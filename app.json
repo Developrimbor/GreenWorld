@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "scheme": "your-app-scheme",
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": ["expo-router"],
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  }
+} 
