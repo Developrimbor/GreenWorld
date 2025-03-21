@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function PostDetail() {
   const [isLiked, setIsLiked] = useState(false);
@@ -38,13 +39,23 @@ export default function PostDetail() {
           source={require('../../assets/images/plastic-waste.jpg')}
           style={styles.postImage}
         />
-        <View style={styles.imageOverlay}>
-          <Text style={styles.date}>25/01/2025</Text>
-          <View style={styles.location}>
-            <Ionicons name="location" size={16} color="#fff" />
-            <Text style={styles.locationText}>Serdivan Sakarya</Text>
+        <LinearGradient
+          colors={['rgba(0,0,0,1)', 'transparent']}
+          style={styles.gradient}
+          start={{ x: 0, y: 1 }}
+          end={{ x: 0, y: 0.5 }}
+        >
+          <View style={styles.imageInfo}>
+            <View style={styles.dateContainer}>
+              <Ionicons name="calendar-outline" size={16} color="#EDEDED" />
+              <Text style={styles.date}>25/01/2025</Text>
+            </View>
+            <View style={styles.location}>
+              <Ionicons name="location" size={16} color="#EDEDED" />
+              <Text style={styles.locationText}>Serdivan Sakarya</Text>
+            </View>
           </View>
-        </View>
+        </LinearGradient>
       </View>
 
       {/* Title Section - Fixed */}
@@ -62,10 +73,10 @@ export default function PostDetail() {
             {'\n\n'}
             Massa mauris eros enim id aliquet. Elementum sed dignissim platea fermentum commodo mauris mattis proin. Egestas morbi lorem eget blandit. Viverra fringilla at duis purus ullamcorper malesuada arcu. Aliquam netus in viverra tincidunt. Integer vulputate odio sapien dolor nulla.
             {'\n\n'}
-            Massa mauris eros enim id aliquet. Elementum sed dignissim platea fermentum commodo mauris mattis proin. Egestas morbi lorem eget blandit. Viverra fringilla at duis purus ullamcorper malesuada arcu. Aliquam netus in viverra tincidunt. Integer vulputate odio sapien dolor nulla.          
+            Elementum sed dignissim platea fermentum commodo mauris mattis proin. Egestas morbi lorem eget blandit. Viverra fringilla at duis purus ullamcorper malesuada arcu. Aliquam netus in viverra tincidunt. Integer vulputate odio sapien dolor nulla.          
             {'\n\n'}
-            Massa mauris eros enim id aliquet. Elementum sed dignissim platea fermentum commodo mauris mattis proin. Egestas morbi lorem eget blandit. Viverra fringilla at duis purus ullamcorper malesuada arcu. Aliquam netus in viverra tincidunt. Integer vulputate odio sapien dolor nulla.          
-          </Text>
+            Sit ultricies varius at integer urna quam mauris vel. Ipsum mauris sapien lorem vel dictumst ac sed posuere. Lorem tristique volupat cras sed. Magna penatibus pulvinar sit pulvinar odio at. Sed dui tellus risus lorem a diam nulla. Lorem ipsum dolor sit amet consectetur.
+         </Text>
         </View>
       </ScrollView>
 
@@ -136,34 +147,48 @@ const styles = StyleSheet.create({
   },
   imageSection: {
     width: '100%',
+    height: 200,
     backgroundColor: '#fff',
     zIndex: 1,
   },
   postImage: {
     width: '100%',
     height: 200,
-  },
-  imageOverlay: {
     position: 'absolute',
-    bottom: 0,
+  },
+  gradient: {
+    position: 'absolute',
     left: 0,
     right: 0,
+    bottom: 0,
+    height: '100%',
+    justifyContent: 'flex-end',
+    padding: 24,
+    paddingBottom: 16,
+  },
+  imageInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    alignItems: 'center',
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   date: {
-    color: '#fff',
-    fontSize: 14,
+    color: '#EDEDED',
+    fontSize: 12,
+    fontFamily: 'Poppins-Regular',
+    marginLeft: 4,
   },
   location: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   locationText: {
-    color: '#fff',
-    fontSize: 14,
+    color: '#EDEDED',
+    fontSize: 12,
+    fontFamily: 'Poppins-Regular',
     marginLeft: 4,
   },
   titleSection: {
@@ -173,7 +198,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E8E8E8',
     zIndex: 1,
     marginTop: 16,
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     paddingBottom: 16,
   },
   title: {
@@ -184,7 +209,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentSection: {
-    padding: 16,
+    padding: 24,
+    paddingTop: 8,
   },
   content: {
     fontSize: 12,
@@ -202,7 +228,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: 24,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   authorInfo: {
     flexDirection: 'row',
@@ -220,7 +248,7 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 4,
   },
   actionButton: {
     padding: 4,

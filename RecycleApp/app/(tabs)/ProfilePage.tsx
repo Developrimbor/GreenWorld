@@ -38,7 +38,7 @@ export default function ProfilePage() {
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>USER PROFILE</Text>
+        <Text style={styles.headerTitle}>PROFILE</Text>
         <TouchableOpacity style={styles.alertButton}>
           <Ionicons name="alert-circle-outline" size={24} color="#000" />
         </TouchableOpacity>
