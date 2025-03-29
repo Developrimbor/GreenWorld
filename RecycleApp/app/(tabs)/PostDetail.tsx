@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: 'Poppins-Medium',
   },
   contentScrollView: {

@@ -115,8 +115,8 @@ const styles = StyleSheet.create({
     marginTop: 30,
   },
   logo: {
-    width: 300,
-    height: 300,
+    width: 200,
+    height: 200,
   },
   slogan: {
     fontFamily: 'Poppins-Regular',

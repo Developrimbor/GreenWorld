@@ -8,14 +8,22 @@ export default function BottomNavigation() {
 
   const isHomePage = currentPath === '/(tabs)/HomePage';
   const isProfilePage = currentPath === '/(tabs)/ProfilePage';
+  const isMapScreen = currentPath === '/(tabs)/MapScreen';
 
   return (
     <View style={styles.bottomNav}>
       <TouchableOpacity style={styles.navItem}>
         <Ionicons name="menu-outline" size={24} color="#000" />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.navItem}>
-        <Ionicons name="map-outline" size={24} color="#000" />
+      <TouchableOpacity 
+        style={styles.navItem}
+        onPress={() => router.push('/(tabs)/MapScreen')}
+      >
+        <Ionicons 
+          name={isMapScreen ? "map" : "map-outline"} 
+          size={24} 
+          color={isMapScreen ? "#4B9363" : "#000"} 
+        />
       </TouchableOpacity>
       <TouchableOpacity 
         style={styles.navItem}

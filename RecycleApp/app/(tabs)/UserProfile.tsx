@@ -223,12 +223,13 @@ export default function UserProfile() {
           <Text style={styles.userName}>Fahri Coşkun</Text>
           <Text style={styles.userNickname}>@wiodex</Text>
           
-          <Text style={styles.memberSince}>Member since January 2025</Text>
-          
-          <View style={styles.pointsContainer}>
-            <Text style={styles.pointsNumber}>200</Text>
-            <Text style={styles.pointsText}>Point</Text>
-          </View>
+        {/* <Text style={styles.memberSince}>Member since January 2025</Text>
+
+<View style={styles.pointsContainer}>
+  <Text style={styles.pointsNumber}>200</Text>
+  <Text style={styles.pointsText}>Point</Text>
+</View> */}
+
 
           <View style={styles.statsContainer}>
             <TouchableOpacity 
@@ -342,7 +343,7 @@ const styles = StyleSheet.create({
   },
   pointsNumber: {
     fontFamily: 'Poppins-Medium',
-    fontSize: 28,
+    fontSize: 22,
     color: '#4B9363',
   },
   pointsText: {
