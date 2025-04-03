@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type PostType = {
   id: string;
@@ -19,6 +20,7 @@ type PostType = {
   title: string;
   author: string;
   location: string;
+  date: string;
 };
 
 const DUMMY_POSTS: PostType[] = [
@@ -27,21 +29,24 @@ const DUMMY_POSTS: PostType[] = [
     image: require('../../assets/images/plastic-waste.jpg'),
     title: 'Plastik Atıkların Geri Dönüşümü',
     author: 'Fahri Coşkun',
-    location: 'Serdivan Sakarya',
+    location: 'Sakarya, Türkiye',
+    date: '10/03/2024',
   },
   {
     id: '2',
     image: require('../../assets/images/plastic-waste.jpg'),
     title: 'Plastik Atıkların Geri Dönüşümü',
     author: 'Fahri Coşkun',
-    location: 'Serdivan Sakarya',
+    location: 'Sakarya, Türkiye',
+    date: '10/03/2024',
   },
   {
     id: '3',
     image: require('../../assets/images/plastic-waste.jpg'),
     title: 'Plastik Atıkların Geri Dönüşümü',
     author: 'Fahri Coşkun',
-    location: 'Serdivan Sakarya',
+    location: 'Sakarya, Türkiye',
+    date: '10/03/2024',
   },
 ];
 
@@ -75,16 +80,29 @@ export default function HomePage() {
           >
             <View style={styles.imageContainer}>
               <Image source={post.image} style={styles.postImage} />
+              <LinearGradient
+                colors={['rgba(0,0,0,1)', 'transparent']}
+                style={styles.gradient}
+                start={{ x: 0, y: 1 }}
+                end={{ x: 0, y: 0.5 }}
+              >
+                <View style={styles.imageInfo}>
+                  <View style={styles.dateContainer}>
+                    <Ionicons name="calendar-outline" size={16} color="#EDEDED" />
+                    <Text style={styles.dateText}>{post.date}</Text>
+                  </View>
+                  <View style={styles.locationContainer}>
+                    <Ionicons name="location" size={16} color="#EDEDED" />
+                    <Text style={styles.locationText}>{post.location}</Text>
+                  </View>
+                </View>
+              </LinearGradient>
               <TouchableOpacity style={styles.bookmarkButton}>
                 <Ionicons name="bookmark-outline" size={24} color="#fff" />
               </TouchableOpacity>
             </View>
             <Text style={styles.postTitle}>{post.title}</Text>
             <Text style={styles.authorName}>{post.author}</Text>
-            <View style={styles.locationContainer}>
-              <Ionicons name="location" size={16} color="#666" />
-              <Text style={styles.locationText}>{post.location}</Text>
-            </View>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -157,6 +175,43 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
   },
+  gradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '50%',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  imageInfo: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dateText: {
+    color: '#EDEDED',
+    fontSize: 12,
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  locationText: {
+    color: '#EDEDED',
+    fontSize: 12,
+  },
   bookmarkButton: {
     position: 'absolute',
     top: 12,
@@ -175,17 +230,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     paddingHorizontal: 12,
-    paddingBottom: 4,
-  },
-  locationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    paddingTop: 4,
-  },
-  locationText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 4,
+    paddingBottom: 12,
   },
 }); 

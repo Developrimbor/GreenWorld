@@ -44,6 +44,7 @@ export default function MapScreen() {
       },
       title: 'Plastik Atık',
       description: 'Plastik şişeler ve ambalajlar',
+      pinColor: '#4B9363'
     },
     {
       id: 2,
@@ -53,7 +54,18 @@ export default function MapScreen() {
       },
       title: 'Kağıt Atık',
       description: 'Kağıt ve karton atıklar',
+      pinColor: '#4B9363'
     },
+    {
+      id: 3,
+      coordinate: {
+        latitude: 40.7758,
+        longitude: 30.3854,
+      },
+      title: 'Tehlikeli Atık',
+      description: 'Kesici ve delici atıklar',
+      pinColor: '#FF0000'
+    }
   ]);
 
   const requestLocationPermission = async () => {
@@ -189,7 +201,8 @@ export default function MapScreen() {
               coordinate={marker.coordinate}
               title={marker.title}
               description={marker.description}
-              pinColor="#4B9363"
+              pinColor={marker.pinColor}
+              onPress={() => router.push('/(tabs)/TrashDetailPage')}
             />
           ))}
           {showCircle && userLocation && (
