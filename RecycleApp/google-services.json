@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "742768033381",
+    "project_id": "greenworld-f1d4f",
+    "storage_bucket": "greenworld-f1d4f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:742768033381:android:8d9610f957167cdf9b508c",
+        "android_client_info": {
+          "package_name": "com.recycleapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAWMbaAjQZd5JOjKpmSYhdeBROsS6v4X4w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

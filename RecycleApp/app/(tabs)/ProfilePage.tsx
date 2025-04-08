@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -11,21 +11,57 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
+import { getCurrentUser } from '../(auth)/services/authService';
+import { auth, db } from '../config/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
 
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState('reported');
+  // Önce tab tipleri için bir type tanımlayalım
+  type TabType = 'reported' | 'cleaned' | 'post';
+
+  const [activeTab, setActiveTab] = useState<TabType>('reported');
   const slideAnim = useRef(new Animated.Value(0)).current;
 
-  const animateSlider = (position) => {
+  const animateSlider = (position: number) => {
     Animated.spring(slideAnim, {
       toValue: position,
       useNativeDriver: true,
     }).start();
   };
 
-  const handleTabPress = (tab) => {
+  const handleTabPress = (tab: TabType) => {
     setActiveTab(tab);
     animateSlider(tab === 'reported' ? 0 : tab === 'cleaned' ? 120 : 240);
+  };
+
+  const [userData, setUserData] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          if (userDoc.exists()) {
+            setUserData(userDoc.data());
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/(auth)/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   return (
@@ -39,8 +75,11 @@ export default function ProfilePage() {
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>PROFILE</Text>
-        <TouchableOpacity style={styles.alertButton}>
-          <Ionicons name="alert-circle-outline" size={24} color="#000" />
+        <TouchableOpacity 
+          style={styles.alertButton}
+          onPress={handleLogout}
+        >
+          <Ionicons name="log-out-outline" size={24} color="#000" />
         </TouchableOpacity>
       </View>
 
@@ -53,13 +92,18 @@ export default function ProfilePage() {
             style={styles.profileImage}
           />
           
-          <Text style={styles.userName}>Yusuf Gülmez</Text>
-          <Text style={styles.userNickname}>@marvelous</Text>
+          <Text style={styles.userName}>{userData?.name || 'Loading...'}</Text>
+          <Text style={styles.userNickname}>@{userData?.username || 'Loading...'}</Text>
           
-          <Text style={styles.memberSince}>Member since January 2025</Text>
+          <Text style={styles.memberSince}>
+            Member since {userData?.createdAt?.toDate().toLocaleDateString('en-US', {
+              month: 'long',
+              year: 'numeric'
+            }) || 'Loading...'}
+          </Text>
           
           <View style={styles.pointsContainer}>
-            <Text style={styles.pointsNumber}>130</Text>
+            <Text style={styles.pointsNumber}>{userData?.points || 0}</Text>
             <Text style={styles.pointsText}>Point</Text>
           </View>
 
@@ -68,7 +112,7 @@ export default function ProfilePage() {
               style={styles.statItem} 
               onPress={() => handleTabPress('reported')}
             >
-              <Text style={styles.statNumber}>5</Text>
+              <Text style={styles.statNumber}>{userData?.reported || 0}</Text>
               <Text style={styles.statLabel}>Reported</Text>
             </TouchableOpacity>
             
@@ -78,7 +122,7 @@ export default function ProfilePage() {
               style={styles.statItem} 
               onPress={() => handleTabPress('cleaned')}
             >
-              <Text style={styles.statNumber}>7</Text>
+              <Text style={styles.statNumber}>{userData?.cleaned || 0}</Text>
               <Text style={styles.statLabel}>Cleaned</Text>
             </TouchableOpacity>
             
@@ -88,7 +132,7 @@ export default function ProfilePage() {
               style={styles.statItem} 
               onPress={() => handleTabPress('post')}
             >
-              <Text style={styles.statNumber}>1</Text>
+              <Text style={styles.statNumber}>{userData?.posts || 0}</Text>
               <Text style={styles.statLabel}>Post</Text>
             </TouchableOpacity>
           </View>
@@ -224,4 +268,4 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: '#4B9363',
   },
-}); 
+});

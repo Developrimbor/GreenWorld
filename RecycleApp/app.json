@@ -18,7 +18,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yourcompany.recycleapp",
-      "googleMapsApiKey": "YOUR_IOS_API_KEY"
+      "googleMapsApiKey": "YOUR_IOS_API_KEY",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
@@ -26,7 +27,8 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.yourcompany.recycleapp",
-      "googleMapsApiKey": "YOUR_ANDROID_API_KEY"
+      "googleMapsApiKey": "YOUR_ANDROID_API_KEY",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -36,11 +38,13 @@
     "plugins": [
       "expo-router",
       "expo-splash-screen",
-      "expo-font"
-    ],
-    "experiments": {
-      "typedRoutes": true
-    },
-    "main": "expo-router/entry"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app needs access to your photos to let you share them."
+        }
+      ]
+    ]
   }
 }

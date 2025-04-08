@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,19 +7,78 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import BottomNavigation from '../../components/BottomNavigation';
 import { LinearGradient } from 'expo-linear-gradient';
 
+type PostType = {
+  id: string;
+  title: string;
+  content: string;
+  location: string;
+  imageUrl: string;
+  author: string;
+  date: string;
+};
+
 export default function PostDetail() {
+  const { id } = useLocalSearchParams();
+  const [post, setPost] = useState<PostType | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
+  useEffect(() => {
+    const fetchPost = async () => {
+      try {
+        console.log('Fetching post with ID:', id); // Debug için
+        const postDoc = await getDoc(doc(db, 'posts', id as string));
+        if (postDoc.exists()) {
+          const postData = postDoc.data();
+          console.log('Post data:', postData); // Debug için
+          setPost({
+            id: postDoc.id,
+            title: postData.title || '',
+            content: postData.content || '',
+            location: postData.location || '',
+            imageUrl: postData.imageUrl || '',
+            author: postData.author || 'Anonim',
+            date: postData.createdAt ? new Date(postData.createdAt.toDate()).toLocaleDateString() : new Date().toLocaleDateString(),
+          });
+        } else {
+          console.log('Post not found'); // Debug için
+          router.back(); // Post bulunamazsa geri dön
+        }
+      } catch (error) {
+        console.error('Error fetching post:', error);
+        Alert.alert('Hata', 'Post yüklenirken bir hata oluştu.');
+        router.back();
+      }
+    };
+
+    if (id) {
+      fetchPost();
+    } else {
+      router.back();
+    }
+  }, [id]);
+
+  if (!post) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header - Fixed */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
@@ -33,10 +92,9 @@ export default function PostDetail() {
         </TouchableOpacity>
       </View>
 
-      {/* Image Section - Fixed */}
       <View style={styles.imageSection}>
         <Image
-          source={require('../../assets/images/plastic-waste.jpg')}
+          source={{ uri: post.imageUrl }}
           style={styles.postImage}
         />
         <LinearGradient
@@ -48,39 +106,26 @@ export default function PostDetail() {
           <View style={styles.imageInfo}>
             <View style={styles.dateContainer}>
               <Ionicons name="calendar-outline" size={16} color="#EDEDED" />
-              <Text style={styles.date}>25/01/2025</Text>
+              <Text style={styles.date}>{post.date}</Text>
             </View>
             <View style={styles.location}>
               <Ionicons name="location" size={16} color="#EDEDED" />
-              <Text style={styles.locationText}>Serdivan Sakarya</Text>
+              <Text style={styles.locationText}>{post.location}</Text>
             </View>
           </View>
         </LinearGradient>
       </View>
 
-      {/* Title Section - Fixed */}
       <View style={styles.titleSection}>
-        <Text style={styles.title}>Plastik Atıkların Geri Dönüşümü</Text>
+        <Text style={styles.title}>{post.title}</Text>
       </View>
 
-      {/* Content Section - Scrollable */}
       <ScrollView style={styles.contentScrollView}>
         <View style={styles.contentSection}>
-          <Text style={styles.content}>
-            Lorem ipsum dolor sit amet, consectetur. Massa mauris eros enim id aliquet. Elementum sed dignissim platea fermentum commodo mauris mattis proin. Egestas morbi tempor eget blandit. Viverra fringilla at duis purus ullamcorper malesuada arcu. Aliquam netus in viverra tincidunt. Integer vulputate odio sapien dolor nulla.
-            {'\n\n'}
-            Sit ultricies varius at integer urna quam mauris vel. Ipsum mauris sapien lorem vel dictumst ac sed posuere. Lorem tristique volupat cras sed. Magna penatibus pulvinar sit pulvinar odio at. Sed dui tellus risus lorem a diam nulla. Lorem ipsum dolor sit amet consectetur.
-            {'\n\n'}
-            Massa mauris eros enim id aliquet. Elementum sed dignissim platea fermentum commodo mauris mattis proin. Egestas morbi lorem eget blandit. Viverra fringilla at duis purus ullamcorper malesuada arcu. Aliquam netus in viverra tincidunt. Integer vulputate odio sapien dolor nulla.
-            {'\n\n'}
-            Elementum sed dignissim platea fermentum commodo mauris mattis proin. Egestas morbi lorem eget blandit. Viverra fringilla at duis purus ullamcorper malesuada arcu. Aliquam netus in viverra tincidunt. Integer vulputate odio sapien dolor nulla.          
-            {'\n\n'}
-            Sit ultricies varius at integer urna quam mauris vel. Ipsum mauris sapien lorem vel dictumst ac sed posuere. Lorem tristique volupat cras sed. Magna penatibus pulvinar sit pulvinar odio at. Sed dui tellus risus lorem a diam nulla. Lorem ipsum dolor sit amet consectetur.
-         </Text>
+          <Text style={styles.content}>{post.content}</Text>
         </View>
       </ScrollView>
 
-      {/* Author Section - Fixed */}
       <View style={styles.authorSection}>
         <TouchableOpacity 
           style={styles.authorInfo}
@@ -90,7 +135,7 @@ export default function PostDetail() {
             source={require('../../assets/images/profile.jpg')}
             style={styles.authorImage}
           />
-          <Text style={styles.authorName}>Fahri Coşkun</Text>
+          <Text style={styles.authorName}>{post.author}</Text>
         </TouchableOpacity>
         <View style={styles.actionButtons}>
           <TouchableOpacity 
@@ -125,6 +170,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -253,4 +303,4 @@ const styles = StyleSheet.create({
   actionButton: {
     padding: 4,
   },
-}); 
+});

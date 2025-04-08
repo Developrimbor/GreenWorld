@@ -8,16 +8,42 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../config/firebase';
 
 export default function LoginScreen() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');  // username yerine email kullanacağız
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
-  const handleLogin = () => {
-    router.push('/(tabs)/HomePage');
+  const handleLogin = async () => {
+    try {
+      if (!email || !password) {
+        Alert.alert('Hata', 'Email ve şifre alanları boş bırakılamaz.');
+        return;
+      }
+
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push('/(tabs)/HomePage');
+    } catch (error: any) {
+      console.log('Firebase Error Code:', error.code);
+      let errorMessage = 'Giriş yapılırken bir hata oluştu.';
+      
+      if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Lütfen geçerli bir email adresi girin.';
+      } else if (error.code === 'auth/user-not-found') {
+        errorMessage = 'Bu email adresi ile kayıtlı bir kullanıcı bulunamadı.';
+      } else if (error.code === 'auth/wrong-password') {
+        errorMessage = 'Yanlış şifre. Lütfen tekrar deneyin.';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Çok fazla giriş denemesi yapıldı. Lütfen daha sonra tekrar deneyin.';
+      }
+  
+      Alert.alert('Giriş Hatası', errorMessage);
+    }
   };
 
   const handleGoogleLogin = () => {
@@ -45,9 +71,11 @@ export default function LoginScreen() {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="Username"
-            value={username}
-            onChangeText={setUsername}
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
           />
         </View>
 
@@ -206,4 +234,4 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     fontSize: 16,
   },
-}); 
+});

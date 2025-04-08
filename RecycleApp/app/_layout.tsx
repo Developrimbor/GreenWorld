@@ -3,6 +3,7 @@ import { useCallback, useEffect } from 'react';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { View } from 'react-native';
+import { auth, db } from './config/firebase';  // Firebase import'unu güncelledik
 
 // Splash screen'i otomatik gizlemeyi engelle
 SplashScreen.preventAutoHideAsync();
@@ -32,4 +33,4 @@ export default function RootLayout() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
     </Stack>
   );
-} 
+}

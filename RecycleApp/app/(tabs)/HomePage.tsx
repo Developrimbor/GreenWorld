@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -13,44 +13,43 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
 import { LinearGradient } from 'expo-linear-gradient';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 type PostType = {
   id: string;
-  image: any;
+  imageUrl: string; // image yerine imageUrl kullan
   title: string;
   author: string;
   location: string;
   date: string;
 };
 
-const DUMMY_POSTS: PostType[] = [
-  {
-    id: '1',
-    image: require('../../assets/images/plastic-waste.jpg'),
-    title: 'Plastik Atıkların Geri Dönüşümü',
-    author: 'Fahri Coşkun',
-    location: 'Sakarya, Türkiye',
-    date: '10/03/2024',
-  },
-  {
-    id: '2',
-    image: require('../../assets/images/plastic-waste.jpg'),
-    title: 'Plastik Atıkların Geri Dönüşümü',
-    author: 'Fahri Coşkun',
-    location: 'Sakarya, Türkiye',
-    date: '10/03/2024',
-  },
-  {
-    id: '3',
-    image: require('../../assets/images/plastic-waste.jpg'),
-    title: 'Plastik Atıkların Geri Dönüşümü',
-    author: 'Fahri Coşkun',
-    location: 'Sakarya, Türkiye',
-    date: '10/03/2024',
-  },
-];
-
 export default function HomePage() {
+  const [posts, setPosts] = useState<PostType[]>([]);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const postsRef = collection(db, 'posts');
+        const q = query(postsRef, orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        
+        const fetchedPosts = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          date: new Date(doc.data().createdAt?.toDate()).toLocaleDateString(),
+        })) as PostType[];
+
+        setPosts(fetchedPosts);
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -72,14 +71,20 @@ export default function HomePage() {
       </View>
 
       <ScrollView style={styles.content}>
-        {DUMMY_POSTS.map((post) => (
+        {posts.map((post) => (
           <TouchableOpacity 
             key={post.id} 
             style={styles.postCard}
-            onPress={() => router.push('/(tabs)/PostDetail')}
+            onPress={() => router.push({
+              pathname: '/(tabs)/PostDetail',
+              params: { id: post.id }
+            })}
           >
             <View style={styles.imageContainer}>
-              <Image source={post.image} style={styles.postImage} />
+              <Image 
+                source={{ uri: post.imageUrl }} // Firestore'dan gelen URL'i kullan
+                style={styles.postImage} 
+              />
               <LinearGradient
                 colors={['rgba(0,0,0,1)', 'transparent']}
                 style={styles.gradient}
@@ -106,6 +111,16 @@ export default function HomePage() {
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      <TouchableOpacity 
+        style={styles.fabButton}
+        onPress={() => router.push({
+          pathname: '/CreatePost',
+          params: { modal: 'true' }  // boolean yerine string olarak geçiriyoruz
+        })}
+      >
+        <Ionicons name="add" size={30} color="#fff" />
+      </TouchableOpacity>
 
       <BottomNavigation />
     </SafeAreaView>
@@ -232,4 +247,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingBottom: 12,
   },
-}); 
+  fabButton: {
+    position: 'absolute',
+    right: 20,
+    bottom: 80, // Positioned above BottomNavigation
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#4B9363',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 1,
+  },
+});
