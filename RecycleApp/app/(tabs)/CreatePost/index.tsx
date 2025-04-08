@@ -39,49 +39,109 @@ export default function CreatePost() {
 
   const handleSubmit = async () => {
     try {
-      if (!auth.currentUser) {
+      console.log('handleSubmit başladı');
+      const currentUser = auth.currentUser;
+      console.log('Current user UID:', currentUser ? currentUser.uid : 'Giriş yapılmamış');
+
+      if (!currentUser) {
         Alert.alert('Hata', 'Lütfen önce giriş yapın.');
+        console.log('Kullanıcı giriş yapmamış.');
         return;
       }
 
       if (!title || !location || !content || !image) {
         Alert.alert('Hata', 'Lütfen tüm alanları doldurun ve bir fotoğraf seçin.');
+        console.log('Eksik alanlar veya resim yok:', { title: !!title, location: !!location, content: !!content, image: !!image });
         return;
       }
 
-      // Resim dosyasını binary olarak oku
+      console.log('Seçilen resim URI:', image);
+
+      // 1. Dosya bilgilerini al
       const fileInfo = await FileSystem.getInfoAsync(image);
+      console.log('1. Dosya bilgisi alındı:', fileInfo);
+      if (!fileInfo.exists) {
+        Alert.alert('Hata', 'Seçilen resim dosyası bulunamadı.');
+        console.log('HATA: Dosya bulunamadı:', image);
+        return;
+      }
+
+      // 2. Dosyayı fetch ile al
       const response = await fetch(fileInfo.uri);
+      console.log('2. Fetch yanıt durumu:', response.status);
+      if (!response.ok) {
+        const responseText = await response.text();
+        Alert.alert('Hata', `Resim dosyası sunucuya yüklenemedi (HTTP ${response.status}).`);
+        console.log('HATA: Fetch başarısız:', response.status, response.statusText, responseText);
+        return;
+      }
+
+      // 3. Blob oluştur
       const blob = await response.blob();
+      console.log('3. Blob oluşturuldu. Boyut:', blob.size, 'Tip:', blob.type);
 
-      // Storage referansını oluştur ve yükle
-      const fileName = `posts/${Date.now()}_${auth.currentUser.uid}.jpg`;
+      // 4. Storage referansı oluştur
+      const fileName = `posts/${Date.now()}_${currentUser.uid}.jpg`;
+      console.log('4. Storage dosya adı belirlendi:', fileName);
       const storageRef = ref(storage, fileName);
-      await uploadBytes(storageRef, blob);
-      const imageUrl = await getDownloadURL(storageRef);
+      console.log('   -> Storage referansı:', storageRef.toString());
 
-      // Post'u Firestore'a kaydet
+      // Token yenilemeyi zorla (Adım 6.5)
+      if (currentUser) {
+        try {
+          console.log('6.5 Token yenileme zorlanıyor...');
+          const idTokenResult = await currentUser.getIdTokenResult(true); // true -> force refresh
+          console.log('    -> Token başarıyla yenilendi. Auth time:', idTokenResult.authTime);
+        } catch (tokenError: any) {
+          console.error('HATA: Token yenilenemedi:', tokenError);
+          Alert.alert('Hata', `Kimlik doğrulama tokenı yenilenemedi: ${tokenError.message}`);
+          return; // Token yenilenemezse devam etme
+        }
+      }
+
+      // 7. Storage'a yükle
+      console.log('7. uploadBytes başlatılıyor...');
+      const uploadTaskSnapshot = await uploadBytes(storageRef, blob);
+      console.log('   uploadBytes tamamlandı:', uploadTaskSnapshot.metadata.fullPath);
+
+      // 8. İndirme URL'sini al
+      console.log('8. getDownloadURL başlatılıyor...');
+      const imageUrl = await getDownloadURL(storageRef);
+      console.log('   İndirme URL alındı:', imageUrl);
+
+      // 9. Firestore'a kaydet
       const postsRef = collection(db, 'posts');
       await addDoc(postsRef, {
         title,
         location,
         content,
         imageUrl,
-        author: auth.currentUser.displayName || 'Anonim',
-        authorId: auth.currentUser.uid,
+        author: currentUser.displayName || 'Anonim',
+        authorId: currentUser.uid,
         createdAt: serverTimestamp(),
       });
 
       Alert.alert('Başarılı', 'Postunuz başarıyla paylaşıldı.');
       router.back();
-    } catch (error) {
-      console.error('Post oluşturma hatası:', error);
-      if (error instanceof Error) {
-        console.error('Hata detayı:', error.message);
-        Alert.alert('Hata', `Post paylaşılırken bir hata oluştu: ${error.message}`);
-      } else {
-        Alert.alert('Hata', 'Post paylaşılırken bilinmeyen bir hata oluştu.');
+    } catch (error: any) {
+      console.error('### Post Oluşturma HATASI ###');
+      console.error('Hata Mesajı:', error.message);
+      if (error.code) {
+        console.error('Firebase Hata Kodu:', error.code);
       }
+      if (error.stack) {
+        console.error('Hata Stack Trace:', error.stack);
+      }
+      console.error('Tüm Hata Nesnesi:', JSON.stringify(error, null, 2));
+
+      let userMessage = 'Post paylaşılırken bir hata oluştu.';
+      if (error.code === 'storage/unknown') {
+          userMessage = 'Dosya yüklenirken bilinmeyen bir hata oluştu. Lütfen tekrar deneyin veya internet bağlantınızı kontrol edin.';
+      } else if (error.code) {
+          userMessage += ` (Kod: ${error.code})`;
+      }
+
+      Alert.alert('Hata', userMessage);
     }
   };
 
