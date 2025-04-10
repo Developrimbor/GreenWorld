@@ -9,21 +9,60 @@ import {
   Modal,
   Dimensions,
   ScrollView,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const images = [
   require('../../assets/images/trash000001.jpg'),
   require('../../assets/images/plastic-waste.jpg'),
 ];
 
+interface InfoItemData {
+  icon: keyof typeof MaterialIcons.glyphMap;
+  title: string;
+  description: string;
+}
+
+interface ModalContentData {
+  title: string;
+  subtitle: string;
+  items: InfoItemData[];
+}
+
+const trashInfoDetailsData: ModalContentData = {
+  title: 'Trash Info Details',
+  subtitle: 'Details about trash types',
+  items: [
+    { icon: 'recycling', title: 'Recyclable', description: 'Materials that can be processed and reused.' },
+    { icon: 'smoking-rooms', title: 'Cigarette Butts', description: 'Often contain plastic filters.' },
+    { icon: 'waves', title: 'Plastic Waste', description: 'Various types of plastic items.' },
+    { icon: 'description', title: 'Paper/Cardboard', description: 'Paper products and cardboard packaging.' },
+    { icon: 'masks', title: 'Medical Masks', description: 'Disposable face masks.' },
+    { icon: 'wine-bar', title: 'Glass Bottles', description: 'Glass containers, usually recyclable.' },
+  ]
+};
+
+const trashVolumeDetailsData: ModalContentData = {
+  title: 'Trash Volume Details',
+  subtitle: 'Estimated amount of trash',
+  items: [
+    { icon: 'shopping-bag', title: 'Garbage Bag (S)', description: 'Small amount, like a single shopping bag.' },
+    { icon: 'delete', title: 'Garbage Bin (M)', description: 'Fills a standard household garbage bin.' },
+    { icon: 'local-shipping', title: 'Garbage Truck (L)', description: 'Large amount requiring a truck for removal.' },
+    { icon: 'delete-sweep', title: 'Multiple Bags (XL)', description: 'Several bags or a large pile of waste.' },
+  ]
+};
+
 export default function TrashDetailPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [modalContent, setModalContent] = useState<ModalContentData | null>(null);
 
   const nextImage = () => {
     if (currentImageIndex < images.length - 1) {
@@ -35,6 +74,16 @@ export default function TrashDetailPage() {
     if (currentImageIndex > 0) {
       setCurrentImageIndex(currentImageIndex - 1);
     }
+  };
+
+  const openInfoModal = (content: ModalContentData) => {
+    setModalContent(content);
+    setShowInfoModal(true);
+  };
+
+  const closeInfoModal = () => {
+    setShowInfoModal(false);
+    setModalContent(null);
   };
 
   return (
@@ -110,7 +159,9 @@ export default function TrashDetailPage() {
           <View style={styles.sectionColumn}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Trash Info</Text>
-              <MaterialIcons name="info" size={22} color="#4B9363" />
+              <TouchableOpacity onPress={() => openInfoModal(trashInfoDetailsData)}>
+                <MaterialIcons name="info" size={22} color="#4B9363" />
+              </TouchableOpacity>
             </View>
             <View style={styles.iconGrid}>
               <MaterialCommunityIcons name="recycle" size={24} color="#4B9363" />
@@ -127,7 +178,9 @@ export default function TrashDetailPage() {
           <View style={styles.sectionColumn}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Trash Volume</Text>
-              <MaterialIcons name="info" size={22} color="#4B9363" />
+              <TouchableOpacity onPress={() => openInfoModal(trashVolumeDetailsData)}>
+                <MaterialIcons name="info" size={22} color="#4B9363" />
+              </TouchableOpacity>
             </View>
             <View style={styles.iconGrid}>
               <MaterialIcons name="delete" size={24} color="#4B9363" />
@@ -184,6 +237,42 @@ export default function TrashDetailPage() {
             />
           </TouchableOpacity>
         </View>
+      </Modal>
+
+      {/* Info Detail Modal */}
+      <Modal
+        visible={showInfoModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeInfoModal}
+      >
+        <TouchableWithoutFeedback onPress={closeInfoModal}> 
+          <View style={styles.infoModalOverlay}>
+            <TouchableWithoutFeedback> 
+              <View style={styles.infoModalContainer}>
+                {modalContent && (
+                  <>
+                    <Text style={styles.infoModalTitle}>{modalContent.title}</Text>
+                    <Text style={styles.infoModalSubtitle}>{modalContent.subtitle}</Text>
+                    <ScrollView style={styles.infoModalList}>
+                      {modalContent.items.map((item, index) => (
+                        <View key={index} style={styles.infoModalItem}>
+                          <View style={styles.infoModalIconContainer}>
+                            <MaterialIcons name={item.icon} size={28} color="#FFF" />
+                          </View>
+                          <View style={styles.infoModalTextContainer}>
+                            <Text style={styles.infoModalItemTitle}>{item.title}</Text>
+                            <Text style={styles.infoModalItemDescription}>{item.description}</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </ScrollView>
+                  </>
+                )}
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </SafeAreaView>
   );
@@ -381,5 +470,74 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 1,
     padding: 8,
+  },
+  infoModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  infoModalContainer: {
+    width: width * 0.85,
+    maxHeight: height * 0.6,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  infoModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#4B9363',
+    textAlign: 'center',
+    marginBottom: 8,
+    fontFamily: 'Poppins-Medium',
+  },
+  infoModalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontFamily: 'Poppins-Regular',
+  },
+  infoModalList: {
+    // Liste çok uzunsa kaydırmayı sağlar
+  },
+  infoModalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  infoModalIconContainer: {
+    width: 50,
+    height: 50,
+    backgroundColor: '#4B9363',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  infoModalTextContainer: {
+    flex: 1,
+  },
+  infoModalItemTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 4,
+    fontFamily: 'Poppins-Medium',
+  },
+  infoModalItemDescription: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
+    fontFamily: 'Poppins-Regular',
   },
 });
