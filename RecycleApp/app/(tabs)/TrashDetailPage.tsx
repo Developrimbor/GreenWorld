@@ -454,6 +454,8 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalBackground: {
     flex: 1,
@@ -461,8 +463,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalImage: {
-    width: width,
-    height: width,
+    width: width * 1.4,
+    height: width * 1.4,
+    resizeMode: 'contain',
   },
   closeButton: {
     position: 'absolute',
