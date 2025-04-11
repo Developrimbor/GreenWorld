@@ -122,7 +122,8 @@ export default function CreatePost() {
       });
 
       Alert.alert('Başarılı', 'Postunuz başarıyla paylaşıldı.');
-      router.back();
+      // router.back() yerine doğrudan HomePage'e yönlendir
+      router.replace('/(tabs)/HomePage');
     } catch (error: any) {
       console.error('### Post Oluşturma HATASI ###');
       console.error('Hata Mesajı:', error.message);

@@ -7,13 +7,14 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Animated,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
 import { getCurrentUser } from '../(auth)/services/authService';
 import { auth, db } from '../config/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, doc, getDoc, getDocs } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 
 export default function ProfilePage() {
@@ -21,6 +22,7 @@ export default function ProfilePage() {
   type TabType = 'reported' | 'cleaned' | 'post';
 
   const [activeTab, setActiveTab] = useState<TabType>('reported');
+  const [userPosts, setUserPosts] = useState<any[]>([]);
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   const animateSlider = (position: number) => {
@@ -52,6 +54,28 @@ export default function ProfilePage() {
       }
     };
 
+    const fetchUserPosts = async () => {
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          const postsRef = collection(db, 'posts');
+          const q = query(
+            postsRef,
+            where('authorId', '==', currentUser.uid)
+          );
+          const querySnapshot = await getDocs(q);
+          const posts = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          console.log('Fetched posts:', posts); // Log ekleyelim
+          setUserPosts(posts);
+        }
+      } catch (error) {
+        console.error('Error fetching user posts:', error);
+      }
+    };
+    fetchUserPosts();
     fetchUserData();
   }, []);
 
@@ -84,7 +108,7 @@ export default function ProfilePage() {
       </View>
 
       {/* Main Content Container */}
-      <View style={styles.mainContainer}>
+      <ScrollView style={styles.mainContainer}>
         {/* Profile Content */}
         <View style={styles.profileContent}>
           <Image
@@ -132,7 +156,7 @@ export default function ProfilePage() {
               style={styles.statItem} 
               onPress={() => handleTabPress('post')}
             >
-              <Text style={styles.statNumber}>{userData?.posts || 0}</Text>
+              <Text style={styles.statNumber}>{userPosts?.length || 0}</Text>
               <Text style={styles.statLabel}>Post</Text>
             </TouchableOpacity>
           </View>
@@ -148,8 +172,39 @@ export default function ProfilePage() {
               ]}
             />
           </View>
+
+          {activeTab === 'post' && (
+            <View style={styles.postsContainer}>
+              {userPosts && userPosts.length > 0 ? (
+                userPosts.map((post) => (
+                  <TouchableOpacity
+                    key={post.id}
+                    style={styles.postCard}
+                    onPress={() => router.push({
+                      pathname: '/(tabs)/PostDetail',
+                      params: { id: post.id }
+                    })}
+                  >
+                    <Image
+                      source={{ uri: post.imageUrl }}
+                      style={styles.postImage}
+                    />
+                    <View style={styles.postInfo}>
+                      <Text style={styles.postTitle}>{post.title || 'No Title'}</Text>
+                      <Text style={styles.postLocation}>{post.location || 'No Location'}</Text>
+                      <Text style={styles.postDate}>
+                        {post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleDateString() : 'No Date'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.noPostsText}>No posts found</Text>
+              )}
+            </View>
+          )}
         </View>
-      </View>
+      </ScrollView>
 
       <BottomNavigation />
     </SafeAreaView>
@@ -171,7 +226,12 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E8E8E8',
   },
   mainContainer: {
-    flex: 1, // Ana içerik container'ı esnek olacak
+    flex: 1,
+  },
+  profileContent: {
+    alignItems: 'center',
+    paddingTop: 24,
+    paddingBottom: 100, // Alt kısımda extra boşluk
   },
   backButton: {
     padding: 4,
@@ -182,10 +242,6 @@ const styles = StyleSheet.create({
   },
   alertButton: {
     padding: 4,
-  },
-  profileContent: {
-    alignItems: 'center',
-    paddingTop: 24, // Üst boşluk
   },
   profileImage: {
     width: 100,
@@ -267,5 +323,58 @@ const styles = StyleSheet.create({
     width: 120,
     height: 2,
     backgroundColor: '#4B9363',
+  },
+  postsContainer: {
+    width: '100%',
+    paddingHorizontal: 16,
+    marginTop: 16,
+    flex: 1, // maxHeight yerine flex kullan
+  },
+  postCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 12,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    minHeight: 100, // Minimum yükseklik ekle
+  },
+  postImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  postInfo: {
+    flex: 1,
+    marginLeft: 12,
+    justifyContent: 'center',
+  },
+  postTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  postLocation: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  postDate: {
+    fontSize: 12,
+    color: '#999',
+  },
+  noPostsText: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#666',
+    marginTop: 20,
+    fontFamily: 'Poppins-Regular',
   },
 });

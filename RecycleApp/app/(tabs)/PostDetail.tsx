@@ -11,11 +11,15 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+// Import kısmına eklenecek
+import { deleteDoc } from 'firebase/firestore';
+import { auth } from '../config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import BottomNavigation from '../../components/BottomNavigation';
 import { LinearGradient } from 'expo-linear-gradient';
 
+// PostType içine authorId ekleyelim
 type PostType = {
   id: string;
   title: string;
@@ -24,6 +28,7 @@ type PostType = {
   imageUrl: string;
   author: string;
   date: string;
+  authorId: string; // Eklendi
 };
 
 export default function PostDetail() {
@@ -31,6 +36,34 @@ export default function PostDetail() {
   const [post, setPost] = useState<PostType | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+
+  // handleDeletePost fonksiyonunu buraya taşıyalım
+  const handleDeletePost = async () => {
+    Alert.alert(
+      "Delete Post",
+      "Are you sure you want to delete this post?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteDoc(doc(db, 'posts', post?.id || ''));
+              Alert.alert('Success', 'Post deleted successfully');
+              router.push("/(tabs)/ProfilePage"); //todo bir önceki sayfa neresiyse oraya pushlayabilir
+            } catch (error) {
+              console.error('Error deleting post:', error);
+              Alert.alert('Error', 'Failed to delete post');
+            }
+          }
+        }
+      ]
+    );
+  };
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -48,6 +81,7 @@ export default function PostDetail() {
             imageUrl: postData.imageUrl || '',
             author: postData.author || 'Anonim',
             date: postData.createdAt ? new Date(postData.createdAt.toDate()).toLocaleDateString() : new Date().toLocaleDateString(),
+            authorId: postData.authorId || '',
           });
         } else {
           console.log('Post not found'); // Debug için
@@ -87,9 +121,29 @@ export default function PostDetail() {
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>USER'S POST</Text>
-        <TouchableOpacity style={styles.alertButton}>
-          <Ionicons name="alert-circle-outline" size={24} color="#000" />
-        </TouchableOpacity>
+        {post?.authorId === auth.currentUser?.uid ? (
+          <View style={styles.headerActions}>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={() => {
+                console.log('Navigating to EditPost with ID:', post.id);
+                router.push(`/(tabs)/EditPost?id=${post.id}`);
+              }}
+            >
+              <Ionicons name="create-outline" size={24} color="#000" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={handleDeletePost}
+            >
+              <Ionicons name="trash-outline" size={24} color="#FF0000" />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity style={styles.alertButton}>
+            <Ionicons name="alert-circle-outline" size={24} color="#000" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.imageSection}>
@@ -166,6 +220,7 @@ export default function PostDetail() {
   );
 }
 
+// Header stillerini güncelleyelim
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -302,5 +357,9 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     padding: 4,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
   },
 });
