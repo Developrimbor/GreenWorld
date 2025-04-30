@@ -13,7 +13,9 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import BottomNavigation from '../../components/BottomNavigation';
 import MapView, { Marker, PROVIDER_GOOGLE, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 const { width, height } = Dimensions.get('window');
 const INITIAL_REGION = {
@@ -26,6 +28,18 @@ const INITIAL_REGION = {
 interface LocationCoords {
   latitude: number;
   longitude: number;
+}
+
+// Atık tipi
+interface Trash {
+  id: string;
+  images: { id: string; uri: string }[];
+  type: number;
+  quantity: number;
+  additionalInfo: string;
+  location: { latitude: number; longitude: number };
+  user: { id: string; name: string };
+  createdAt: any;
 }
 
 export default function MapScreen() {
@@ -67,6 +81,7 @@ export default function MapScreen() {
       pinColor: '#FF0000'
     }
   ]);
+  const [trashReports, settrashReports] = useState<Trash[]>([]);
 
   const requestLocationPermission = async () => {
     try {
@@ -167,6 +182,36 @@ export default function MapScreen() {
     }
   };
 
+  const fetchtrashReports = async () => {
+    const querySnapshot = await getDocs(collection(db, 'trashReports'));
+    const data = querySnapshot.docs.map(doc => {
+      const d = doc.data();
+      return {
+        id: doc.id,
+        images: d.images || [],
+        type: d.type || 0,
+        quantity: d.quantity || 0,
+        additionalInfo: d.additionalInfo || '',
+        location: d.location || { latitude: 0, longitude: 0 },
+        user: d.user || { id: '', name: '' },
+        createdAt: d.createdAt || null,
+      };
+    });
+    settrashReports(data);
+  };
+
+  useEffect(() => {
+    fetchtrashReports();
+  }, []);
+
+  // Ekran odaklandığında verileri yeniden çek
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchtrashReports();
+      return () => {};
+    }, [])
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header - Başlık */}
@@ -209,6 +254,14 @@ export default function MapScreen() {
               description={marker.description}
               pinColor={marker.pinColor}
               onPress={() => router.push('/(tabs)/TrashDetailPage')}
+            />
+          ))}
+          {trashReports.map(trash => (
+            <Marker
+              key={trash.id}
+              coordinate={trash.location}
+              pinColor="#4B9363"
+              onPress={() => router.push({ pathname: '/(tabs)/TrashDetailPage', params: { id: trash.id } })}
             />
           ))}
           {showCircle && userLocation && (
