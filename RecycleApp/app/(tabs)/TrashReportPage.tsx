@@ -23,6 +23,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { addDoc, collection, updateDoc, increment, doc, serverTimestamp } from 'firebase/firestore';
+import { db, auth } from '../config/firebase';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -72,7 +74,7 @@ export default function TrashReportPage() {
         longitude: parseFloat(params.longitude as string),
       });
     }
-  }, [params]);
+  }, []);
 
   const requestCameraPermission = async () => {
     if (Platform.OS === 'android') {
@@ -125,19 +127,66 @@ export default function TrashReportPage() {
   };
 
   // Form gönderimi
-  const handleSubmit = () => {
-    console.log('Atık raporu oluşturuluyor...');
-    console.log({
-      location: selectedLocation,
-      type: selectedType,
-      quantity: selectedQuantity,
-      additionalInfo,
-    });
-    
-    // Burada form verilerini API'ye gönderme işlemi yapılabilir
-    
-    // Başarılı gönderim sonrası ana sayfaya dönüş
-    router.replace('/HomePage');
+  const handleSubmit = async () => {
+    if (!selectedType || !selectedQuantity || images.length === 0) {
+      Alert.alert('Eksik bilgi', 'Lütfen tüm alanları doldurun ve en az bir görsel ekleyin.');
+      return;
+    }
+
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        Alert.alert('Error', 'You must be logged in to report trash');
+        return;
+      }
+
+      const reportData = {
+        location: selectedLocation,
+        type: selectedType,
+        quantity: selectedQuantity,
+        additionalInfo,
+        imageUrls: images.map(img => img.uri),
+        status: 'reported', // 'reported' veya 'cleaned'
+        authorId: currentUser.uid,
+        createdAt: new Date(),
+      };
+
+      // Trash report'u Firebase'e kaydet
+      const docRef = await addDoc(collection(db, 'trashReports'), reportData);
+
+      // Kullanıcının reported sayısını güncelle
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, {
+        reported: increment(1)
+      });
+
+      Alert.alert('Success', 'Trash report submitted successfully');
+      router.replace('/(tabs)/MapScreen');
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      Alert.alert('Error', 'Failed to submit report');
+    }
+
+    // // Kullanıcı bilgisini al
+    // const user = auth.currentUser;
+    // const userName = user?.displayName || user?.email || 'Anonim';
+
+    // const trashData = {
+    //   images, // [{id, uri}]
+    //   type: selectedType,
+    //   quantity: selectedQuantity,
+    //   additionalInfo,
+    //   location: selectedLocation,
+    //   user: { id: user?.uid, name: userName },
+    //   createdAt: serverTimestamp(),
+    // };
+
+    // try {
+    //   await addDoc(collection(db, 'trashes'), trashData);
+    //   router.replace('/(tabs)/MapScreen');
+    // } catch (e) {
+    //   Alert.alert('Hata', 'Atık kaydedilemedi.');
+    // }
   };
 
   // Trash Images görseline tıklama
@@ -192,8 +241,8 @@ export default function TrashReportPage() {
             initialRegion={{
               latitude: selectedLocation.latitude,
               longitude: selectedLocation.longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
+              latitudeDelta: 0.005,
+              longitudeDelta: 0.005,
             }}
             customMapStyle={[
               {
@@ -384,14 +433,21 @@ export default function TrashReportPage() {
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Trash Images</Text>
           <GestureHandlerRootView>
-            <DraggableFlatList
-              data={images}
-              onDragEnd={handleDragEnd}
-              keyExtractor={(item) => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              renderItem={renderItem}
-            />
+            {images.length === 0 ? (
+              <TouchableOpacity style={styles.emptyImageBox} onPress={handleTakePhoto}>
+                <Ionicons name="add" size={32} color="#AAA" />
+                <Text style={styles.emptyImageText}>Fotoğraf Ekle</Text>
+              </TouchableOpacity>
+            ) : (
+              <DraggableFlatList
+                data={images}
+                onDragEnd={handleDragEnd}
+                keyExtractor={(item) => item.id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                renderItem={renderItem}
+              />
+            )}
           </GestureHandlerRootView>
         </View>
 
@@ -412,7 +468,7 @@ export default function TrashReportPage() {
             >
               <MaterialIcons
                 name="directions-car"
-                size={28}
+                size={24}
                 color={selectedType === 1 ? '#4B9363' : '#555'}
               />
             </TouchableOpacity>
@@ -422,7 +478,7 @@ export default function TrashReportPage() {
             >
               <MaterialIcons
                 name="time-to-leave"
-                size={28}
+                size={24}
                 color={selectedType === 2 ? '#4B9363' : '#555'}
               />
             </TouchableOpacity>
@@ -432,7 +488,7 @@ export default function TrashReportPage() {
             >
               <MaterialIcons
                 name="local-drink"
-                size={28}
+                size={24}
                 color={selectedType === 3 ? '#4B9363' : '#555'}
               />
             </TouchableOpacity>
@@ -442,7 +498,7 @@ export default function TrashReportPage() {
             >
               <MaterialIcons
                 name="description"
-                size={28}
+                size={24}
                 color={selectedType === 4 ? '#4B9363' : '#555'}
               />
             </TouchableOpacity>
@@ -452,7 +508,7 @@ export default function TrashReportPage() {
             >
               <MaterialIcons
                 name="masks"
-                size={28}
+                size={24}
                 color={selectedType === 5 ? '#4B9363' : '#555'}
               />
             </TouchableOpacity>
@@ -464,7 +520,7 @@ export default function TrashReportPage() {
             >
               <MaterialIcons
                 name="liquor"
-                size={28}
+                size={24}
                 color={selectedType === 6 ? '#4B9363' : '#555'}
               />
             </TouchableOpacity>
@@ -474,7 +530,7 @@ export default function TrashReportPage() {
             >
               <MaterialIcons
                 name="smoking-rooms"
-                size={28}
+                size={24}
                 color={selectedType === 7 ? '#4B9363' : '#555'}
               />
             </TouchableOpacity>
@@ -484,7 +540,7 @@ export default function TrashReportPage() {
             >
               <MaterialIcons
                 name="pest-control"
-                size={28}
+                size={24}
                 color={selectedType === 8 ? '#4B9363' : '#555'}
               />
             </TouchableOpacity>
@@ -494,7 +550,7 @@ export default function TrashReportPage() {
             >
               <MaterialIcons
                 name="recycling"
-                size={28}
+                size={24}
                 color={selectedType === 9 ? '#4B9363' : '#555'}
               />
             </TouchableOpacity>
@@ -504,7 +560,7 @@ export default function TrashReportPage() {
             >
               <MaterialIcons
                 name="delete"
-                size={28}
+                size={24}
                 color={selectedType === 10 ? '#4B9363' : '#555'}
               />
             </TouchableOpacity>
@@ -589,16 +645,15 @@ export default function TrashReportPage() {
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.confirmButton, (!selectedType || !selectedQuantity) && styles.disabledButton]} 
+            style={[styles.confirmButton, (!selectedType || !selectedQuantity || images.length === 0) && styles.disabledButton]} 
             onPress={handleSubmit}
-            disabled={!selectedType || !selectedQuantity}
+            disabled={!selectedType || !selectedQuantity || images.length === 0}
           >
             <Text style={styles.confirmButtonText}>Confirm</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Bottom Spacing */}
-        <View style={styles.bottomSpacing} />
+
       </ScrollView>
 
       {/* Bottom Navigation */}
@@ -651,7 +706,7 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     width: '100%',
-    height: 250,
+    height: 200,
   },
   map: {
     ...StyleSheet.absoluteFillObject,
@@ -659,7 +714,6 @@ const styles = StyleSheet.create({
   cameraButtonContainer: {
     alignItems: 'center',
     marginTop: -30,
-    marginBottom: 10,
   },
   cameraButton: {
     width: 60,
@@ -676,13 +730,13 @@ const styles = StyleSheet.create({
   },
   sectionContainer: {
     paddingHorizontal: 16,
-    marginTop: 16,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '500',
     color: '#333',
     marginBottom: 12,
+    marginTop: 12,
   },
   imageContainer: {
     position: 'relative',
@@ -729,11 +783,11 @@ const styles = StyleSheet.create({
   wasteTypesGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   wasteTypeItem: {
-    width: (SCREEN_WIDTH - 40) / 5,
-    height: (SCREEN_WIDTH - 40) / 5,
+    width: (SCREEN_WIDTH - 60) / 5,
+    height: (SCREEN_WIDTH - 60) / 5,
     backgroundColor: '#ECECEC',
     borderRadius: 8,
     justifyContent: 'center',
@@ -744,8 +798,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   wasteQuantityItem: {
-    width: (SCREEN_WIDTH - 40) / 5,
-    height: (SCREEN_WIDTH - 40) / 5,
+    width: (SCREEN_WIDTH - 60) / 5,
+    height: (SCREEN_WIDTH - 60) / 5,
     backgroundColor: '#ECECEC',
     borderRadius: 8,
     justifyContent: 'center',
@@ -769,7 +823,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginHorizontal: 16,
-    marginTop: 16,
+    marginTop: 8,
     marginBottom: 16,
   },
   cancelButton: {
@@ -802,9 +856,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 16,
   },
-  bottomSpacing: {
-    height: 80, // Provides space for bottom navigation
-  },
+
   activeImageContainer: {
     borderWidth: 2,
     borderColor: '#4B9363',
@@ -817,5 +869,22 @@ const styles = StyleSheet.create({
   imageWrapper: {
     position: 'relative',
     marginRight: 8,
+  },
+  emptyImageBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderStyle: 'dashed',
+    backgroundColor: '#F8F8F8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  emptyImageText: {
+    fontSize: 10,
+    color: '#AAA',
+    marginTop: 4,
   },
 }); 

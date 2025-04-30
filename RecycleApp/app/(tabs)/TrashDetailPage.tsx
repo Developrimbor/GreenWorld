@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -10,10 +10,13 @@ import {
   Dimensions,
   ScrollView,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 const { width, height } = Dimensions.get('window');
 
@@ -59,10 +62,25 @@ const trashVolumeDetailsData: ModalContentData = {
 };
 
 export default function TrashDetailPage() {
+  const { id } = useLocalSearchParams();
+  const [trash, setTrash] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [modalContent, setModalContent] = useState<ModalContentData | null>(null);
+
+  useEffect(() => {
+    const fetchTrash = async () => {
+      if (!id) return;
+      setLoading(true);
+      const docRef = doc(db, 'trashReports', id as string);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) setTrash(docSnap.data());
+      setLoading(false);
+    };
+    fetchTrash();
+  }, [id]);
 
   const nextImage = () => {
     if (currentImageIndex < images.length - 1) {
@@ -85,6 +103,18 @@ export default function TrashDetailPage() {
     setShowInfoModal(false);
     setModalContent(null);
   };
+
+  if (loading) {
+    return (
+      <View style={styles.centered}><ActivityIndicator size="large" color="#4B9363" /></View>
+    );
+  }
+
+  if (!trash) {
+    return (
+      <View style={styles.centered}><Text>Atık bulunamadı.</Text></View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -133,22 +163,22 @@ export default function TrashDetailPage() {
             <View style={styles.infoRowLeft}>
               <View style={styles.infoItem}>
                 <MaterialIcons name="tag" size={16} color="#4B9363" />
-                <Text style={styles.infoText}>ID: 1</Text>
+                <Text style={styles.infoText}>ID: {id}</Text>
               </View>
               <View style={styles.infoItem}>
                 <MaterialIcons name="person" size={16} color="#4B9363" />
-                <Text style={styles.infoText}>Yusuf Gulmez</Text>
+                <Text style={styles.infoText}>Kullanıcı: {trash.user?.name}</Text>
               </View>
             </View>
 
             <View style={styles.infoRowRight}>
               <View style={styles.infoItem}>
                 <MaterialIcons name="calendar-today" size={16} color="#4B9363" />
-                <Text style={styles.infoText}>25/01/2025</Text>
+                <Text style={styles.infoText}>Tarih: {trash.createdAt?.toDate ? trash.createdAt.toDate().toLocaleString() : ''}</Text>
               </View>
               <View style={styles.infoItem}>
                 <MaterialIcons name="location-on" size={16} color="#4B9363" />
-                <Text style={styles.infoText}>Sakarya, TR</Text>
+                <Text style={styles.infoText}>Konum: {trash.location?.latitude}, {trash.location?.longitude}</Text>
               </View>
             </View>
           </View>
@@ -193,10 +223,13 @@ export default function TrashDetailPage() {
         <View style={styles.otherDetailsSection}>
           <Text style={styles.sectionTitle}>Other Details</Text>
           <Text style={styles.detailsText}>
-            Lorem ipsum dolor sit amet consectetur. Massa mauris eros enim id aliquet. Elementum sed dignissim platea fermentum commodo mattis proin.
+            Tür: {trash.type}
           </Text>
           <Text style={styles.detailsText}>
-            Lorem ipsum dolor sit amet consectetur. Massa mauris eros enim id aliquet. Elementum sed dignissim platea fermentum commodo mattis proin.
+            Miktar: {trash.quantity}
+          </Text>
+          <Text style={styles.detailsText}>
+            Ek Bilgi: {trash.additionalInfo}
           </Text>
           
           {/* Action Buttons */}
@@ -211,6 +244,13 @@ export default function TrashDetailPage() {
           <TouchableOpacity style={styles.primaryButton}>
             <Text style={styles.primaryButtonText}>I Cleaned</Text>
           </TouchableOpacity>
+        </View>
+
+        <Text style={styles.label}>Görseller:</Text>
+        <View style={styles.imagesRow}>
+          {trash.images?.map((img: any) => (
+            <Image key={img.id} source={{ uri: img.uri }} style={styles.image} />
+          ))}
         </View>
       </ScrollView>
 
@@ -542,5 +582,28 @@ const styles = StyleSheet.create({
     color: '#666',
     lineHeight: 18,
     fontFamily: 'Poppins-Regular',
+  },
+  imagesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+  },
+  image: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  label: {
+    fontWeight: 'bold',
+    marginTop: 8,
+    color: '#333',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
   },
 });
