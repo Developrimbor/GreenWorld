@@ -88,11 +88,11 @@ export default function MapScreen() {
       const newRegion = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
+        latitudeDelta: 0.0015,
+        longitudeDelta: 0.0015
       };
       
-      mapRef.current?.animateToRegion(newRegion, 1000);
+      mapRef.current?.animateToRegion(newRegion, 200);
       
       setRegion(newRegion);
       setUserLocation({
