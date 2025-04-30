@@ -23,6 +23,7 @@ export default function ProfilePage() {
 
   const [activeTab, setActiveTab] = useState<TabType>('reported');
   const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [reportedItems, setReportedItems] = useState<any[]>([]); // State'i buraya taşıyalım
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   const animateSlider = (position: number) => {
@@ -88,6 +89,35 @@ export default function ProfilePage() {
     }
   };
 
+  // Reported items için useEffect ekleyelim
+  useEffect(() => {
+    const fetchReportedItems = async () => {
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          const reportsRef = collection(db, 'trashReports');
+          const q = query(
+            reportsRef,
+            where('authorId', '==', currentUser.uid),
+            where('status', '==', 'reported')
+          );
+          const querySnapshot = await getDocs(q);
+          const reports = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          setReportedItems(reports);
+        }
+      } catch (error) {
+        console.error('Error fetching reported items:', error);
+      }
+    };
+
+    if (activeTab === 'reported') {
+      fetchReportedItems();
+    }
+  }, [activeTab]);
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -136,7 +166,7 @@ export default function ProfilePage() {
               style={styles.statItem} 
               onPress={() => handleTabPress('reported')}
             >
-              <Text style={styles.statNumber}>{userData?.reported || 0}</Text>
+              <Text style={styles.statNumber}>{reportedItems?.length || 0}</Text>
               <Text style={styles.statLabel}>Reported</Text>
             </TouchableOpacity>
             
@@ -203,6 +233,43 @@ export default function ProfilePage() {
               )}
             </View>
           )}
+          {activeTab === 'reported' && (
+            <View style={styles.postsContainer}>
+              {reportedItems && reportedItems.length > 0 ? (
+                reportedItems.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.postCard}
+                    onPress={() => router.push({
+                      pathname: '/(tabs)/TrashDetailPage',
+                      params: { id: item.id }
+                    })}
+                  >
+                    {item.imageUrls && (
+                      <Image
+                        source={{ uri: item.imageUrls[0] }}
+                        style={styles.postImage}
+                      />
+                    )}
+                    <View style={styles.postInfo}>
+                      <Text style={styles.postTitle}>REPORTED</Text>
+                      <View style={styles.locationContainer}>
+                        <Ionicons name="location-outline" size={16} color="#666" />
+                        <Text style={styles.postLocation}>
+                          {`${item.location.latitude.toFixed(4)}, ${item.location.longitude.toFixed(4)}`}
+                        </Text>
+                      </View>
+                      <Text style={styles.postDate}>
+                        {item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'No Date'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.noPostsText}>No reported items found</Text>
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -211,6 +278,7 @@ export default function ProfilePage() {
   );
 }
 
+// Styles'a yeni stiller ekleyelim
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -337,10 +405,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 8,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -376,5 +441,51 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 20,
     fontFamily: 'Poppins-Regular',
+  },
+  reportCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 12,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  reportImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  reportContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  reportedTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4B9363',
+    marginBottom: 8,
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  locationText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  dateText: {
+    fontSize: 12,
+    color: '#999',
   },
 });
