@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -9,36 +9,119 @@ import {
   ScrollView,
   TextInput,
   Dimensions,
+  Alert,
+  Platform,
+  PermissionsAndroid,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
 import MapView, { Marker } from 'react-native-maps';
+import * as ImagePicker from 'expo-image-picker';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-// Örnek atık resimleri
-const dummyImages = [
-  require('../../assets/images/trash000001.jpg'),
-  require('../../assets/images/plastic-waste.jpg'),
-  require('../../assets/images/trash000001.jpg'),
-  require('../../assets/images/plastic-waste.jpg'),
-  require('../../assets/images/trash000001.jpg'),
-];
+// Örnek atık resimleri (yorum satırına alındı)
+// const dummyImages = [
+//   require('../../assets/images/trash000001.jpg'),
+//   require('../../assets/images/plastic-waste.jpg'),
+//   require('../../assets/images/trash000001.jpg'),
+//   require('../../assets/images/plastic-waste.jpg'),
+//   require('../../assets/images/trash000001.jpg'),
+// ];
+
+interface ImageItem {
+  id: string;
+  uri: string;
+}
+
+const CAMERA_PERMISSION_KEY = 'CAMERA_PERMISSION_GRANTED';
+const GALLERY_PERMISSION_KEY = 'GALLERY_PERMISSION_GRANTED';
+
+const checkPermission = async (key: string) => {
+  const value = await AsyncStorage.getItem(key);
+  return value === 'true';
+};
+
+const setPermission = async (key: string, granted: boolean) => {
+  await AsyncStorage.setItem(key, granted ? 'true' : 'false');
+};
 
 export default function TrashReportPage() {
+  const params = useLocalSearchParams();
   const [selectedLocation, setSelectedLocation] = useState({
-    latitude: 40.7429,
-    longitude: 30.3273,
+    latitude: params.latitude ? parseFloat(params.latitude as string) : 40.7429,
+    longitude: params.longitude ? parseFloat(params.longitude as string) : 30.3273,
   });
   const [selectedType, setSelectedType] = useState<number | null>(null);
   const [selectedQuantity, setSelectedQuantity] = useState<number | null>(null);
   const [additionalInfo, setAdditionalInfo] = useState('');
+  const [images, setImages] = useState<ImageItem[]>([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  // Kamera ile fotoğraf çekme
-  const handleTakePhoto = () => {
-    // Burada kamera fonksiyonalitesi eklenecek
-    console.log('Kamera açılıyor...');
+  useEffect(() => {
+    if (params.latitude && params.longitude) {
+      setSelectedLocation({
+        latitude: parseFloat(params.latitude as string),
+        longitude: parseFloat(params.longitude as string),
+      });
+    }
+  }, [params]);
+
+  const requestCameraPermission = async () => {
+    if (Platform.OS === 'android') {
+      const alreadyGranted = await checkPermission(CAMERA_PERMISSION_KEY);
+      if (alreadyGranted) return true;
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: 'Kamera İzni',
+            message: 'Uygulamanın kameraya erişmesine izin vermeniz gerekiyor.',
+            buttonNeutral: 'Daha Sonra Sor',
+            buttonNegative: 'İptal',
+            buttonPositive: 'Tamam',
+          },
+        );
+        const isGranted = granted === PermissionsAndroid.RESULTS.GRANTED;
+        await setPermission(CAMERA_PERMISSION_KEY, isGranted);
+        return isGranted;
+      } catch (err) {
+        console.warn(err);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleTakePhoto = async () => {
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) {
+      Alert.alert('İzin reddedildi', 'Kamera erişimi için izin vermeniz gerekiyor.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
+    if (!result.canceled && result.assets) {
+      setImages(prev => [...prev, { id: Date.now().toString(), uri: result.assets[0].uri }]);
+    }
+  };
+
+  const handleDeleteImage = (id: string) => {
+    setImages(images.filter(img => img.id !== id));
+  };
+
+  const handleDragEnd = ({ data }: { data: ImageItem[] }) => {
+    setImages(data);
   };
 
   // Form gönderimi
@@ -56,6 +139,33 @@ export default function TrashReportPage() {
     // Başarılı gönderim sonrası ana sayfaya dönüş
     router.replace('/HomePage');
   };
+
+  // Trash Images görseline tıklama
+  const handleImagePress = (uri: string) => {
+    setSelectedImage(uri);
+    setModalVisible(true);
+  };
+
+  const renderItem = ({ item, drag, isActive }: RenderItemParams<ImageItem>) => (
+    <View style={styles.imageWrapper}>
+      <TouchableOpacity
+        style={[styles.imageContainer, isActive && styles.activeImageContainer]}
+        onLongPress={drag}
+        disabled={isActive}
+        activeOpacity={1}
+        onPress={() => handleImagePress(item.uri)}
+      >
+        <Image source={{ uri: item.uri }} style={styles.image} />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => handleDeleteImage(item.id)}
+        activeOpacity={0.7}
+      >
+        <MaterialIcons name="close" size={22} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -273,15 +383,16 @@ export default function TrashReportPage() {
         {/* Trash Images Section */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Trash Images</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagesScroll}>
-            {dummyImages.map((image, index) => (
-              <Image
-                key={index}
-                source={image}
-                style={styles.trashImage}
-              />
-            ))}
-          </ScrollView>
+          <GestureHandlerRootView>
+            <DraggableFlatList
+              data={images}
+              onDragEnd={handleDragEnd}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              renderItem={renderItem}
+            />
+          </GestureHandlerRootView>
         </View>
 
         {/* Location Info */}
@@ -492,6 +603,18 @@ export default function TrashReportPage() {
 
       {/* Bottom Navigation */}
       <BottomNavigation />
+
+      {/* Trash Images Modal */}
+      <Modal visible={modalVisible} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' }}>
+          <TouchableOpacity style={{ position: 'absolute', top: 40, right: 30, zIndex: 10 }} onPress={() => setModalVisible(false)}>
+            <MaterialIcons name="close" size={36} color="#fff" />
+          </TouchableOpacity>
+          {selectedImage && (
+            <Image source={{ uri: selectedImage }} style={{ width: '95%', height: '80%', resizeMode: 'contain' }} />
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -561,14 +684,36 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 12,
   },
-  imagesScroll: {
-    marginBottom: 8,
+  imageContainer: {
+    position: 'relative',
+    marginRight: 8,
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    zIndex: 1,
+    backgroundColor: 'rgba(255, 0, 0, 0.8)',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   trashImage: {
     width: 80,
     height: 80,
     borderRadius: 8,
-    marginRight: 8,
   },
   locationInfo: {
     paddingHorizontal: 16,
@@ -659,5 +804,18 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 80, // Provides space for bottom navigation
+  },
+  activeImageContainer: {
+    borderWidth: 2,
+    borderColor: '#4B9363',
+  },
+  image: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  imageWrapper: {
+    position: 'relative',
+    marginRight: 8,
   },
 }); 
