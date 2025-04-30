@@ -154,7 +154,13 @@ export default function MapScreen() {
 
   const handleConfirmLocation = () => {
     if (selectedLocation) {
-      router.push('/(tabs)/TrashReportPage');
+      router.push({
+        pathname: '/(tabs)/TrashReportPage',
+        params: {
+          latitude: selectedLocation.latitude,
+          longitude: selectedLocation.longitude,
+        }
+      });
       // Yönlendirme sonrası state'leri sıfırla
       setSelectedLocation(null);
       setShowConfirmButton(false);
