@@ -8,6 +8,9 @@ import {
   TextInput,
   Dimensions,
   Alert,
+  ActivityIndicator,
+  Keyboard,
+  FlatList,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import BottomNavigation from '../../components/BottomNavigation';
@@ -49,39 +52,11 @@ export default function MapScreen() {
   const [showCircle, setShowCircle] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<LocationCoords | null>(null);
   const [showConfirmButton, setShowConfirmButton] = useState(false);
-  const [markers, setMarkers] = useState([
-    {
-      id: 1,
-      coordinate: {
-        latitude: 40.7558,
-        longitude: 30.3954,
-      },
-      title: 'Plastik Atık',
-      description: 'Plastik şişeler ve ambalajlar',
-      pinColor: '#4B9363'
-    },
-    {
-      id: 2,
-      coordinate: {
-        latitude: 40.7658,
-        longitude: 30.4054,
-      },
-      title: 'Kağıt Atık',
-      description: 'Kağıt ve karton atıklar',
-      pinColor: '#4B9363'
-    },
-    {
-      id: 3,
-      coordinate: {
-        latitude: 40.7758,
-        longitude: 30.3854,
-      },
-      title: 'Tehlikeli Atık',
-      description: 'Kesici ve delici atıklar',
-      pinColor: '#FF0000'
-    }
-  ]);
   const [trashReports, settrashReports] = useState<Trash[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<{name: string, coords: {latitude: number, longitude: number}}[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const requestLocationPermission = async () => {
     try {
@@ -128,6 +103,33 @@ export default function MapScreen() {
     const hasPermission = await requestLocationPermission();
     if (hasPermission) {
       await getCurrentLocation();
+    }
+  };
+
+  // Kullanıcının konumuna git
+  const navigateToUserLocation = async () => {
+    try {
+      const hasPermission = await requestLocationPermission();
+      if (!hasPermission) return;
+      
+      const location = await Location.getCurrentPositionAsync({});
+      const newRegion = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01
+      };
+      
+      setRegion(newRegion);
+      setUserLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+      
+      mapRef.current?.animateToRegion(newRegion, 500);
+    } catch (error) {
+      console.error('Konuma gitme hatası:', error);
+      Alert.alert('Hata', 'Konumunuz alınamadı. Lütfen tekrar deneyin.');
     }
   };
 
@@ -212,11 +214,174 @@ export default function MapScreen() {
     }, [])
   );
 
+  // Arama yapıldığında yerler için öneri oluştur
+  const getSuggestions = async (query: string) => {
+    if (!query.trim()) {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    
+    setIsSearching(true);
+    
+    try {
+      // Arama sorgusunu Geocode API ile yap
+      const response = await Location.geocodeAsync(query);
+      
+      if (response && response.length > 0) {
+        // En fazla 5 sonuç göster
+        const results = response.slice(0, 5).map((loc, index) => ({
+          name: `Konum ${index + 1}`,  // API konum adlarını döndürmüyor, sadece koordinatlar
+          coords: {
+            latitude: loc.latitude,
+            longitude: loc.longitude
+          }
+        }));
+        
+        // Sonuçları göster
+        setSearchSuggestions(results);
+        setShowSuggestions(true);
+      } else {
+        setSearchSuggestions([]);
+        setShowSuggestions(false);
+      }
+    } catch (error) {
+      console.error('Öneri hatası:', error);
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+  
+  // Arama sonuçlarından daha detaylı bilgi almak için ters geocoding yap
+  const getLocationDetails = async (latitude: number, longitude: number) => {
+    try {
+      const response = await Location.reverseGeocodeAsync({
+        latitude,
+        longitude
+      });
+      
+      if (response && response.length > 0) {
+        const location = response[0];
+        let locationName = '';
+        
+        // Adres bilgilerini birleştir
+        if (location.name) locationName += location.name;
+        if (location.street) {
+          if (locationName) locationName += ', ';
+          locationName += location.street;
+        }
+        if (location.city) {
+          if (locationName) locationName += ', ';
+          locationName += location.city;
+        }
+        if (location.region) {
+          if (locationName) locationName += ', ';
+          locationName += location.region;
+        }
+        if (location.country) {
+          if (locationName) locationName += ', ';
+          locationName += location.country;
+        }
+        
+        return locationName || `Konum (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+      }
+      
+      return `Konum (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+    } catch (error) {
+      console.error('Ters geocoding hatası:', error);
+      return `Konum (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+    }
+  };
+  
+  // Arama sorgusunu değiştirdiğimizde önerileri güncelle
+  useEffect(() => {
+    // 500ms bekleyerek her tuş vuruşunda API çağrısı yapılmasını engelle
+    const timer = setTimeout(() => {
+      if (searchQuery.length > 1) {
+        getSuggestions(searchQuery);
+      } else {
+        setSearchSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+  
+  // Kullanıcı önerilen bir konumu seçtiğinde
+  const selectSuggestion = async (location: {name: string, coords: {latitude: number, longitude: number}}) => {
+    setIsSearching(true);
+    
+    try {
+      // Konum detaylarını al
+      const locationName = await getLocationDetails(
+        location.coords.latitude,
+        location.coords.longitude
+      );
+      
+      // Arama çubuğunu güncelle
+      setSearchQuery(locationName);
+      
+      // Haritayı bu konuma taşı
+      const newRegion = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      };
+      
+      setRegion(newRegion);
+      mapRef.current?.animateToRegion(newRegion, 500);
+      
+      // Önerileri kapat
+      setShowSuggestions(false);
+    } catch (error) {
+      console.error('Konum seçme hatası:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setIsSearching(true);
+    setShowSuggestions(false);
+    Keyboard.dismiss();
+    
+    try {
+      const response = await Location.geocodeAsync(searchQuery);
+      
+      if (response && response.length > 0) {
+        const { latitude, longitude } = response[0];
+        
+        const newRegion = {
+          latitude,
+          longitude,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        };
+        
+        setRegion(newRegion);
+        mapRef.current?.animateToRegion(newRegion, 500);
+      } else {
+        Alert.alert('Sonuç Bulunamadı', 'Aradığınız konum bulunamadı. Lütfen başka bir arama yapın.');
+      }
+    } catch (error) {
+      console.error('Arama hatası:', error);
+      Alert.alert('Hata', 'Arama yapılırken bir hata oluştu. Lütfen tekrar deneyin.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header - Başlık */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>MAP</Text>
+        <Text style={styles.headerTitle}>HARİTA</Text>
       </View>
       
       {/* Arama Çubuğu */}
@@ -225,14 +390,44 @@ export default function MapScreen() {
           <Ionicons name="search" size={20} color="#999" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search"
+            placeholder="Search..."
             placeholderTextColor="#999"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onSubmitEditing={handleSearch}
+            returnKeyType="search"
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color="#999" />
+            </TouchableOpacity>
+          )}
+          {isSearching && <ActivityIndicator size="small" color="#4B9363" style={styles.searchLoader} />}
         </View>
-        <TouchableOpacity style={styles.optionsButton}>
-          <Ionicons name="options-outline" size={24} color="#000" />
+        <TouchableOpacity style={styles.optionsButton} onPress={handleSearch}>
+          <Ionicons name="search" size={24} color="#000" />
         </TouchableOpacity>
       </View>
+
+      {/* Arama Önerileri */}
+      {showSuggestions && searchSuggestions.length > 0 && (
+        <View style={styles.suggestionsContainer}>
+          <FlatList
+            data={searchSuggestions}
+            keyExtractor={(item, index) => `suggestion-${index}`}
+            renderItem={({ item }) => (
+              <TouchableOpacity 
+                style={styles.suggestionItem}
+                onPress={() => selectSuggestion(item)}
+              >
+                <Ionicons name="location-outline" size={20} color="#666" />
+                <Text style={styles.suggestionText}>{item.name}</Text>
+              </TouchableOpacity>
+            )}
+            keyboardShouldPersistTaps="handled"
+          />
+        </View>
+      )}
 
       {/* Harita Alanı */}
       <View style={styles.mapArea}>
@@ -246,16 +441,6 @@ export default function MapScreen() {
           showsMyLocationButton={false}
           onPress={handleMapPress}
         >
-          {markers.map(marker => (
-            <Marker
-              key={marker.id}
-              coordinate={marker.coordinate}
-              title={marker.title}
-              description={marker.description}
-              pinColor={marker.pinColor}
-              onPress={() => router.push('/(tabs)/TrashDetailPage')}
-            />
-          ))}
           {trashReports.map(trash => (
             <Marker
               key={trash.id}
@@ -291,7 +476,7 @@ export default function MapScreen() {
         </TouchableOpacity>
 
         {/* Sağ Alt Navigasyon Butonu */}
-        <TouchableOpacity style={styles.navButton}>
+        <TouchableOpacity style={styles.navButton} onPress={navigateToUserLocation}>
           <Ionicons name="navigate" size={24} color="#fff" />
         </TouchableOpacity>
 
@@ -304,18 +489,19 @@ export default function MapScreen() {
             <Text style={styles.confirmButtonText}>Bu Konumu Onayla</Text>
           </TouchableOpacity>
         )}
-      </View>
+        
+        {/* Report Spot ve View Spots Near butonları harita üzerinde olacak */}
+        <View style={styles.floatingButtonsContainer}>
+          <TouchableOpacity style={styles.floatingButton} onPress={handleReportSpot}>
+            <MaterialCommunityIcons name="trash-can" size={20} color="#fff" />
+            <Text style={styles.floatingButtonText}>Report Spot</Text>
+          </TouchableOpacity>
 
-      {/* Alt Butonlar */}
-      <View style={styles.bottomButtons}>
-        <TouchableOpacity style={styles.reportButton} onPress={handleReportSpot}>
-          <MaterialCommunityIcons name="trash-can" size={20} color="#4B9363" />
-          <Text style={styles.buttonText}>Report Spot</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.viewButton}>
-          <Text style={styles.viewButtonText}>View Spots Near</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.floatingButton}>
+            <Ionicons name="eye-outline" size={20} color="#fff" />
+            <Text style={styles.floatingButtonText}>View Spots Near</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Bottom Navigation */}
@@ -359,6 +545,10 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     flex: 1,
     fontSize: 16,
+    paddingVertical: 8,
+  },
+  searchLoader: {
+    marginLeft: 8,
   },
   optionsButton: {
     width: 40,
@@ -439,54 +629,68 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  bottomButtons: {
+  // Yeni eklenene butonlar ve konteynırı
+  floatingButtonsContainer: {
+    position: 'absolute',
+    bottom: 80,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
-    padding: 16,
-    paddingBottom: 12,
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
   },
-  reportButton: {
+  floatingButton: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: '#4B9363',
     borderRadius: 24,
     paddingHorizontal: 20,
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 2,
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
-  viewButton: {
-    backgroundColor: '#fff',
-    borderRadius: 24,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-  },
-  buttonText: {
-    color: '#000',
-    fontFamily: 'Poppins-Medium',
+  floatingButtonText: {
+    color: '#fff',
     fontSize: 14,
     marginLeft: 8,
-  },
-  viewButtonText: {
-    color: '#000',
     fontFamily: 'Poppins-Medium',
+  },
+  suggestionsContainer: {
+    backgroundColor: 'white',
+    position: 'absolute',
+    top: 115, // Header + Search bar height
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    borderRadius: 8,
+    marginHorizontal: 16,
+    maxHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  suggestionText: {
+    marginLeft: 8,
     fontSize: 14,
+    color: '#333',
   },
 }); 
