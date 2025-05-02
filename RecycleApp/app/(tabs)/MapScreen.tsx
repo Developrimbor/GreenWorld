@@ -11,6 +11,8 @@ import {
   ActivityIndicator,
   Keyboard,
   FlatList,
+  Modal,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import BottomNavigation from '../../components/BottomNavigation';
@@ -19,6 +21,8 @@ import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { storage } from '../config/firebase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 const INITIAL_REGION = {
@@ -58,6 +62,7 @@ export default function MapScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState<{name: string, coords: {latitude: number, longitude: number}}[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showInfoDialog, setShowInfoDialog] = useState(false);
 
   const requestLocationPermission = async () => {
     try {
@@ -101,9 +106,26 @@ export default function MapScreen() {
   };
 
   const handleReportSpot = async () => {
-    const hasPermission = await requestLocationPermission();
-    if (hasPermission) {
-      await getCurrentLocation();
+    try {
+      // İlk kullanımda bilgi dialogu göster
+      const hasShownInfo = await AsyncStorage.getItem('hasShownLocationInfo');
+      if (!hasShownInfo) {
+        setShowInfoDialog(true);
+        await AsyncStorage.setItem('hasShownLocationInfo', 'true');
+        return;
+      }
+
+      const hasPermission = await requestLocationPermission();
+      if (hasPermission) {
+        await getCurrentLocation();
+      }
+    } catch (error) {
+      console.error('Tercih verisini okuma hatası:', error);
+      // Hata olursa da lokasyon izni isteyip, devam et
+      const hasPermission = await requestLocationPermission();
+      if (hasPermission) {
+        await getCurrentLocation();
+      }
     }
   };
 
@@ -538,6 +560,81 @@ export default function MapScreen() {
 
       {/* Bottom Navigation */}
       <BottomNavigation />
+
+      {/* Konum Doğrulama Bilgi Modal */}
+      <Modal
+        visible={showInfoDialog}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowInfoDialog(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowInfoDialog(false)}>
+          <View style={styles.infoDialogOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.infoDialogContainer}>
+                <View style={styles.infoDialogHeader}>
+                  <Text style={styles.infoDialogTitle}>Konum Doğrulama Sistemi</Text>
+                  <TouchableOpacity onPress={() => setShowInfoDialog(false)}>
+                    <Ionicons name="close" size={24} color="#000" />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.infoDialogDescription}>
+                  RecycleApp, atık temizleme işlemlerinin gerçek ve doğru olmasını sağlamak için konum doğrulama sistemini kullanır.
+                </Text>
+
+                <View style={styles.infoStep}>
+                  <View style={styles.infoStepNumber}>
+                    <Text style={styles.infoStepNumberText}>1</Text>
+                  </View>
+                  <Text style={styles.infoStepText}>
+                    Atık bildirimi yaparken, uygulama konumunuzu alır ve çevrenizde 30 metrelik bir alan belirler.
+                  </Text>
+                </View>
+
+                <View style={styles.infoStep}>
+                  <View style={styles.infoStepNumber}>
+                    <Text style={styles.infoStepNumberText}>2</Text>
+                  </View>
+                  <Text style={styles.infoStepText}>
+                    Atık noktası yalnızca bu alan içinde işaretlenebilir, bu da atığın gerçekten orada olduğunu doğrular.
+                  </Text>
+                </View>
+
+                <View style={styles.infoStep}>
+                  <View style={styles.infoStepNumber}>
+                    <Text style={styles.infoStepNumberText}>3</Text>
+                  </View>
+                  <Text style={styles.infoStepText}>
+                    Temizlik yapmak istediğinizde, atık noktasına en fazla 100 metre mesafede olmanız gerekir.
+                  </Text>
+                </View>
+
+                <View style={styles.infoStep}>
+                  <View style={styles.infoStepNumber}>
+                    <Text style={styles.infoStepNumberText}>4</Text>
+                  </View>
+                  <Text style={styles.infoStepText}>
+                    Bu sistem, sahte bildirimler ve temizlikleri engelleyerek uygulamanın güvenilirliğini sağlar.
+                  </Text>
+                </View>
+
+                <TouchableOpacity 
+                  style={styles.infoDialogButton}
+                  onPress={() => {
+                    setShowInfoDialog(false);
+                    requestLocationPermission().then(hasPermission => {
+                      if (hasPermission) getCurrentLocation();
+                    });
+                  }}
+                >
+                  <Text style={styles.infoDialogButtonText}>Anladım, Devam Et</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -733,5 +830,74 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: '#333',
+  },
+  // Info Dialog styles
+  infoDialogOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  infoDialogContainer: {
+    width: '90%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  infoDialogHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  infoDialogTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4B9363',
+  },
+  infoDialogDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  infoStep: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  infoStepNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#4B9363',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    marginTop: 2,
+  },
+  infoStepNumberText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  infoStepText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+  },
+  infoDialogButton: {
+    marginTop: 16,
+    backgroundColor: '#4B9363',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  infoDialogButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 

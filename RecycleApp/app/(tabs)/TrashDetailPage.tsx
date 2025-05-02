@@ -11,6 +11,7 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -69,8 +70,10 @@ export default function TrashDetailPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showCleaningInfoModal, setShowCleaningInfoModal] = useState(false);
   const [modalContent, setModalContent] = useState<ModalContentData | null>(null);
   const [locationName, setLocationName] = useState<string>('');
+  const [checkingLocation, setCheckingLocation] = useState(false);
 
   useEffect(() => {
     const fetchTrash = async () => {
@@ -140,7 +143,8 @@ export default function TrashDetailPage() {
                     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
                     Math.sin(dLon/2) * Math.sin(dLon/2); 
                   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-                  return R * c;
+                  const distance = R * c * 1000; // metre cinsinden mesafe
+                  return distance;
                 };
                 
                 // En yakın şehri bul
@@ -231,6 +235,90 @@ export default function TrashDetailPage() {
     setModalContent(null);
   };
 
+  // Mesafe hesaplama fonksiyonu (Haversine formülü ile)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Dünya'nın yarıçapı, km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2); 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    const distance = R * c * 1000; // metre cinsinden mesafe
+    return distance;
+  };
+
+  // Konum kontrolü ve temizleme sayfasına yönlendirme
+  const handleCleanedButton = async () => {
+    if (!trash || !trash.location) {
+      Alert.alert('Hata', 'Atık konum bilgisi bulunamadı.');
+      return;
+    }
+
+    setCheckingLocation(true);
+
+    try {
+      // Konum izni kontrolü
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Konum İzni Gerekli', 
+          'Atık temizleme işlemi yapabilmek için konum izni vermeniz gerekmektedir.',
+          [{ text: 'Tamam' }]
+        );
+        setCheckingLocation(false);
+        return;
+      }
+
+      // Kullanıcının konumunu al
+      const userLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High
+      });
+
+      // Atık konumu ile kullanıcı konumu arasındaki mesafeyi hesapla
+      const { latitude, longitude } = trash.location;
+      const distance = calculateDistance(
+        userLocation.coords.latitude,
+        userLocation.coords.longitude,
+        latitude,
+        longitude
+      );
+
+      // Maksimum mesafe sınırı (100 metre)
+      const MAX_DISTANCE = 100;
+
+      if (distance <= MAX_DISTANCE) {
+        // Kullanıcı atığa yeterince yakın, temizleme sayfasına yönlendir
+        router.push({
+          pathname: '/(tabs)/TrashCleaned',
+          params: { id: id }
+        });
+      } else {
+        // Kullanıcı atığa yeterince yakın değil, uyarı göster
+        Alert.alert(
+          'Çok Uzaktasınız',
+          `Bu atığı temizlemek için atık noktasına en fazla ${MAX_DISTANCE} metre mesafede olmalısınız. Şu anda atık noktasına olan mesafeniz yaklaşık ${Math.round(distance)} metredir.`,
+          [{ text: 'Tamam' }]
+        );
+      }
+    } catch (error) {
+      console.error('Konum kontrolü hatası:', error);
+      Alert.alert(
+        'Konum Hatası',
+        'Konumunuz alınırken bir hata oluştu. Lütfen konum servislerinizin açık olduğundan emin olun.',
+        [{ text: 'Tamam' }]
+      );
+    } finally {
+      setCheckingLocation(false);
+    }
+  };
+
+  // Temizleme bilgi modalını göster
+  const showCleaningInfo = () => {
+    setShowCleaningInfoModal(true);
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}><ActivityIndicator size="large" color="#4B9363" /></View>
@@ -251,7 +339,7 @@ export default function TrashDetailPage() {
           <MaterialIcons name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>TRASH INFO</Text>
-        <TouchableOpacity style={styles.infoButton}>
+        <TouchableOpacity style={styles.infoButton} onPress={showCleaningInfo}>
           <MaterialIcons name="error" size={24} color="#000" />
         </TouchableOpacity>
       </View>
@@ -322,29 +410,29 @@ export default function TrashDetailPage() {
           <Text style={[styles.needCleanText, { textAlign: 'center' }]}>NEED TO CLEAN!</Text>
         </View>
 
-        {/* Info Section */}
-        <View style={styles.infoSection}>
-          <View style={styles.infoContainer}>
-            <View style={styles.infoRowLeft}>
-              <View style={styles.infoItem}>
-                <MaterialIcons name="tag" size={16} color="#4B9363" />
-                <Text style={styles.infoText}>ID: {formatId(id)}</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <MaterialIcons name="person" size={16} color="#4B9363" />
-                <Text style={styles.infoText}>Kullanıcı: {trash.user?.name || 'Bilinmiyor'}</Text>
-              </View>
+        {/* Info Section - Yeniden Düzenleniyor */}
+        <View style={styles.combinedSection}>
+          <View style={styles.sectionColumn}>
+            <View style={styles.infoItem}>
+              <MaterialIcons name="tag" size={16} color="#4B9363" />
+              <Text style={styles.infoText}>ID: {formatId(id)}</Text>
             </View>
+            <View style={styles.infoItem}>
+              <MaterialIcons name="person" size={16} color="#4B9363" />
+              <Text style={styles.infoText}>: {trash.user?.name || 'Bilinmiyor'}</Text>
+            </View>
+          </View>
 
-            <View style={styles.infoRowRight}>
-              <View style={styles.infoItem}>
-                <MaterialIcons name="calendar-today" size={16} color="#4B9363" />
-                <Text style={styles.infoText}>: {formatDate(trash.createdAt)}</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <MaterialIcons name="location-on" size={16} color="#4B9363" />
-                <Text style={styles.infoText}>: {locationName}</Text>
-              </View>
+          <View style={styles.divider} />
+
+          <View style={styles.sectionColumn}>
+            <View style={styles.infoItem}>
+              <MaterialIcons name="calendar-today" size={16} color="#4B9363" />
+              <Text style={styles.infoText}>: {formatDate(trash.createdAt)}</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <MaterialIcons name="location-on" size={16} color="#4B9363" />
+              <Text style={styles.infoText}>: {locationName}</Text>
             </View>
           </View>
         </View>
@@ -383,7 +471,7 @@ export default function TrashDetailPage() {
             </View>
           </View>
         </View>
-
+        
         {/* Other Details Section */}
         <View style={styles.otherDetailsSection}>
           <Text style={styles.sectionTitle}>Other Details</Text>
@@ -406,8 +494,16 @@ export default function TrashDetailPage() {
               <Text style={styles.outlineButtonText}>Always Here</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.primaryButton}>
-            <Text style={styles.primaryButtonText}>I Cleaned</Text>
+          <TouchableOpacity 
+            style={styles.primaryButton}
+            onPress={handleCleanedButton}
+            disabled={checkingLocation}
+          >
+            {checkingLocation ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.primaryButtonText}>I Cleaned</Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -470,6 +566,83 @@ export default function TrashDetailPage() {
                     </ScrollView>
                   </>
                 )}
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Temizleme Bilgi Modalı */}
+      <Modal
+        visible={showCleaningInfoModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCleaningInfoModal(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowCleaningInfoModal(false)}> 
+          <View style={styles.infoModalOverlay}>
+            <TouchableWithoutFeedback> 
+              <View style={styles.infoModalContainer}>
+                <Text style={styles.infoModalTitle}>Atık Temizleme Bilgileri</Text>
+                <Text style={styles.infoModalSubtitle}>Temizleme işlemi nasıl çalışır?</Text>
+                
+                <ScrollView style={styles.infoModalList}>
+                  <View style={styles.cleaningInfoItem}>
+                    <View style={styles.cleaningInfoNumber}>
+                      <Text style={styles.cleaningInfoNumberText}>1</Text>
+                    </View>
+                    <Text style={styles.cleaningInfoText}>
+                      "I Cleaned" butonuna tıkladığınızda, konumunuz kontrol edilir.
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.cleaningInfoItem}>
+                    <View style={styles.cleaningInfoNumber}>
+                      <Text style={styles.cleaningInfoNumberText}>2</Text>
+                    </View>
+                    <Text style={styles.cleaningInfoText}>
+                      Atık noktasına en fazla 100 metre mesafede olmanız gerekir.
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.cleaningInfoItem}>
+                    <View style={styles.cleaningInfoNumber}>
+                      <Text style={styles.cleaningInfoNumberText}>3</Text>
+                    </View>
+                    <Text style={styles.cleaningInfoText}>
+                      Temizlik öncesi ve sonrası fotoğraf çekmeniz gerekir.
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.cleaningInfoItem}>
+                    <View style={styles.cleaningInfoNumber}>
+                      <Text style={styles.cleaningInfoNumberText}>4</Text>
+                    </View>
+                    <Text style={styles.cleaningInfoText}>
+                      Temizlik işlemi tamamlandığında, hala atık noktasına yakın olduğunuz kontrol edilir.
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.cleaningInfoItem}>
+                    <View style={styles.cleaningInfoNumber}>
+                      <Text style={styles.cleaningInfoNumberText}>5</Text>
+                    </View>
+                    <Text style={styles.cleaningInfoText}>
+                      Konumunuz doğrulandığında, temizlik raporu kaydedilir.
+                    </Text>
+                  </View>
+                  
+                  <Text style={styles.cleaningInfoNote}>
+                    Not: Bu işlem, sahte temizleme raporlarını önlemek için konum doğrulaması yapar. Lütfen temizleme işlemini gerçekten atık noktasında yapın.
+                  </Text>
+                </ScrollView>
+                
+                <TouchableOpacity 
+                  style={styles.cleaningInfoCloseButton}
+                  onPress={() => setShowCleaningInfoModal(false)}
+                >
+                  <Text style={styles.cleaningInfoCloseButtonText}>Anladım</Text>
+                </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
           </View>
@@ -583,7 +756,7 @@ const styles = StyleSheet.create({
   },
   needCleanSection: {
     width: '100%',
-    marginTop: 8,
+    marginTop: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#D9D9D9',
     justifyContent: 'center',
@@ -593,34 +766,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     fontSize: 16,
     color: '#A91101',
-  },
-  infoSection: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#D9D9D9',
-  },
-  infoContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  infoRowLeft: {
-    flexDirection: 'column',
-    gap: 12,
-  },
-  infoRowRight: {
-    flexDirection: 'column',
-    gap: 12,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  infoText: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 12,
-    color: '#696969',
   },
   combinedSection: {
     flexDirection: 'row',
@@ -640,7 +785,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontFamily: 'Poppins-Medium',
@@ -651,48 +796,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
   },
-  otherDetailsSection: {
-    padding: 24,
-    minHeight: 196,
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
   },
-  detailsText: {
-    fontFamily: 'Poppins-Regular',
+  infoText: {
+    fontFamily: 'Poppins-Medium',
     fontSize: 12,
     color: '#696969',
-    marginTop: 12,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 24,
-    gap: 12,
-  },
-  outlineButton: {
-    flex: 1,
-    height: 48,
-    borderWidth: 1,
-    borderColor: '#4B9363',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  outlineButtonText: {
-    color: '#4B9363',
-    fontFamily: 'Poppins-Medium',
-    fontSize: 14,
-  },
-  primaryButton: {
-    height: 48,
-    backgroundColor: '#4B9363',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  primaryButtonText: {
-    color: '#fff',
-    fontFamily: 'Poppins-Medium',
-    fontSize: 14,
   },
   modalContainer: {
     flex: 1,
@@ -799,5 +912,92 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
+  },
+  otherDetailsSection: {
+    padding: 24,
+    minHeight: 196,
+  },
+  detailsText: {
+    fontFamily: 'Poppins-Regular',
+    fontSize: 12,
+    color: '#696969',
+    marginTop: 12,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 24,
+    gap: 12,
+  },
+  outlineButton: {
+    flex: 1,
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#4B9363',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  outlineButtonText: {
+    color: '#4B9363',
+    fontFamily: 'Poppins-Medium',
+    fontSize: 14,
+  },
+  primaryButton: {
+    height: 48,
+    backgroundColor: '#4B9363',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontFamily: 'Poppins-Medium',
+    fontSize: 14,
+  },
+  cleaningInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  cleaningInfoNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#4B9363',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  cleaningInfoNumberText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cleaningInfoText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+  },
+  cleaningInfoNote: {
+    fontSize: 14,
+    color: '#A91101',
+    fontStyle: 'italic',
+    marginTop: 16,
+    lineHeight: 20,
+  },
+  cleaningInfoCloseButton: {
+    marginTop: 16,
+    backgroundColor: '#4B9363',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  cleaningInfoCloseButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
