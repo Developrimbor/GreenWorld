@@ -22,10 +22,6 @@ import * as Location from 'expo-location';
 
 const { width, height } = Dimensions.get('window');
 
-const images = [
-  require('../../assets/images/trash000001.jpg'),
-  require('../../assets/images/plastic-waste.jpg'),
-];
 
 interface InfoItemData {
   icon: keyof typeof MaterialIcons.glyphMap;
@@ -74,6 +70,7 @@ export default function TrashDetailPage() {
   const [modalContent, setModalContent] = useState<ModalContentData | null>(null);
   const [locationName, setLocationName] = useState<string>('');
   const [checkingLocation, setCheckingLocation] = useState(false);
+  const [authorUsername, setAuthorUsername] = useState<string>('');
 
   useEffect(() => {
     const fetchTrash = async () => {
@@ -85,6 +82,14 @@ export default function TrashDetailPage() {
       if (docSnap.exists()) {
         const trashData = docSnap.data();
         setTrash(trashData);
+        
+        // Kullanıcı bilgisini getir
+        if (trashData.authorId) {
+          fetchUserDetails(trashData.authorId);
+        } else if (trashData.user?.id) {
+          // Geriye dönük uyumluluk için eski yapıyı da kontrol et
+          fetchUserDetails(trashData.user.id);
+        }
         
         // Log data to see the structure
         console.log("Trash report data:", JSON.stringify(trashData, null, 2));
@@ -199,6 +204,26 @@ export default function TrashDetailPage() {
     
     fetchTrash();
   }, [id]);
+
+  // Kullanıcı detaylarını getir
+  const fetchUserDetails = async (userId: string) => {
+    try {
+      const userDocRef = doc(db, 'users', userId);
+      const userDocSnap = await getDoc(userDocRef);
+      
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        // Kullanıcının username'ini al, yoksa displayName veya email kontrolü yap
+        const username = userData.username || userData.displayName || userData.email || 'Bilinmiyor';
+        setAuthorUsername(username);
+      } else {
+        setAuthorUsername('Bilinmiyor');
+      }
+    } catch (error) {
+      console.error('Kullanıcı bilgileri alınamadı:', error);
+      setAuthorUsername('Bilinmiyor');
+    }
+  };
 
   // ID'nin kısaltılmış versiyonunu oluştur (ilk 3 karakter + **)
   const formatId = (fullId: string | string[] | undefined) => {
@@ -419,7 +444,7 @@ export default function TrashDetailPage() {
             </View>
             <View style={styles.infoItem}>
               <MaterialIcons name="person" size={16} color="#4B9363" />
-              <Text style={styles.infoText}>: {trash.user?.name || 'Bilinmiyor'}</Text>
+              <Text style={styles.infoText}>: {authorUsername || (trash.user?.name || 'Bilinmiyor')}</Text>
             </View>
           </View>
 

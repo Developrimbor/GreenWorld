@@ -46,6 +46,7 @@ interface Trash {
   additionalInfo: string;
   location: { latitude: number; longitude: number };
   user: { id: string; name: string };
+  authorId: string;
   createdAt: any;
 }
 
@@ -219,6 +220,7 @@ export default function MapScreen() {
         additionalInfo: d.additionalInfo || '',
         location: d.location || { latitude: 0, longitude: 0 },
         user: d.user || { id: '', name: '' },
+        authorId: d.authorId || d.user?.id || '',
         createdAt: d.createdAt || null,
       };
     });
