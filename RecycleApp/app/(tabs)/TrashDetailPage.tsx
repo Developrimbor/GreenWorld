@@ -17,6 +17,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import * as Location from 'expo-location';
 
 const { width, height } = Dimensions.get('window');
 
@@ -69,6 +70,7 @@ export default function TrashDetailPage() {
   const [showImageModal, setShowImageModal] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [modalContent, setModalContent] = useState<ModalContentData | null>(null);
+  const [locationName, setLocationName] = useState<string>('');
 
   useEffect(() => {
     const fetchTrash = async () => {
@@ -76,14 +78,139 @@ export default function TrashDetailPage() {
       setLoading(true);
       const docRef = doc(db, 'trashReports', id as string);
       const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) setTrash(docSnap.data());
+      
+      if (docSnap.exists()) {
+        const trashData = docSnap.data();
+        setTrash(trashData);
+        
+        // Log data to see the structure
+        console.log("Trash report data:", JSON.stringify(trashData, null, 2));
+        
+        // Konum bilgisini çözümle
+        if (trashData.location) {
+          try {
+            const { latitude, longitude } = trashData.location;
+            
+            // İlk olarak Expo Location API'si ile deneyelim
+            const locationInfo = await Location.reverseGeocodeAsync({
+              latitude,
+              longitude
+            });
+            
+            if (locationInfo && locationInfo.length > 0) {
+              const { city, region, country, name, street, district, subregion } = locationInfo[0];
+              
+              // Şehir bilgisi için öncelik sırası: city -> region
+              let cityName = city || region || '';
+              const countryName = country || '';
+              
+              // Expo'dan city boş gelirse ikinci bir yöntem deneyelim - manuel tanımlanmış şehir bulma
+              if (!cityName) {
+                // Türkiye için büyük şehirlerin yaklaşık koordinatları
+                const majorCities = [
+                  { name: "İstanbul", lat: 41.0082, lon: 28.9784, radius: 50 },
+                  { name: "Ankara", lat: 39.9334, lon: 32.8597, radius: 50 },
+                  { name: "İzmir", lat: 38.4237, lon: 27.1428, radius: 40 },
+                  { name: "Bursa", lat: 40.1885, lon: 29.0610, radius: 30 },
+                  { name: "Antalya", lat: 36.8969, lon: 30.7133, radius: 30 },
+                  { name: "Konya", lat: 37.8719, lon: 32.4844, radius: 40 },
+                  { name: "Adana", lat: 37.0000, lon: 35.3213, radius: 30 },
+                  { name: "Gaziantep", lat: 37.0662, lon: 37.3833, radius: 30 },
+                  { name: "Şanlıurfa", lat: 37.1591, lon: 38.7969, radius: 30 },
+                  { name: "Kocaeli", lat: 40.7654, lon: 29.9408, radius: 30 },
+                  { name: "Mersin", lat: 36.8121, lon: 34.6415, radius: 30 },
+                  { name: "Diyarbakır", lat: 37.9144, lon: 40.2306, radius: 30 },
+                  { name: "Hatay", lat: 36.2025, lon: 36.1606, radius: 30 },
+                  { name: "Manisa", lat: 38.6191, lon: 27.4289, radius: 30 },
+                  { name: "Kayseri", lat: 38.7205, lon: 35.4894, radius: 30 },
+                  { name: "Samsun", lat: 41.2867, lon: 36.3300, radius: 30 },
+                  { name: "Balıkesir", lat: 39.6484, lon: 27.8826, radius: 30 },
+                  { name: "Kahramanmaraş", lat: 37.5753, lon: 36.9228, radius: 30 },
+                  { name: "Van", lat: 38.4946, lon: 43.3831, radius: 30 },
+                  { name: "Aydın", lat: 37.8560, lon: 27.8416, radius: 30 }
+                ];
+                
+                // Mesafeyi hesaplayan fonksiyon
+                const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+                  const R = 6371; // Dünya yarıçapı (km)
+                  const dLat = (lat2 - lat1) * Math.PI / 180;
+                  const dLon = (lon2 - lon1) * Math.PI / 180;
+                  const a = 
+                    Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                    Math.sin(dLon/2) * Math.sin(dLon/2); 
+                  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+                  return R * c;
+                };
+                
+                // En yakın şehri bul
+                let closestCity = null;
+                let minDistance = Number.MAX_VALUE;
+                
+                for (const city of majorCities) {
+                  const distance = calculateDistance(latitude, longitude, city.lat, city.lon);
+                  if (distance < minDistance && distance < city.radius) {
+                    minDistance = distance;
+                    closestCity = city.name;
+                  }
+                }
+                
+                if (closestCity) {
+                  cityName = closestCity;
+                }
+              }
+              
+              // Konum bilgisi oluştur
+              if (cityName && countryName) {
+                setLocationName(`${cityName}, ${countryName}`);
+              } else if (cityName) {
+                setLocationName(cityName);
+              } else if (countryName) {
+                setLocationName(countryName);
+              } else {
+                // Şehir ve ülke yoksa, koordinatları gösterip, "Bilinmiyor, Bilinmiyor" yazsın
+                setLocationName(`Bilinmiyor, Bilinmiyor (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
+              }
+            } else {
+              // API yanıt vermiyorsa koordinatları göster
+              setLocationName(`Bilinmiyor, Bilinmiyor (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
+            }
+          } catch (error) {
+            console.error('Konum bilgisi alınamadı:', error);
+            // Hata durumunda koordinatları göster
+            if (trashData.location?.latitude && trashData.location?.longitude) {
+              const { latitude, longitude } = trashData.location;
+              setLocationName(`Bilinmiyor, Bilinmiyor (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
+            } else {
+              setLocationName('Konum bilgisi yok');
+            }
+          }
+        } else {
+          setLocationName('Konum bilgisi yok');
+        }
+      }
+      
       setLoading(false);
     };
+    
     fetchTrash();
   }, [id]);
 
+  // ID'nin kısaltılmış versiyonunu oluştur (ilk 3 karakter + **)
+  const formatId = (fullId: string | string[] | undefined) => {
+    if (!fullId || typeof fullId !== 'string') return '---**';
+    return fullId.substring(0, 3) + '**';
+  };
+
+  const formatDate = (dateObj: any) => {
+    if (!dateObj || !dateObj.toDate) return '';
+    
+    const date = dateObj.toDate();
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+  };
+
   const nextImage = () => {
-    if (currentImageIndex < images.length - 1) {
+    if (trash?.images && currentImageIndex < trash.images.length - 1) {
       setCurrentImageIndex(currentImageIndex + 1);
     }
   };
@@ -132,15 +259,48 @@ export default function TrashDetailPage() {
       <ScrollView style={styles.content}>
         {/* Image Section */}
         <View style={styles.imageSection}>
-          <TouchableOpacity onPress={() => setShowImageModal(true)}>
-            <Image
-              source={images[currentImageIndex]}
-              style={styles.mainImage}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
+          {trash.images && trash.images.length > 0 ? (
+            <>
+              <TouchableOpacity onPress={() => setShowImageModal(true)}>
+                <Image
+                  source={{ uri: trash.images[currentImageIndex].uri }}
+                  style={styles.mainImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+              
+              {trash.images.length > 1 && (
+                <View style={styles.thumbnailsContainer}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {trash.images.map((img: any, index: number) => (
+                      <TouchableOpacity 
+                        key={img.id || index} 
+                        onPress={() => setCurrentImageIndex(index)}
+                        style={[
+                          styles.thumbnailWrapper,
+                          currentImageIndex === index && styles.activeThumbnail
+                        ]}
+                      >
+                        <Image source={{ uri: img.uri }} style={styles.thumbnail} />
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={[styles.mainImage, styles.noImageContainer]}>
+              <MaterialIcons name="image-not-supported" size={48} color="#ccc" />
+              <Text style={styles.noImageText}>Görsel yok</Text>
+              {process.env.NODE_ENV === 'development' && (
+                <Text style={styles.devInfo}>
+                  Debug: {JSON.stringify(trash.images || 'No images')}
+                </Text>
+              )}
+            </View>
+          )}
           
-          {images.length > 1 && (
+          {trash.images && trash.images.length > 1 && (
             <>
               <TouchableOpacity style={styles.previousButton} onPress={previousImage}>
                 <MaterialIcons name="chevron-left" size={24} color="#fff" />
@@ -148,6 +308,11 @@ export default function TrashDetailPage() {
               <TouchableOpacity style={styles.nextButton} onPress={nextImage}>
                 <MaterialIcons name="chevron-right" size={24} color="#fff" />
               </TouchableOpacity>
+              <View style={styles.paginationContainer}>
+                <Text style={styles.paginationText}>
+                  {currentImageIndex + 1}/{trash.images.length}
+                </Text>
+              </View>
             </>
           )}
         </View>
@@ -163,22 +328,22 @@ export default function TrashDetailPage() {
             <View style={styles.infoRowLeft}>
               <View style={styles.infoItem}>
                 <MaterialIcons name="tag" size={16} color="#4B9363" />
-                <Text style={styles.infoText}>ID: {id}</Text>
+                <Text style={styles.infoText}>ID: {formatId(id)}</Text>
               </View>
               <View style={styles.infoItem}>
                 <MaterialIcons name="person" size={16} color="#4B9363" />
-                <Text style={styles.infoText}>Kullanıcı: {trash.user?.name}</Text>
+                <Text style={styles.infoText}>Kullanıcı: {trash.user?.name || 'Bilinmiyor'}</Text>
               </View>
             </View>
 
             <View style={styles.infoRowRight}>
               <View style={styles.infoItem}>
                 <MaterialIcons name="calendar-today" size={16} color="#4B9363" />
-                <Text style={styles.infoText}>Tarih: {trash.createdAt?.toDate ? trash.createdAt.toDate().toLocaleString() : ''}</Text>
+                <Text style={styles.infoText}>: {formatDate(trash.createdAt)}</Text>
               </View>
               <View style={styles.infoItem}>
                 <MaterialIcons name="location-on" size={16} color="#4B9363" />
-                <Text style={styles.infoText}>Konum: {trash.location?.latitude}, {trash.location?.longitude}</Text>
+                <Text style={styles.infoText}>: {locationName}</Text>
               </View>
             </View>
           </View>
@@ -245,13 +410,6 @@ export default function TrashDetailPage() {
             <Text style={styles.primaryButtonText}>I Cleaned</Text>
           </TouchableOpacity>
         </View>
-
-        <Text style={styles.label}>Görseller:</Text>
-        <View style={styles.imagesRow}>
-          {trash.images?.map((img: any) => (
-            <Image key={img.id} source={{ uri: img.uri }} style={styles.image} />
-          ))}
-        </View>
       </ScrollView>
 
       {/* Bottom Navigation */}
@@ -266,16 +424,19 @@ export default function TrashDetailPage() {
           >
             <MaterialIcons name="close" size={24} color="#fff" />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.modalBackground}
+          <TouchableWithoutFeedback 
             onPress={() => setShowImageModal(false)}
           >
-            <Image
-              source={images[currentImageIndex]}
-              style={styles.modalImage}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
+            <View style={styles.modalBackground}>
+              {trash.images && trash.images.length > 0 && (
+                <Image
+                  source={{ uri: trash.images[currentImageIndex].uri }}
+                  style={styles.modalImage}
+                  resizeMode="contain"
+                />
+              )}
+            </View>
+          </TouchableWithoutFeedback>
         </View>
       </Modal>
 
@@ -348,12 +509,45 @@ const styles = StyleSheet.create({
   },
   imageSection: {
     width: '100%',
-    height: 254,
     position: 'relative',
+    marginBottom: 0,
   },
   mainImage: {
-    width: 412,
+    width: '100%',
     height: 254,
+  },
+  thumbnailsContainer: {
+    width: '100%',
+    height: 56,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  thumbnailWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 4,
+    marginRight: 8,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  activeThumbnail: {
+    borderColor: '#4B9363',
+  },
+  thumbnail: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 2,
+  },
+  noImageContainer: {
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noImageText: {
+    marginTop: 8,
+    color: '#999',
+    fontSize: 16,
   },
   previousButton: {
     position: 'absolute',
@@ -373,11 +567,23 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 8,
   },
+  paginationContainer: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  paginationText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
   needCleanSection: {
     width: '100%',
-    height: 52,
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    marginTop: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#D9D9D9',
     justifyContent: 'center',
@@ -405,9 +611,6 @@ const styles = StyleSheet.create({
   infoRowRight: {
     flexDirection: 'column',
     gap: 12,
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center'
   },
   infoItem: {
     flexDirection: 'row',
@@ -501,10 +704,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    width: '100%',
   },
   modalImage: {
-    width: width * 1.4,
-    height: width * 1.4,
+    width: width * 0.9,
+    height: width * 0.9,
     resizeMode: 'contain',
   },
   closeButton: {
@@ -556,7 +760,7 @@ const styles = StyleSheet.create({
   infoModalItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
   },
   infoModalIconContainer: {
     width: 50,
@@ -583,22 +787,12 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontFamily: 'Poppins-Regular',
   },
-  imagesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  devInfo: {
     marginTop: 8,
-  },
-  image: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  label: {
-    fontWeight: 'bold',
-    marginTop: 8,
-    color: '#333',
+    fontSize: 10,
+    color: '#999',
+    textAlign: 'center',
+    padding: 8,
   },
   centered: {
     flex: 1,
