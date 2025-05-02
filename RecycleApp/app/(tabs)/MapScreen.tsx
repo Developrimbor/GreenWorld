@@ -53,6 +53,7 @@ export default function MapScreen() {
   const [selectedLocation, setSelectedLocation] = useState<LocationCoords | null>(null);
   const [showConfirmButton, setShowConfirmButton] = useState(false);
   const [trashReports, settrashReports] = useState<Trash[]>([]);
+  const [visibleTrashReports, setVisibleTrashReports] = useState<Trash[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState<{name: string, coords: {latitude: number, longitude: number}}[]>([]);
@@ -200,6 +201,8 @@ export default function MapScreen() {
       };
     });
     settrashReports(data);
+    // Artık başlangıçta atık noktaları gösterilmeyecek
+    setVisibleTrashReports([]);
   };
 
   useEffect(() => {
@@ -213,6 +216,34 @@ export default function MapScreen() {
       return () => {};
     }, [])
   );
+
+  // Haritanın görünüm alanındaki atık noktalarını göster
+  const showSpotsInVisibleArea = () => {
+    if (!mapRef.current) return;
+    
+    // Haritanın görünür alanını al
+    mapRef.current.getMapBoundaries().then(({northEast, southWest}) => {
+      // Görünür alandaki atık noktalarını filtrele
+      const visibleSpots = trashReports.filter(trash => {
+        const { latitude, longitude } = trash.location;
+        return (
+          latitude <= northEast.latitude &&
+          latitude >= southWest.latitude &&
+          longitude <= northEast.longitude &&
+          longitude >= southWest.longitude
+        );
+      });
+      
+      setVisibleTrashReports(visibleSpots);
+      
+      if (visibleSpots.length === 0) {
+        Alert.alert('Bilgi', 'Bu alanda görüntülenecek atık noktası bulunamadı.');
+      }
+    }).catch(error => {
+      console.error('Harita sınırları alınamadı:', error);
+      Alert.alert('Hata', 'Atık noktaları görüntülenemedi. Lütfen tekrar deneyin.');
+    });
+  };
 
   // Arama yapıldığında yerler için öneri oluştur
   const getSuggestions = async (query: string) => {
@@ -381,7 +412,7 @@ export default function MapScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header - Başlık */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>HARİTA</Text>
+        <Text style={styles.headerTitle}>MAP</Text>
       </View>
       
       {/* Arama Çubuğu */}
@@ -408,27 +439,7 @@ export default function MapScreen() {
           <Ionicons name="search" size={24} color="#000" />
         </TouchableOpacity>
       </View>
-
-      {/* Arama Önerileri */}
-      {showSuggestions && searchSuggestions.length > 0 && (
-        <View style={styles.suggestionsContainer}>
-          <FlatList
-            data={searchSuggestions}
-            keyExtractor={(item, index) => `suggestion-${index}`}
-            renderItem={({ item }) => (
-              <TouchableOpacity 
-                style={styles.suggestionItem}
-                onPress={() => selectSuggestion(item)}
-              >
-                <Ionicons name="location-outline" size={20} color="#666" />
-                <Text style={styles.suggestionText}>{item.name}</Text>
-              </TouchableOpacity>
-            )}
-            keyboardShouldPersistTaps="handled"
-          />
-        </View>
-      )}
-
+      
       {/* Harita Alanı */}
       <View style={styles.mapArea}>
         <MapView
@@ -441,7 +452,7 @@ export default function MapScreen() {
           showsMyLocationButton={false}
           onPress={handleMapPress}
         >
-          {trashReports.map(trash => (
+          {visibleTrashReports.map(trash => (
             <Marker
               key={trash.id}
               coordinate={trash.location}
@@ -470,15 +481,36 @@ export default function MapScreen() {
           )}
         </MapView>
 
-        {/* Sol Alt Menü Butonu */}
-        <TouchableOpacity style={styles.menuButton}>
-          <Ionicons name="menu" size={24} color="#fff" />
-        </TouchableOpacity>
+        {/* Arama Önerileri */}
+        {showSuggestions && searchSuggestions.length > 0 && (
+          <View style={styles.suggestionsContainer}>
+            <FlatList
+              data={searchSuggestions}
+              keyExtractor={(item, index) => `suggestion-${index}`}
+              renderItem={({ item }) => (
+                <TouchableOpacity 
+                  style={styles.suggestionItem}
+                  onPress={() => selectSuggestion(item)}
+                >
+                  <Ionicons name="location-outline" size={20} color="#666" />
+                  <Text style={styles.suggestionText}>{item.name}</Text>
+                </TouchableOpacity>
+              )}
+              keyboardShouldPersistTaps="handled"
+            />
+          </View>
+        )}
 
-        {/* Sağ Alt Navigasyon Butonu */}
-        <TouchableOpacity style={styles.navButton} onPress={navigateToUserLocation}>
-          <Ionicons name="navigate" size={24} color="#fff" />
-        </TouchableOpacity>
+        {/* Navigasyon ve Menü Butonları (Harita Üzerinde) */}
+        <View style={styles.topButtonsContainer}>
+          <TouchableOpacity style={styles.topButton}>
+            <Ionicons name="menu" size={24} color="#fff" />
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.topButton} onPress={navigateToUserLocation}>
+            <Ionicons name="navigate" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
 
         {/* Onay Butonu */}
         {showConfirmButton && (
@@ -489,19 +521,19 @@ export default function MapScreen() {
             <Text style={styles.confirmButtonText}>Bu Konumu Onayla</Text>
           </TouchableOpacity>
         )}
-        
-        {/* Report Spot ve View Spots Near butonları harita üzerinde olacak */}
-        <View style={styles.floatingButtonsContainer}>
-          <TouchableOpacity style={styles.floatingButton} onPress={handleReportSpot}>
-            <MaterialCommunityIcons name="trash-can" size={20} color="#fff" />
-            <Text style={styles.floatingButtonText}>Report Spot</Text>
-          </TouchableOpacity>
+      </View>
+      
+      {/* Alt Butonlar - Report Spot ve View Spots Near */}
+      <View style={styles.bottomButtons}>
+        <TouchableOpacity style={styles.reportButton} onPress={handleReportSpot}>
+          <MaterialCommunityIcons name="trash-can" size={20} color="#4B9363" />
+          <Text style={styles.buttonText}>Report Spot</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.floatingButton}>
-            <Ionicons name="eye-outline" size={20} color="#fff" />
-            <Text style={styles.floatingButtonText}>View Spots Near</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.viewButton} onPress={showSpotsInVisibleArea}>
+          <Ionicons name="eye-outline" size={20} color="#4B9363" />
+          <Text style={styles.viewButtonText}>View Spots Near</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Bottom Navigation */}
@@ -513,7 +545,7 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
   },
   header: {
     padding: 16,
@@ -531,6 +563,7 @@ const styles = StyleSheet.create({
     padding: 8,
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: 'transparent',
   },
   searchBar: {
     flexDirection: 'row',
@@ -563,15 +596,19 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   map: {
-    width: '100%',
-    height: '100%',
+    ...StyleSheet.absoluteFillObject, // Haritayı tüm alanı kapsayacak şekilde ayarla
   },
-  menuButton: {
-    position: 'absolute',
-    left: 16,
-    bottom: 24,
-    width: 48,
-    height: 48,
+  topButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    backgroundColor: 'transparent',
+    zIndex: 10,
+  },
+  topButton: {
+    width: 40,
+    height: 40,
     borderRadius: 24,
     backgroundColor: '#4B9363',
     alignItems: 'center',
@@ -584,27 +621,64 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+  },
+  bottomButtons: {
+    position: 'absolute',
+    bottom: 80, // BottomNavigation'ın üzerinde
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    justifyContent: 'space-between',
+    backgroundColor: 'transparent',
     zIndex: 10,
   },
-  navButton: {
-    position: 'absolute',
-    right: 16,
-    bottom: 24,
-    width: 48,
-    height: 48,
+  reportButton: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 1)', // Yarı şeffaf beyaz
     borderRadius: 24,
-    backgroundColor: '#4B9363',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    zIndex: 10,
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+  },
+  viewButton: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 1)', // Yarı şeffaf beyaz
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+  },
+  buttonText: {
+    color: '#000',
+    fontFamily: 'Poppins-Medium',
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  viewButtonText: {
+    color: '#000',
+    fontFamily: 'Poppins-Medium',
+    fontSize: 14,
+    marginLeft: 8,
   },
   confirmButton: {
     position: 'absolute',
@@ -628,39 +702,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  // Yeni eklenene butonlar ve konteynırı
-  floatingButtonsContainer: {
-    position: 'absolute',
-    bottom: 80,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-  },
-  floatingButton: {
-    flexDirection: 'row',
-    backgroundColor: '#4B9363',
-    borderRadius: 24,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  floatingButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    marginLeft: 8,
-    fontFamily: 'Poppins-Medium',
   },
   suggestionsContainer: {
     backgroundColor: 'white',
