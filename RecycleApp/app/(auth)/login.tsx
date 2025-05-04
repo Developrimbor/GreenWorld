@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -13,11 +13,35 @@ import {
 import { router } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');  // username yerine email kullanacağız
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    // Kayıtlı giriş bilgilerini kontrol et
+    const loadSavedCredentials = async () => {
+      try {
+        const savedEmail = await AsyncStorage.getItem('userEmail');
+        const savedPassword = await AsyncStorage.getItem('userPassword');
+        const savedRememberMe = await AsyncStorage.getItem('rememberMe');
+        
+        if (savedRememberMe === 'true' && savedEmail && savedPassword) {
+          setEmail(savedEmail);
+          setPassword(savedPassword);
+          setRememberMe(true);
+        }
+      } catch (error) {
+        console.log('Kayıtlı bilgileri yüklerken hata:', error);
+      }
+    };
+
+    loadSavedCredentials();
+  }, []);
 
   const handleLogin = async () => {
     try {
@@ -26,7 +50,21 @@ export default function LoginScreen() {
         return;
       }
 
+      // Giriş işlemi
       await signInWithEmailAndPassword(auth, email, password);
+      
+      // Remember Me seçili ise bilgileri kaydet
+      if (rememberMe) {
+        await AsyncStorage.setItem('userEmail', email);
+        await AsyncStorage.setItem('userPassword', password);
+        await AsyncStorage.setItem('rememberMe', 'true');
+      } else {
+        // Seçili değilse kayıtlı bilgileri temizle
+        await AsyncStorage.removeItem('userEmail');
+        await AsyncStorage.removeItem('userPassword');
+        await AsyncStorage.setItem('rememberMe', 'false');
+      }
+
       router.push('/(tabs)/HomePage');
     } catch (error: any) {
       console.log('Firebase Error Code:', error.code);
@@ -44,6 +82,10 @@ export default function LoginScreen() {
   
       Alert.alert('Giriş Hatası', errorMessage);
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   const handleGoogleLogin = () => {
@@ -80,13 +122,25 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Şifre"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity 
+              style={styles.eyeIcon} 
+              onPress={togglePasswordVisibility}
+            >
+              <Ionicons 
+                name={showPassword ? 'eye-off' : 'eye'} 
+                size={24} 
+                color="#4B9363" 
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.optionsContainer}>
@@ -95,11 +149,11 @@ export default function LoginScreen() {
             onPress={() => setRememberMe(!rememberMe)}
           >
             <View style={[styles.checkbox, rememberMe && styles.checked]} />
-            <Text style={styles.optionText}>Beni Hatırla</Text>
+            <Text style={styles.optionText}>Remember me</Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => {}}>
-            <Text style={styles.forgotPassword}>Şifremi unuttum</Text>
+            <Text style={styles.forgotPassword}>Forgot Password?</Text>
           </TouchableOpacity>
         </View>
 
@@ -168,6 +222,21 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontFamily: 'Poppins-Regular',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 12,
+    fontFamily: 'Poppins-Regular',
+  },
+  eyeIcon: {
+    padding: 10,
   },
   optionsContainer: {
     flexDirection: 'row',
