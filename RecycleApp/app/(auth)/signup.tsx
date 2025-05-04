@@ -174,11 +174,11 @@ export default function SignUpScreen() {
         </View>
 
         <View style={styles.loginWrapper}>
-          <Text style={styles.loginText}>Zaten hesabınız var mı? </Text>
+          <Text style={styles.loginText}>Do you already have an account? </Text>
           <TouchableOpacity 
             onPress={() => router.push('/(auth)/login')}
           >
-            <Text style={styles.greenText}>Giriş Yap</Text>
+            <Text style={styles.greenText}>Log In</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
