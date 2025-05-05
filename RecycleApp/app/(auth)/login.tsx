@@ -88,6 +88,10 @@ export default function LoginScreen() {
     setShowPassword(!showPassword);
   };
 
+  const toggleRememberMe = () => {
+    setRememberMe(!rememberMe);
+  };
+
   const handleGoogleLogin = () => {
     router.push('/(tabs)/HomePage');
   };
@@ -133,6 +137,7 @@ export default function LoginScreen() {
             <TouchableOpacity 
               style={styles.eyeIcon} 
               onPress={togglePasswordVisibility}
+              activeOpacity={0.7}
             >
               <Ionicons 
                 name={showPassword ? 'eye-off' : 'eye'} 
@@ -146,13 +151,18 @@ export default function LoginScreen() {
         <View style={styles.optionsContainer}>
           <TouchableOpacity 
             style={styles.checkboxContainer}
-            onPress={() => setRememberMe(!rememberMe)}
+            onPress={toggleRememberMe}
+            activeOpacity={0.7}
           >
-            <View style={[styles.checkbox, rememberMe && styles.checked]} />
+            <View style={[styles.checkbox, rememberMe && styles.checked]}>
+              {rememberMe && (
+                <Ionicons name="checkmark" size={16} color="#fff" />
+              )}
+            </View>
             <Text style={styles.optionText}>Remember me</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => {}}>
+          <TouchableOpacity onPress={() => {}} activeOpacity={0.7}>
             <Text style={styles.forgotPassword}>Forgot Password?</Text>
           </TouchableOpacity>
         </View>
@@ -160,6 +170,7 @@ export default function LoginScreen() {
         <TouchableOpacity 
           style={styles.loginButton} 
           onPress={handleLogin}
+          activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>LOG IN</Text>
         </TouchableOpacity>
@@ -167,6 +178,7 @@ export default function LoginScreen() {
         <TouchableOpacity 
           style={styles.googleButton} 
           onPress={handleGoogleLogin}
+          activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>LOG IN WITH GOOGLE</Text>
         </TouchableOpacity>
@@ -177,6 +189,7 @@ export default function LoginScreen() {
         <TouchableOpacity 
           style={styles.signupButton}
           onPress={() => router.push('/(auth)/signup')}
+          activeOpacity={0.7}
         >
           <Text style={styles.signupText}>SIGN UP</Text>
         </TouchableOpacity>
@@ -255,6 +268,8 @@ const styles = StyleSheet.create({
     borderColor: '#4B9363',
     borderRadius: 4,
     marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   checked: {
     backgroundColor: '#4B9363',
