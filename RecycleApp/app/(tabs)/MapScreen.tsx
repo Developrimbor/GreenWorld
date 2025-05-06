@@ -64,6 +64,7 @@ export default function MapScreen() {
   const [searchSuggestions, setSearchSuggestions] = useState<{name: string, coords: {latitude: number, longitude: number}}[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showInfoDialog, setShowInfoDialog] = useState(false);
+  const [isReportMode, setIsReportMode] = useState(false);
 
   const requestLocationPermission = async () => {
     try {
@@ -119,6 +120,7 @@ export default function MapScreen() {
       const hasPermission = await requestLocationPermission();
       if (hasPermission) {
         await getCurrentLocation();
+        setIsReportMode(true);
       }
     } catch (error) {
       console.error('Tercih verisini okuma hatası:', error);
@@ -126,8 +128,17 @@ export default function MapScreen() {
       const hasPermission = await requestLocationPermission();
       if (hasPermission) {
         await getCurrentLocation();
+        setIsReportMode(true);
       }
     }
+  };
+
+  // Konum seçim modunu iptal et
+  const cancelReportMode = () => {
+    setShowCircle(false);
+    setSelectedLocation(null);
+    setShowConfirmButton(false);
+    setIsReportMode(false);
   };
 
   // Kullanıcının konumuna git
@@ -205,6 +216,7 @@ export default function MapScreen() {
       // Yönlendirme sonrası state'leri sıfırla
       setSelectedLocation(null);
       setShowConfirmButton(false);
+      setIsReportMode(false);
     }
   };
 
@@ -545,18 +557,36 @@ export default function MapScreen() {
             <Text style={styles.confirmButtonText}>Bu Konumu Onayla</Text>
           </TouchableOpacity>
         )}
+
+        {/* İptal Butonu */}
+        {isReportMode && (
+          <TouchableOpacity 
+            style={[styles.cancelButton, showConfirmButton ? styles.cancelButtonWithConfirm : {}]}
+            onPress={cancelReportMode}
+          >
+            <Text style={styles.cancelButtonText}>İptal</Text>
+          </TouchableOpacity>
+        )}
       </View>
       
       {/* Alt Butonlar - Report Spot ve View Spots Near */}
       <View style={styles.bottomButtons}>
-        <TouchableOpacity style={styles.reportButton} onPress={handleReportSpot}>
-          <MaterialCommunityIcons name="trash-can" size={20} color="#4B9363" />
-          <Text style={styles.buttonText}>Report Spot</Text>
+        <TouchableOpacity 
+          style={[styles.reportButton, isReportMode && styles.disabledButton]} 
+          onPress={handleReportSpot}
+          disabled={isReportMode}
+        >
+          <MaterialCommunityIcons name="trash-can" size={20} color={isReportMode ? "#999" : "#4B9363"} />
+          <Text style={[styles.buttonText, isReportMode && styles.disabledButtonText]}>Report Spot</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.viewButton} onPress={showSpotsInVisibleArea}>
-          <Ionicons name="eye-outline" size={20} color="#4B9363" />
-          <Text style={styles.viewButtonText}>View Spots Near</Text>
+        <TouchableOpacity 
+          style={[styles.viewButton, isReportMode && styles.disabledButton]} 
+          onPress={showSpotsInVisibleArea}
+          disabled={isReportMode}
+        >
+          <Ionicons name="eye-outline" size={20} color={isReportMode ? "#999" : "#4B9363"} />
+          <Text style={[styles.viewButtonText, isReportMode && styles.disabledButtonText]}>View Spots Near</Text>
         </TouchableOpacity>
       </View>
 
@@ -901,5 +931,55 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  reportModeBanner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(75, 147, 99, 0.9)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    zIndex: 5,
+  },
+  reportModeText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  cancelButton: {
+    position: 'absolute',
+    right: 16,
+    bottom: 80,
+    backgroundColor: '#e74c3c',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 10,
+  },
+  cancelButtonWithConfirm: {
+    bottom: 140, // Onay butonunun üzerinde göster
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  disabledButton: {
+    backgroundColor: 'rgba(200, 200, 200, 0.8)',
+  },
+  disabledButtonText: {
+    color: '#999',
   },
 }); 
