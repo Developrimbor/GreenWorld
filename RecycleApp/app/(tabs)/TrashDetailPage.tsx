@@ -81,6 +81,13 @@ export default function TrashDetailPage() {
       
       if (docSnap.exists()) {
         const trashData = docSnap.data();
+        // imageUrls varsa ve images yoksa dönüştür
+        if (!trashData.images && trashData.imageUrls && Array.isArray(trashData.imageUrls)) {
+          trashData.images = trashData.imageUrls.map((url, idx) => ({
+            uri: url,
+            id: idx.toString(),
+          }));
+        }
         setTrash(trashData);
         
         // Kullanıcı bilgisini getir
@@ -374,14 +381,14 @@ export default function TrashDetailPage() {
         <View style={styles.imageSection}>
           {trash.images && trash.images.length > 0 ? (
             <>
-              <TouchableOpacity onPress={() => setShowImageModal(true)}>
-                <Image
+          <TouchableOpacity onPress={() => setShowImageModal(true)}>
+            <Image
                   source={{ uri: trash.images[currentImageIndex].uri }}
-                  style={styles.mainImage}
-                  resizeMode="cover"
-                />
-              </TouchableOpacity>
-              
+              style={styles.mainImage}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
+          
               {trash.images.length > 1 && (
                 <View style={styles.thumbnailsContainer}>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -438,12 +445,12 @@ export default function TrashDetailPage() {
         {/* Info Section - Yeniden Düzenleniyor */}
         <View style={styles.combinedSection}>
           <View style={styles.sectionColumn}>
-            <View style={styles.infoItem}>
-              <MaterialIcons name="tag" size={16} color="#4B9363" />
+              <View style={styles.infoItem}>
+                <MaterialIcons name="tag" size={16} color="#4B9363" />
               <Text style={styles.infoText}>ID: {formatId(id)}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <MaterialIcons name="person" size={16} color="#4B9363" />
+              </View>
+              <View style={styles.infoItem}>
+                <MaterialIcons name="person" size={16} color="#4B9363" />
               <Text style={styles.infoText}>: {authorUsername || (trash.user?.name || 'Bilinmiyor')}</Text>
             </View>
           </View>
@@ -451,12 +458,12 @@ export default function TrashDetailPage() {
           <View style={styles.divider} />
 
           <View style={styles.sectionColumn}>
-            <View style={styles.infoItem}>
-              <MaterialIcons name="calendar-today" size={16} color="#4B9363" />
+              <View style={styles.infoItem}>
+                <MaterialIcons name="calendar-today" size={16} color="#4B9363" />
               <Text style={styles.infoText}>: {formatDate(trash.createdAt)}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <MaterialIcons name="location-on" size={16} color="#4B9363" />
+              </View>
+              <View style={styles.infoItem}>
+                <MaterialIcons name="location-on" size={16} color="#4B9363" />
               <Text style={styles.infoText}>: {locationName}</Text>
             </View>
           </View>
@@ -466,10 +473,10 @@ export default function TrashDetailPage() {
         <View style={styles.combinedSection}>
           <View style={styles.sectionColumn}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Trash Info</Text>
               <TouchableOpacity onPress={() => openInfoModal(trashInfoDetailsData)}>
-                <MaterialIcons name="info" size={22} color="#4B9363" />
+                <MaterialIcons name="info" size={22} color="#A91101" />
               </TouchableOpacity>
+              <Text style={styles.sectionTitle}>Trash Info</Text>
             </View>
             <View style={styles.iconGrid}>
               <MaterialCommunityIcons name="recycle" size={24} color="#4B9363" />
@@ -485,10 +492,10 @@ export default function TrashDetailPage() {
 
           <View style={styles.sectionColumn}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Trash Volume</Text>
               <TouchableOpacity onPress={() => openInfoModal(trashVolumeDetailsData)}>
-                <MaterialIcons name="info" size={22} color="#4B9363" />
+                <MaterialIcons name="info" size={22} color="#A91101" />
               </TouchableOpacity>
+              <Text style={styles.sectionTitle}>Trash Volume</Text>
             </View>
             <View style={styles.iconGrid}>
               <MaterialIcons name="delete" size={24} color="#4B9363" />
@@ -496,7 +503,7 @@ export default function TrashDetailPage() {
             </View>
           </View>
         </View>
-        
+
         {/* Other Details Section */}
         <View style={styles.otherDetailsSection}>
           <Text style={styles.sectionTitle}>Other Details</Text>
@@ -527,7 +534,7 @@ export default function TrashDetailPage() {
             {checkingLocation ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.primaryButtonText}>I Cleaned</Text>
+            <Text style={styles.primaryButtonText}>I Cleaned</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -550,11 +557,11 @@ export default function TrashDetailPage() {
           >
             <View style={styles.modalBackground}>
               {trash.images && trash.images.length > 0 && (
-                <Image
+            <Image
                   source={{ uri: trash.images[currentImageIndex].uri }}
-                  style={styles.modalImage}
-                  resizeMode="contain"
-                />
+              style={styles.modalImage}
+              resizeMode="contain"
+            />
               )}
             </View>
           </TouchableWithoutFeedback>
@@ -781,7 +788,6 @@ const styles = StyleSheet.create({
   },
   needCleanSection: {
     width: '100%',
-    marginTop: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#D9D9D9',
     justifyContent: 'center',
@@ -789,12 +795,15 @@ const styles = StyleSheet.create({
   },
   needCleanText: {
     fontFamily: 'Poppins-Medium',
+    marginTop: 12,
+    marginBottom: 8,
     fontSize: 16,
     color: '#A91101',
   },
   combinedSection: {
     flexDirection: 'row',
     padding: 24,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#D9D9D9',
   },
@@ -810,7 +819,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   sectionTitle: {
     fontFamily: 'Poppins-Medium',
@@ -825,7 +834,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   infoText: {
     fontFamily: 'Poppins-Medium',
@@ -946,12 +955,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     fontSize: 12,
     color: '#696969',
-    marginTop: 12,
+    marginTop: 6,
   },
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 24,
+    marginTop: 16,
     gap: 12,
   },
   outlineButton: {
