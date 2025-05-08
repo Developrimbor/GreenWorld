@@ -342,8 +342,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     zIndex: 1,
     marginTop: 16,
+    marginBottom: 16,
     paddingHorizontal: 24,
-    paddingBottom: 8,
+    // paddingBottom: 8,
   },
   title: {
     fontSize: 16,
@@ -354,7 +355,7 @@ const styles = StyleSheet.create({
   },
   contentSection: {
     padding: 24,
-    paddingTop: 8,
+    paddingTop: 4,
   },
   content: {
     fontSize: 12,
