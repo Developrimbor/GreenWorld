@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -29,6 +30,7 @@ type PostType = {
   author: string;
   date: string;
   authorId: string; // Eklendi
+  authorImage?: string; // Profil resmi için eklendi
 };
 
 export default function PostDetail() {
@@ -36,33 +38,25 @@ export default function PostDetail() {
   const [post, setPost] = useState<PostType | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 
-  // handleDeletePost fonksiyonunu buraya taşıyalım
-  const handleDeletePost = async () => {
-    Alert.alert(
-      "Delete Post",
-      "Are you sure you want to delete this post?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteDoc(doc(db, 'posts', post?.id || ''));
-              Alert.alert('Success', 'Post deleted successfully');
-              router.push("/(tabs)/ProfilePage"); //todo bir önceki sayfa neresiyse oraya pushlayabilir
-            } catch (error) {
-              console.error('Error deleting post:', error);
-              Alert.alert('Error', 'Failed to delete post');
-            }
-          }
-        }
-      ]
-    );
+  // handleDeletePost fonksiyonunu değiştirelim
+  const handleDeletePost = () => {
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteDoc(doc(db, 'posts', post?.id || ''));
+      setDeleteModalVisible(false);
+      // Başarılı silme bildirimi için özel modal yapısı kullanabiliriz
+      Alert.alert('Başarılı', 'Gönderi başarıyla silindi');
+      router.push("/(tabs)/ProfilePage");
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      Alert.alert('Hata', 'Gönderi silinirken bir hata oluştu');
+      setDeleteModalVisible(false);
+    }
   };
 
   useEffect(() => {
@@ -82,6 +76,7 @@ export default function PostDetail() {
             author: postData.author || 'Anonim',
             date: postData.createdAt ? new Date(postData.createdAt.toDate()).toLocaleDateString() : new Date().toLocaleDateString(),
             authorId: postData.authorId || '',
+            authorImage: postData.authorImage || '',
           });
         } else {
           console.log('Post not found'); // Debug için
@@ -186,7 +181,7 @@ export default function PostDetail() {
           onPress={() => router.push('/(tabs)/UserProfile')}
         >
           <Image
-            source={require('../../assets/images/profile.jpg')}
+            source={post.authorImage ? { uri: post.authorImage } : require('../../assets/images/profile.jpg')}
             style={styles.authorImage}
           />
           <Text style={styles.authorName}>{post.author}</Text>
@@ -215,6 +210,47 @@ export default function PostDetail() {
         </View>
       </View>
 
+      {/* Silme Modalı */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={deleteModalVisible}
+        onRequestClose={() => setDeleteModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity 
+              style={styles.closeButton} 
+              onPress={() => setDeleteModalVisible(false)}
+            >
+              <Ionicons name="close" size={24} color="#000" />
+            </TouchableOpacity>
+            
+            <Text style={styles.modalTitle}>Delete Post</Text>
+            
+            <Text style={styles.modalDescription}>
+              Are you sure you want to delete this post? This action cannot be undone.
+            </Text>
+            
+            <View style={styles.modalButtonsContainer}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.cancelButton]} 
+                onPress={() => setDeleteModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.deleteButton]} 
+                onPress={confirmDelete}
+              >
+                <Text style={styles.deleteButtonText}>Yes, delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <BottomNavigation />
     </SafeAreaView>
   );
@@ -236,9 +272,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E8E8E8',
+    height: 56,
   },
   backButton: {
     padding: 4,
@@ -246,6 +283,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
   },
   alertButton: {
     padding: 4,
@@ -299,15 +340,13 @@ const styles = StyleSheet.create({
   titleSection: {
     width: '100%',
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
     zIndex: 1,
     marginTop: 16,
     paddingHorizontal: 24,
-    paddingBottom: 16,
+    paddingBottom: 8,
   },
   title: {
-    fontSize: 20,
+    fontSize: 16,
     fontFamily: 'Poppins-Medium',
   },
   contentScrollView: {
@@ -327,21 +366,22 @@ const styles = StyleSheet.create({
   authorSection: {
     width: '100%',
     backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#E8E8E8',
+    // borderTopWidth: 1,
+    // borderTopColor: '#E8E8E8',
     zIndex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 24,
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 8,
   },
   authorInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   authorImage: {
+    borderWidth: 1.5,
+    borderColor: '#E8E8E8',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -361,5 +401,80 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     gap: 8,
+  },
+  // Modal stilleri
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 1,
+  },
+  modalTitle: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 20,
+    color: '#4B9363',
+    marginBottom: 16,
+    marginTop: 16,
+  },
+  modalDescription: {
+    fontFamily: 'Poppins-Regular',
+    fontSize: 14,
+    color: '#555',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  modalButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 8,
+  },
+  modalButton: {
+    paddingVertical: 12,
+    borderRadius: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  cancelButton: {
+    backgroundColor: '#EFEFEF',
+    borderRadius: 8,
+  },
+  cancelButtonText: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 14,
+    color: '#444',
+  },
+  deleteButton: {
+    backgroundColor: '#4B9363',
+    borderRadius: 8,
+  },
+  deleteButtonText: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 14,
+    color: 'white',
   },
 });
