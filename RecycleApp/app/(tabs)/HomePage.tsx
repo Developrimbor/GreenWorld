@@ -28,6 +28,8 @@ type PostType = {
   location: string;
   date: string;
   createdAt: any;
+  content?: string;
+  tags?: string[];
 };
 
 type FilterType = {
@@ -335,34 +337,39 @@ export default function HomePage() {
                   params: { id: post.id }
                 })}
               >
-                <View style={styles.imageContainer}>
+                <View style={styles.horizontalCard}>
                   <Image 
                     source={{ uri: post.imageUrl }}
-                    style={styles.postImage} 
+                    style={styles.cardImage} 
                   />
-                  <LinearGradient
-                    colors={['rgba(0,0,0,1)', 'transparent']}
-                    style={styles.gradient}
-                    start={{ x: 0, y: 1 }}
-                    end={{ x: 0, y: 0.5 }}
-                  >
-                    <View style={styles.imageInfo}>
-                      <View style={styles.dateContainer}>
-                        <Ionicons name="calendar-outline" size={16} color="#EDEDED" />
-                        <Text style={styles.dateText}>{post.date}</Text>
+                  <View style={styles.cardContent}>
+                    <Text style={styles.cardTitle}>{post.title}</Text>
+                    {post.content && (
+                      <Text style={styles.cardDescription} numberOfLines={2}>
+                        {post.content}
+                      </Text>
+                    )}
+                    <View style={styles.cardMetaContainer}>
+                      <View style={styles.cardMeta}>
+                        <Ionicons name="calendar-outline" size={12} color="#666" />
+                        <Text style={styles.cardMetaText}>{post.date}</Text>
                       </View>
-                      <View style={styles.locationContainer}>
-                        <Ionicons name="location" size={16} color="#EDEDED" />
-                        <Text style={styles.locationText}>{post.location}</Text>
+                      <View style={styles.cardMeta}>
+                        <Ionicons name="location" size={12} color="#666" />
+                        <Text style={styles.cardMetaText}>{post.location}</Text>
                       </View>
                     </View>
-                  </LinearGradient>
-                  <TouchableOpacity style={styles.bookmarkButton}>
-                    <Ionicons name="bookmark-outline" size={24} color="#fff" />
-                  </TouchableOpacity>
+                    {post.tags && post.tags.length > 0 && (
+                      <View style={styles.tagsContainer}>
+                        {post.tags.map((tag, index) => (
+                          <View key={index} style={styles.tagChip}>
+                            <Text style={styles.tagText}>{tag}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
                 </View>
-                <Text style={styles.postTitle}>{post.title}</Text>
-                <Text style={styles.authorName}>{post.author}</Text>
               </TouchableOpacity>
             ))
           ) : (
@@ -438,11 +445,11 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingVertical: 16,
+    paddingVertical: 4,
     paddingHorizontal: 24,
   },
   postCard: {
-    marginBottom: 16,
+    marginBottom: 8,
     borderRadius: 12,
     backgroundColor: '#fff',
     shadowColor: '#000',
@@ -453,80 +460,75 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    paddingHorizontal: 12,
+    height: 120,
   },
-  imageContainer: {
-    position: 'relative',
-  },
-  postImage: {
-    width: '100%',
-    height: 160,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-  },
-  gradient: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: '50%',
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-  },
-  imageInfo: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 12,
+  horizontalCard: {
     flexDirection: 'row',
+    alignItems: 'center',
+    height: '100%',
+  },
+  cardImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+  },
+  cardContent: {
+    flex: 1,
+    marginLeft: 16,
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
-  dateContainer: {
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  cardDescription: {
+    fontSize: 12,
+    color: '#696969',
+    marginTop: 6,
+  },
+  cardMetaContainer: {
+    flexDirection: 'row',
+    marginTop: 8,
+    justifyContent: 'flex-start',
+    flexWrap: 'wrap',
+  },
+  cardMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    marginRight: 12,
+    marginTop: 2,
   },
-  dateText: {
-    color: '#EDEDED',
-    fontSize: 12,
+  cardMetaText: {
+    fontSize: 8,
+    color: '#696969',
+    marginLeft: 4,
   },
-  locationContainer: {
+  tagsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    flexWrap: 'wrap',
+    marginTop: 8,
   },
-  locationText: {
-    color: '#EDEDED',
-    fontSize: 12,
-  },
-  bookmarkButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 20,
-    padding: 8,
-  },
-  postTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    padding: 10,
-    paddingBottom: 6,
-  },
-  authorName: {
-    fontSize: 13,
-    color: '#666',
+  tagChip: {
+    backgroundColor: '#E8F5E9',
     paddingHorizontal: 10,
-    paddingBottom: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 6,
+    marginBottom: 4,
+  },
+  tagText: {
+    fontSize: 8,
+    color: '#4B9363',
   },
   fabButton: {
     position: 'absolute',
-    right: 20,
-    bottom: 80, // Positioned above BottomNavigation
+    right: 24,
+    bottom: 94, // Positioned above BottomNavigation
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 8,
     backgroundColor: '#4B9363',
     justifyContent: 'center',
     alignItems: 'center',
