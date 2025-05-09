@@ -41,7 +41,7 @@ export default function BottomNavigation() {
   return (
     <View style={styles.bottomNav}>
       <TouchableOpacity style={styles.navItem}>
-        <Ionicons name="menu-outline" size={24} color="#000" />
+        <Ionicons name="menu-outline" size={24} color="#fff" />
       </TouchableOpacity>
       <TouchableOpacity 
         style={styles.navItem}
@@ -50,7 +50,7 @@ export default function BottomNavigation() {
         <Ionicons 
           name={isMapScreen ? "map" : "map-outline"} 
           size={24} 
-          color={isMapScreen ? "#4B9363" : "#000"} 
+          color={isMapScreen ? "#4B9363" : "#fff"} 
         />
       </TouchableOpacity>
       <TouchableOpacity 
@@ -60,7 +60,7 @@ export default function BottomNavigation() {
         <Ionicons 
           name={isHomePage ? "home" : "home-outline"} 
           size={24} 
-          color={isHomePage ? "#4B9363" : "#000"} 
+          color={isHomePage ? "#4B9363" : "#fff"} 
         />
       </TouchableOpacity>
       <TouchableOpacity 
@@ -71,7 +71,7 @@ export default function BottomNavigation() {
           <Ionicons 
             name={isNotificationsPage ? "notifications" : "notifications-outline"} 
             size={24} 
-            color={isNotificationsPage ? "#4B9363" : "#000"} 
+            color={isNotificationsPage ? "#4B9363" : "#fff"} 
           />
           {unreadCount > 0 && !isNotificationsPage && (
             <View style={styles.badge}>
@@ -89,7 +89,7 @@ export default function BottomNavigation() {
         <Ionicons 
           name={isProfilePage ? "person" : "person-outline"} 
           size={24} 
-          color={isProfilePage ? "#4B9363" : "#000"} 
+          color={isProfilePage ? "#4B9363" : "#fff"} 
         />
       </TouchableOpacity>
     </View>
@@ -104,12 +104,18 @@ const styles = StyleSheet.create({
     borderTopColor: '#E8E8E8',
     zIndex: 1,
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: 12,
+    paddingTop: 16,
+    paddingBottom: 16,
+    // paddingHorizontal: 24,
   },
   navItem: {
     padding: 8,
+    backgroundColor: '#4B9363',
+    borderRadius: 8,
+    marginHorizontal: 14,
+
   },
   badge: {
     position: 'absolute',
