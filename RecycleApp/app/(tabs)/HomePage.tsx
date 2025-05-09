@@ -11,6 +11,7 @@ import {
   Modal,
   TouchableWithoutFeedback,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -44,6 +45,7 @@ export default function HomePage() {
     dateRange: 'all',
   });
   const [availableLocations, setAvailableLocations] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Fetch posts from Firebase
   useEffect(() => {
@@ -52,6 +54,7 @@ export default function HomePage() {
 
   const fetchPosts = async () => {
     try {
+      setIsLoading(true);
       const postsRef = collection(db, 'posts');
       const q = query(postsRef, orderBy('createdAt', 'desc'));
       const querySnapshot = await getDocs(q);
@@ -74,6 +77,8 @@ export default function HomePage() {
       setFilteredPosts(fetchedPosts);
     } catch (error) {
       console.error('Error fetching posts:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -313,55 +318,62 @@ export default function HomePage() {
         </TouchableWithoutFeedback>
       </Modal>
 
-      <ScrollView style={styles.content}>
-        {filteredPosts.length > 0 ? (
-          filteredPosts.map((post) => (
-            <TouchableOpacity 
-              key={post.id} 
-              style={styles.postCard}
-              onPress={() => router.push({
-                pathname: '/(tabs)/PostDetail',
-                params: { id: post.id }
-              })}
-            >
-              <View style={styles.imageContainer}>
-                <Image 
-                  source={{ uri: post.imageUrl }}
-                  style={styles.postImage} 
-                />
-                <LinearGradient
-                  colors={['rgba(0,0,0,1)', 'transparent']}
-                  style={styles.gradient}
-                  start={{ x: 0, y: 1 }}
-                  end={{ x: 0, y: 0.5 }}
-                >
-                  <View style={styles.imageInfo}>
-                    <View style={styles.dateContainer}>
-                      <Ionicons name="calendar-outline" size={16} color="#EDEDED" />
-                      <Text style={styles.dateText}>{post.date}</Text>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4B9363" />
+          <Text style={styles.loadingText}>İçerikler yükleniyor...</Text>
+        </View>
+      ) : (
+        <ScrollView style={styles.content}>
+          {filteredPosts.length > 0 ? (
+            filteredPosts.map((post) => (
+              <TouchableOpacity 
+                key={post.id} 
+                style={styles.postCard}
+                onPress={() => router.push({
+                  pathname: '/(tabs)/PostDetail',
+                  params: { id: post.id }
+                })}
+              >
+                <View style={styles.imageContainer}>
+                  <Image 
+                    source={{ uri: post.imageUrl }}
+                    style={styles.postImage} 
+                  />
+                  <LinearGradient
+                    colors={['rgba(0,0,0,1)', 'transparent']}
+                    style={styles.gradient}
+                    start={{ x: 0, y: 1 }}
+                    end={{ x: 0, y: 0.5 }}
+                  >
+                    <View style={styles.imageInfo}>
+                      <View style={styles.dateContainer}>
+                        <Ionicons name="calendar-outline" size={16} color="#EDEDED" />
+                        <Text style={styles.dateText}>{post.date}</Text>
+                      </View>
+                      <View style={styles.locationContainer}>
+                        <Ionicons name="location" size={16} color="#EDEDED" />
+                        <Text style={styles.locationText}>{post.location}</Text>
+                      </View>
                     </View>
-                    <View style={styles.locationContainer}>
-                      <Ionicons name="location" size={16} color="#EDEDED" />
-                      <Text style={styles.locationText}>{post.location}</Text>
-                    </View>
-                  </View>
-                </LinearGradient>
-                <TouchableOpacity style={styles.bookmarkButton}>
-                  <Ionicons name="bookmark-outline" size={24} color="#fff" />
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.postTitle}>{post.title}</Text>
-              <Text style={styles.authorName}>{post.author}</Text>
-            </TouchableOpacity>
-          ))
-        ) : (
-          <View style={styles.noResultsContainer}>
-            <Ionicons name="search-outline" size={48} color="#ccc" />
-            <Text style={styles.noResultsText}>Sonuç bulunamadı</Text>
-            <Text style={styles.noResultsSubtext}>Farklı arama terimi veya filtre deneyin</Text>
-          </View>
-        )}
-      </ScrollView>
+                  </LinearGradient>
+                  <TouchableOpacity style={styles.bookmarkButton}>
+                    <Ionicons name="bookmark-outline" size={24} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.postTitle}>{post.title}</Text>
+                <Text style={styles.authorName}>{post.author}</Text>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.noResultsContainer}>
+              <Ionicons name="search-outline" size={48} color="#ccc" />
+              <Text style={styles.noResultsText}>Sonuç bulunamadı</Text>
+              <Text style={styles.noResultsSubtext}>Farklı arama terimi veya filtre deneyin</Text>
+            </View>
+          )}
+        </ScrollView>
+      )}
 
       <TouchableOpacity 
         style={styles.fabButton}
@@ -648,5 +660,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     marginTop: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 16,
   },
 });
