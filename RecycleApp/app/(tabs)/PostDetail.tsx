@@ -10,7 +10,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 // Import kısmına eklenecek
 import { deleteDoc } from 'firebase/firestore';
@@ -113,7 +113,7 @@ export default function PostDetail() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <MaterialIcons name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>USER'S POST</Text>
         {post?.authorId === auth.currentUser?.uid ? (
@@ -271,21 +271,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E8E8E8',
-    height: 56,
+    // height: 56,
   },
   backButton: {
-    padding: 4,
+    padding: 8,
+    width: 40,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    position: 'absolute',
-    left: 0,
-    right: 0,
+    flex: 1,
     textAlign: 'center',
   },
   alertButton: {
