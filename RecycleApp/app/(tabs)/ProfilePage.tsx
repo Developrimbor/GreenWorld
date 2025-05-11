@@ -8,8 +8,10 @@ import {
   SafeAreaView,
   Animated,
   ScrollView,
+  Modal,
+  TouchableWithoutFeedback,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
 import { getCurrentUser } from '../(auth)/services/authService';
@@ -39,6 +41,9 @@ export default function ProfilePage() {
   };
 
   const [userData, setUserData] = useState<any>(null);
+
+  // Menü için state ekliyoruz
+  const [menuVisible, setMenuVisible] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -118,24 +123,99 @@ export default function ProfilePage() {
     }
   }, [activeTab]);
 
+  // Menü işlemleri
+  const toggleMenu = () => {
+    setMenuVisible(!menuVisible);
+  };
+  
+  const handleMenuOption = (option: string) => {
+    setMenuVisible(false);
+    
+    switch (option) {
+      case 'logout':
+        handleLogout();
+        break;
+      case 'liked':
+        // Burada Liked Posts sayfasına yönlendirme yapılabilir
+        console.log('Liked Posts tıklandı');
+        break;
+      case 'saved':
+        // Burada Saved Posts sayfasına yönlendirme yapılabilir
+        console.log('Saved Posts tıklandı');
+        break;
+      case 'settings':
+        // Burada Settings sayfasına yönlendirme yapılabilir
+        console.log('Settings tıklandı');
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => router.push('/(tabs)/HomePage')}
+          onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <MaterialIcons name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>PROFILE</Text>
         <TouchableOpacity 
-          style={styles.alertButton}
-          onPress={handleLogout}
+          style={styles.menuButton}
+          onPress={toggleMenu}
         >
-          <Ionicons name="log-out-outline" size={24} color="#000" />
+          <MaterialIcons name="more-vert" size={24} color="#000" />
         </TouchableOpacity>
       </View>
+
+      {/* Dropdown Menu */}
+      {menuVisible && (
+        <Modal
+          transparent={true}
+          visible={menuVisible}
+          animationType="fade"
+          onRequestClose={() => setMenuVisible(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback>
+                <View style={styles.menuContainer}>
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => handleMenuOption('liked')}
+                  >
+                    <Text style={styles.menuItemText}>Liked Posts</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => handleMenuOption('saved')}
+                  >
+                    <Text style={styles.menuItemText}>Saved Posts</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => handleMenuOption('settings')}
+                  >
+                    <Text style={styles.menuItemText}>Settings</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.menuItem}
+                    onPress={() => handleMenuOption('logout')}
+                  >
+                    <Text style={styles.menuItemTextRed}>Log Out</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      )}
 
       {/* Main Content Container */}
       <ScrollView style={styles.mainContainer}>
@@ -288,8 +368,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E8E8E8',
   },
@@ -302,14 +382,16 @@ const styles = StyleSheet.create({
     paddingBottom: 100, // Alt kısımda extra boşluk
   },
   backButton: {
-    padding: 4,
+    padding: 8,
+    width: 40,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
   },
-  alertButton: {
-    padding: 4,
+  menuButton: {
+    padding: 8,
+    width: 40,
   },
   profileImage: {
     width: 100,
@@ -487,5 +569,41 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 12,
     color: '#999',
+  },
+  // Menu styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  menuContainer: {
+    position: 'absolute',
+    right: 24,
+    top: 64, // Header'ın altından başlasın
+    backgroundColor: 'white',
+    borderRadius: 8,
+    paddingVertical: 8,
+    width: 180,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  menuItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: '#000',
+    fontWeight: '400',
+  },
+  menuItemTextRed: {
+    fontSize: 16,
+    color: 'red',
+    fontWeight: '400',
   },
 });
