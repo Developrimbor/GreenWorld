@@ -65,9 +65,13 @@ export default function MapScreen() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [isReportMode, setIsReportMode] = useState(false);
+  // Hata mesajı state'leri
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const requestLocationPermission = async () => {
     try {
+      // Konum izni iste (daha önce denendi mi kontrol edilmeden)
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('İzin Gerekli', 'Konum izni olmadan atık bildirimi yapamazsınız.');
@@ -83,31 +87,51 @@ export default function MapScreen() {
   const getCurrentLocation = async () => {
     try {
       const location = await Location.getCurrentPositionAsync({});
+      // Yeni region'ı hesaplarken longitude/latitude delta'yı eşit tutuyoruz
+      // Bu, haritanın çarpık görünmesini önler
+      const longitudeDelta = 0.005;
+      const latitudeDelta = 0.005;
+      
       const newRegion = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        latitudeDelta: 0.0015,
-        longitudeDelta: 0.0015
+        latitudeDelta: latitudeDelta,
+        longitudeDelta: longitudeDelta
       };
       
-      mapRef.current?.animateToRegion(newRegion, 200);
+      // Haritayı tam kullanıcı konumuna merkezliyoruz
+      mapRef.current?.animateToRegion(newRegion, 500);
       
+      // Region ve kullanıcı konumunu güncelliyoruz
       setRegion(newRegion);
       setUserLocation({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       });
+      
       setShowCircle(true);
       // Yeni konum alındığında seçili konumu ve onay butonunu sıfırla
       setSelectedLocation(null);
       setShowConfirmButton(false);
     } catch (error) {
       console.error('Konum alınamadı:', error);
-      Alert.alert('Hata', 'Konumunuz alınamadı. Lütfen tekrar deneyin.');
+      
+      // Özelleştirilmiş hata mesajı göster
+      setShowErrorModal(true);
+      setErrorMessage('Konumunuz alınamadı. Lütfen tekrar deneyin.');
+      
+      // Hata durumunda butonları aktif hale getir
+      setIsReportMode(false);
     }
   };
 
   const handleReportSpot = async () => {
+    // İptal et - tıklamadan önce herhangi bir report mode aktifse temizle
+    setIsReportMode(false);
+    setShowCircle(false);
+    setSelectedLocation(null);
+    setShowConfirmButton(false);
+    
     try {
       // İlk kullanımda bilgi dialogu göster
       const hasShownInfo = await AsyncStorage.getItem('hasShownLocationInfo');
@@ -117,18 +141,39 @@ export default function MapScreen() {
         return;
       }
 
+      // Konum izni iste - her tıklamada konum izni isteyelim
       const hasPermission = await requestLocationPermission();
       if (hasPermission) {
-        await getCurrentLocation();
-        setIsReportMode(true);
+        try {
+          await getCurrentLocation();
+          // Sadece konum başarıyla alındığında report mode'u aktif et
+          setIsReportMode(true);
+        } catch (err) {
+          // Konum alma hatası durumunda butonları aktif hale getir
+          console.error('Konum alma hatası:', err);
+          setIsReportMode(false);
+        }
+      } else {
+        // Kullanıcı konum iznini vermezse, report mode'u deaktif yap
+        setIsReportMode(false);
       }
     } catch (error) {
       console.error('Tercih verisini okuma hatası:', error);
       // Hata olursa da lokasyon izni isteyip, devam et
       const hasPermission = await requestLocationPermission();
       if (hasPermission) {
-        await getCurrentLocation();
-        setIsReportMode(true);
+        try {
+          await getCurrentLocation();
+          // Sadece konum başarıyla alındığında report mode'u aktif et
+          setIsReportMode(true);
+        } catch (err) {
+          // Konum alma hatası durumunda butonları aktif hale getir
+          console.error('Konum alma hatası:', err);
+          setIsReportMode(false);
+        }
+      } else {
+        // Kullanıcı konum iznini vermezse, report mode'u deaktif yap
+        setIsReportMode(false);
       }
     }
   };
@@ -164,7 +209,13 @@ export default function MapScreen() {
       mapRef.current?.animateToRegion(newRegion, 500);
     } catch (error) {
       console.error('Konuma gitme hatası:', error);
-      Alert.alert('Hata', 'Konumunuz alınamadı. Lütfen tekrar deneyin.');
+      
+      // Özelleştirilmiş hata mesajı göster
+      setShowErrorModal(true);
+      setErrorMessage('Konumunuz alınamadı. Lütfen tekrar deneyin.');
+      
+      // Hata durumunda report modu kapat
+      setIsReportMode(false);
     }
   };
 
@@ -188,7 +239,9 @@ export default function MapScreen() {
   };
 
   const handleMapPress = (event: any) => {
-    if (showCircle && userLocation) {
+    // Sadece isReportMode true ve showCircle true ise harita tıklamalarını işle
+    // Bu, View Spots Near modunda yanlışlıkla atık noktasına tıklanmasını önler
+    if (isReportMode && showCircle && userLocation) {
       const { coordinate } = event.nativeEvent;
       
       if (isLocationInCircle(coordinate)) {
@@ -256,6 +309,14 @@ export default function MapScreen() {
   // Haritanın görünüm alanındaki atık noktalarını göster
   const showSpotsInVisibleArea = () => {
     if (!mapRef.current) return;
+    
+    // View Spots Near kullanıldığında report mode'u devre dışı bırak
+    // Bu, View Spots Near kullanıldığında mavi dairenin ve harita tıklama işlevinin 
+    // inaktif olmasını sağlar
+    setIsReportMode(false);
+    setShowCircle(false);
+    setSelectedLocation(null);
+    setShowConfirmButton(false);
     
     // Haritanın görünür alanını al
     mapRef.current.getMapBoundaries().then(({northEast, southWest}) => {
@@ -444,6 +505,16 @@ export default function MapScreen() {
     }
   };
 
+  // Modal kapatıldığında tüm butonları aktif hale getiren fonksiyon
+  const closeErrorModal = () => {
+    setShowErrorModal(false);
+    setIsReportMode(false); // Report mode'u deaktif et
+    // Tüm modu sıfırla
+    setShowCircle(false);
+    setSelectedLocation(null);
+    setShowConfirmButton(false);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header - Başlık */}
@@ -558,8 +629,8 @@ export default function MapScreen() {
           </TouchableOpacity>
         )}
 
-        {/* İptal Butonu */}
-        {isReportMode && (
+        {/* İptal butonu - Sadece report mode aktifken ve konum izni varken göster */}
+        {isReportMode && showCircle && (
           <TouchableOpacity 
             style={[styles.cancelButton, showConfirmButton ? styles.cancelButtonWithConfirm : {}]}
             onPress={cancelReportMode}
@@ -572,21 +643,26 @@ export default function MapScreen() {
       {/* Alt Butonlar - Report Spot ve View Spots Near */}
       <View style={styles.bottomButtons}>
         <TouchableOpacity 
-          style={[styles.reportButton, isReportMode && styles.disabledButton]} 
+          style={[styles.reportButton, isReportMode && styles.reportActiveButton]} 
           onPress={handleReportSpot}
-          disabled={isReportMode}
         >
-          <MaterialCommunityIcons name="trash-can" size={20} color={isReportMode ? "#999" : "#4B9363"} />
-          <Text style={[styles.buttonText, isReportMode && styles.disabledButtonText]}>Report Spot</Text>
+          <MaterialCommunityIcons 
+            name="trash-can" 
+            size={20} 
+            color={isReportMode ? "#FFFFFF" : "#4B9363"} 
+          />
+          <Text style={[
+            styles.buttonText, 
+            isReportMode && styles.reportActiveButtonText
+          ]}>Report Spot</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={[styles.viewButton, isReportMode && styles.disabledButton]} 
+          style={styles.viewButton} 
           onPress={showSpotsInVisibleArea}
-          disabled={isReportMode}
         >
-          <Ionicons name="eye-outline" size={20} color={isReportMode ? "#999" : "#4B9363"} />
-          <Text style={[styles.viewButtonText, isReportMode && styles.disabledButtonText]}>View Spots Near</Text>
+          <Ionicons name="eye-outline" size={20} color="#4B9363" />
+          <Text style={styles.viewButtonText}>View Spots Near</Text>
         </TouchableOpacity>
       </View>
 
@@ -666,6 +742,27 @@ export default function MapScreen() {
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Özelleştirilmiş Hata Modal */}
+      <Modal
+        visible={showErrorModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => closeErrorModal()}
+      >
+        <View style={styles.errorModalOverlay}>
+          <View style={styles.errorModalContainer}>
+            <Text style={styles.errorModalTitle}>Hata</Text>
+            <Text style={styles.errorModalMessage}>{errorMessage}</Text>
+            <TouchableOpacity 
+              style={styles.errorModalButton}
+              onPress={() => closeErrorModal()}
+            >
+              <Text style={styles.errorModalButtonText}>Tamam</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -779,6 +876,12 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.2,
     shadowRadius: 1.41,
+  },
+  reportActiveButton: {
+    backgroundColor: '#4B9363', // Aktif report mode için yeşil arka plan
+  },
+  reportActiveButtonText: {
+    color: '#FFFFFF', // Aktif report mode için beyaz yazı
   },
   viewButton: {
     flexDirection: 'row',
@@ -981,5 +1084,50 @@ const styles = StyleSheet.create({
   },
   disabledButtonText: {
     color: '#999',
+  },
+  // Hata Modal Stilleri
+  errorModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorModalContainer: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  errorModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#E74C3C',
+    marginBottom: 12,
+  },
+  errorModalMessage: {
+    fontSize: 16,
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  errorModalButton: {
+    backgroundColor: '#4B9363',
+    paddingHorizontal: 30,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  errorModalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 
