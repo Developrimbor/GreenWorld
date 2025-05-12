@@ -67,6 +67,23 @@ export default function PostDetail() {
         if (postDoc.exists()) {
           const postData = postDoc.data();
           console.log('Post data:', postData); // Debug için
+          
+          // Post sahibinin bilgilerini getir
+          let authorPhotoURL = '';
+          if (postData.authorId) {
+            try {
+              const userDoc = await getDoc(doc(db, 'users', postData.authorId));
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                // Profil fotoğrafı için photoURL veya profilePicture alanını kontrol et
+                authorPhotoURL = userData.photoURL || userData.profilePicture || '';
+                console.log('Author photo URL:', authorPhotoURL);
+              }
+            } catch (error) {
+              console.error('Error fetching author data:', error);
+            }
+          }
+          
           setPost({
             id: postDoc.id,
             title: postData.title || '',
@@ -76,7 +93,7 @@ export default function PostDetail() {
             author: postData.author || 'Anonim',
             date: postData.createdAt ? new Date(postData.createdAt.toDate()).toLocaleDateString() : new Date().toLocaleDateString(),
             authorId: postData.authorId || '',
-            authorImage: postData.authorImage || '',
+            authorImage: authorPhotoURL || '', // Yazarın profil fotoğrafı URL'si
           });
         } else {
           console.log('Post not found'); // Debug için
@@ -95,6 +112,22 @@ export default function PostDetail() {
       router.back();
     }
   }, [id]);
+
+  // Kullanıcı profil sayfası yönlendirmesi için fonksiyon
+  const handleProfileNavigation = () => {
+    if (!post?.authorId) return null;
+    
+    // Eğer post sahibi giriş yapmış olan kullanıcı ise ProfilePage'e yönlendir
+    if (post.authorId === auth.currentUser?.uid) {
+      router.push('/(tabs)/ProfilePage');
+    } else {
+      // Değilse UserProfile sayfasına yönlendir
+      router.push({
+        pathname: '/(tabs)/UserProfile',
+        params: { userId: post.authorId }
+      });
+    }
+  };
 
   if (!post) {
     return (
@@ -178,12 +211,18 @@ export default function PostDetail() {
       <View style={styles.authorSection}>
         <TouchableOpacity 
           style={styles.authorInfo}
-          onPress={() => router.push('/(tabs)/UserProfile')}
+          onPress={handleProfileNavigation}
         >
-          <Image
-            source={post.authorImage ? { uri: post.authorImage } : require('../../assets/images/profile.jpg')}
-            style={styles.authorImage}
-          />
+          {post.authorImage ? (
+            <Image
+              source={{ uri: post.authorImage }}
+              style={styles.authorImage}
+            />
+          ) : (
+            <View style={[styles.authorImage, styles.defaultAuthorImage]}>
+              <Ionicons name="person" size={26} color="#4B9363" />
+            </View>
+          )}
           <Text style={styles.authorName}>{post.author}</Text>
         </TouchableOpacity>
         <View style={styles.actionButtons}>
@@ -386,6 +425,11 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     marginRight: 12,
+  },
+  defaultAuthorImage: {
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   authorName: {
     fontSize: 16,
