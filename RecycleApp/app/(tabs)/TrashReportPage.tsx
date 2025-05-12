@@ -25,6 +25,8 @@ import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flat
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { addDoc, collection, updateDoc, increment, doc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
+import { storage } from '../config/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -140,13 +142,27 @@ export default function TrashReportPage() {
         return;
       }
 
+      // Önce resimleri Firebase Storage'a yükle
+      const uploadPromises = images.map(async (image) => {
+        const response = await fetch(image.uri);
+        const blob = await response.blob();
+        
+        const fileName = `trash_images/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
+        const imageRef = ref(storage, fileName);
+        
+        await uploadBytes(imageRef, blob);
+        return getDownloadURL(imageRef);
+      });
+
+      const imageUrls = await Promise.all(uploadPromises);
+
       const reportData = {
         location: selectedLocation,
         type: selectedType,
         quantity: selectedQuantity,
         additionalInfo,
-        imageUrls: images.map(img => img.uri),
-        status: 'reported', // 'reported' veya 'cleaned'
+        imageUrls: imageUrls, // Artık Firebase Storage URL'lerini kullanıyoruz
+        status: 'reported',
         authorId: currentUser.uid,
         createdAt: new Date(),
       };
@@ -887,4 +903,4 @@ const styles = StyleSheet.create({
     color: '#AAA',
     marginTop: 4,
   },
-}); 
+});
