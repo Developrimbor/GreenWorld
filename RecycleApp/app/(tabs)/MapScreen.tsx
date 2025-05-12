@@ -14,7 +14,7 @@ import {
   Modal,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import BottomNavigation from '../../components/BottomNavigation';
 import MapView, { Marker, PROVIDER_GOOGLE, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -48,6 +48,7 @@ interface Trash {
   user: { id: string; name: string };
   authorId: string;
   createdAt: any;
+  status: string; // 'reported' veya 'cleaned' olabilir
 }
 
 export default function MapScreen() {
@@ -118,7 +119,7 @@ export default function MapScreen() {
       
       // Özelleştirilmiş hata mesajı göster
       setShowErrorModal(true);
-      setErrorMessage('Konumunuz alınamadı. Lütfen tekrar deneyin.');
+      setErrorMessage('Your location could not be retrieved. Please try again.');
       
       // Hata durumunda butonları aktif hale getir
       setIsReportMode(false);
@@ -145,9 +146,9 @@ export default function MapScreen() {
       const hasPermission = await requestLocationPermission();
       if (hasPermission) {
         try {
-          await getCurrentLocation();
+        await getCurrentLocation();
           // Sadece konum başarıyla alındığında report mode'u aktif et
-          setIsReportMode(true);
+        setIsReportMode(true);
         } catch (err) {
           // Konum alma hatası durumunda butonları aktif hale getir
           console.error('Konum alma hatası:', err);
@@ -163,9 +164,9 @@ export default function MapScreen() {
       const hasPermission = await requestLocationPermission();
       if (hasPermission) {
         try {
-          await getCurrentLocation();
+        await getCurrentLocation();
           // Sadece konum başarıyla alındığında report mode'u aktif et
-          setIsReportMode(true);
+        setIsReportMode(true);
         } catch (err) {
           // Konum alma hatası durumunda butonları aktif hale getir
           console.error('Konum alma hatası:', err);
@@ -212,7 +213,7 @@ export default function MapScreen() {
       
       // Özelleştirilmiş hata mesajı göster
       setShowErrorModal(true);
-      setErrorMessage('Konumunuz alınamadı. Lütfen tekrar deneyin.');
+      setErrorMessage('Your location could not be retrieved. Please try again.');
       
       // Hata durumunda report modu kapat
       setIsReportMode(false);
@@ -287,6 +288,7 @@ export default function MapScreen() {
         user: d.user || { id: '', name: '' },
         authorId: d.authorId || d.user?.id || '',
         createdAt: d.createdAt || null,
+        status: d.status || 'reported', // Varsayılan olarak 'reported' kabul ediyoruz
       };
     });
     settrashReports(data);
@@ -519,7 +521,19 @@ export default function MapScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header - Başlık */}
       <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <MaterialIcons name="chevron-left" size={24} color="#000" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>MAP</Text>
+        <TouchableOpacity 
+          style={styles.infoButton}
+          onPress={() => setShowInfoDialog(true)}
+        >
+          <MaterialIcons name="info-outline" size={24} color="#4B9363" />
+        </TouchableOpacity>
       </View>
       
       {/* Arama Çubuğu */}
@@ -563,7 +577,7 @@ export default function MapScreen() {
             <Marker
               key={trash.id}
               coordinate={trash.location}
-              pinColor="#4B9363"
+              pinColor={trash.status === 'cleaned' ? "#4B9363" : "#E74C3C"}
               onPress={() => router.push({ pathname: '/(tabs)/TrashDetailPage', params: { id: trash.id } })}
             />
           ))}
@@ -753,13 +767,13 @@ export default function MapScreen() {
       >
         <View style={styles.errorModalOverlay}>
           <View style={styles.errorModalContainer}>
-            <Text style={styles.errorModalTitle}>Hata</Text>
+            <Text style={styles.errorModalTitle}>Error</Text>
             <Text style={styles.errorModalMessage}>{errorMessage}</Text>
             <TouchableOpacity 
               style={styles.errorModalButton}
               onPress={() => closeErrorModal()}
             >
-              <Text style={styles.errorModalButtonText}>Tamam</Text>
+              <Text style={styles.errorModalButtonText}>OK</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -774,7 +788,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   header: {
-    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E8E8E8',
     backgroundColor: '#fff',
@@ -1129,5 +1147,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    // backgroundColor: '#E8E8E8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    // backgroundColor: '#E8E8E8',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 }); 
