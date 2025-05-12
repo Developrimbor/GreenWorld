@@ -111,7 +111,7 @@ export default function PostDetail() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => router.push('/(tabs)/HomePage')}
         >
           <MaterialIcons name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
