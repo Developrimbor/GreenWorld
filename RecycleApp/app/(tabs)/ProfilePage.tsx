@@ -242,7 +242,7 @@ export default function ProfilePage() {
               onPress={togglePointsInfo}
             >
               <Text style={styles.pointsBadgeText} numberOfLines={1} ellipsizeMode="tail">
-                {userData?.points || 100000} P
+                {userData?.points} P
               </Text>
             </TouchableOpacity>
             
@@ -590,7 +590,7 @@ const styles = StyleSheet.create({
   },
   postsContainer: {
     width: '100%',
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     marginTop: 16,
     flex: 1, // maxHeight yerine flex kullan
   },
