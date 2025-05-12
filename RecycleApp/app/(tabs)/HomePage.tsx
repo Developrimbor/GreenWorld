@@ -351,11 +351,11 @@ export default function HomePage() {
                     )}
                     <View style={styles.cardMetaContainer}>
                       <View style={styles.cardMeta}>
-                        <Ionicons name="calendar-outline" size={12} color="#666" />
+                        <Ionicons name="calendar-outline" size={16} color="#4B9363" />
                         <Text style={styles.cardMetaText}>{post.date}</Text>
                       </View>
                       <View style={styles.cardMeta}>
-                        <Ionicons name="location" size={12} color="#666" />
+                        <Ionicons name="location" size={16} color="#4B9363" />
                         <Text style={styles.cardMetaText}>{post.location}</Text>
                       </View>
                     </View>
@@ -497,11 +497,11 @@ const styles = StyleSheet.create({
   cardMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 8,
     marginTop: 2,
   },
   cardMetaText: {
-    fontSize: 8,
+    fontSize: 10,
     color: '#696969',
     marginLeft: 4,
   },
