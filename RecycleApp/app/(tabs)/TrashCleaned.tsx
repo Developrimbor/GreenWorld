@@ -18,7 +18,7 @@ import {
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
-import { doc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, increment, setDoc, collection } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -200,9 +200,29 @@ export default function TrashCleaned() {
         updates.afterCleaningImage = await getDownloadURL(afterImageRef);
       }
 
-      // Firestore'u güncelle
+      // Firestore'u güncelle - trashReports koleksiyonu
       const trashRef = doc(db, 'trashReports', id as string);
       await updateDoc(trashRef, updates);
+      
+      // cleanedReports koleksiyonuna da ekle
+      const cleanedReportRef = doc(db, 'cleanedReports', id as string);
+      const timestamp = new Date();
+      
+      // Temizlenen atık raporu için veri hazırla
+      const cleanedReportData = {
+        ...trash, // Orijinal atık bilgilerini ekle
+        ...updates, // Temizlik bilgilerini ekle
+        createdAt: timestamp, // Temizleme raporu oluşturma zamanı
+        originalReportId: id, // Orijinal rapor ID'si
+        authorId: trash.authorId, // Atığı bildiren kullanıcı
+        cleanedBy: currentUser.uid, // Temizleyen kullanıcı
+        pointsAwarded: 20, // Verilen puan
+        cleaned: true,
+        status: 'cleaned'
+      };
+      
+      // cleanedReports koleksiyonuna ekle
+      await setDoc(cleanedReportRef, cleanedReportData);
       
       // Kullanıcının temizleme sayısını artır ve puan ekle
       const userRef = doc(db, 'users', currentUser.uid);
