@@ -18,8 +18,8 @@ import {
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { doc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { db, auth } from '../config/firebase';
 import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as Location from 'expo-location';
@@ -165,10 +165,20 @@ export default function TrashCleaned() {
 
       // Kullanıcı yeterince yakın, temizlik işlemine devam et
       const storage = getStorage();
+      const currentUser = auth.currentUser;
+      
+      if (!currentUser) {
+        Alert.alert('Hata', 'Kullanıcı bilgileriniz alınamadı. Lütfen tekrar giriş yapın.');
+        setSubmitting(false);
+        return;
+      }
+      
       const updates: any = {
         cleaned: true,
         cleanedAt: new Date(),
         cleaningInfo: additionalInfo || '',
+        status: 'cleaned',
+        cleanedBy: currentUser.uid,
         userLocation: {
           latitude: userLocation.coords.latitude,
           longitude: userLocation.coords.longitude
@@ -193,6 +203,13 @@ export default function TrashCleaned() {
       // Firestore'u güncelle
       const trashRef = doc(db, 'trashReports', id as string);
       await updateDoc(trashRef, updates);
+      
+      // Kullanıcının temizleme sayısını artır ve puan ekle
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, {
+        cleaned: increment(1),
+        points: increment(20)
+      });
 
       Alert.alert(
         'Başarılı',
