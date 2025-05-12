@@ -18,11 +18,11 @@ export default function BottomNavigation() {
 
   // Bildirim sayısını almak için optimize edilmiş fonksiyon
   const fetchUnreadCount = useCallback(async () => {
-    const user = auth.currentUser;
-    if (user) {
-      const count = await getUnreadCount(user.uid);
-      setUnreadCount(count);
-    }
+      const user = auth.currentUser;
+      if (user) {
+        const count = await getUnreadCount(user.uid);
+        setUnreadCount(count);
+      }
   }, []);
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function BottomNavigation() {
       >
         <Ionicons 
           name="menu-outline" 
-          size={24} 
+          size={28} 
           color={menuActive ? "#fff" : "#000"} 
         />
       </TouchableOpacity>
@@ -68,8 +68,9 @@ export default function BottomNavigation() {
         onPress={() => router.push('/(tabs)/MapScreen')}
       >
         <Ionicons 
-          name={isMapScreen ? "map" : "map-outline"} 
-          size={24} 
+        // name={isMapScreen ? "map" : "map-outline"} 
+          name={isMapScreen ? "earth" : "earth-outline"} 
+          size={28} 
           color={isMapScreen ? "#fff" : "#000"} 
         />
       </TouchableOpacity>
@@ -82,7 +83,7 @@ export default function BottomNavigation() {
       >
         <Ionicons 
           name={isHomePage ? "home" : "home-outline"} 
-          size={24} 
+          size={28} 
           color={isHomePage ? "#fff" : "#000"} 
         />
       </TouchableOpacity>
@@ -96,7 +97,7 @@ export default function BottomNavigation() {
         <View>
           <Ionicons 
             name={isNotificationsPage ? "notifications" : "notifications-outline"} 
-            size={24} 
+            size={28} 
             color={isNotificationsPage ? "#fff" : "#000"} 
           />
           {unreadCount > 0 && !isNotificationsPage && (
@@ -117,7 +118,7 @@ export default function BottomNavigation() {
       >
         <Ionicons 
           name={isProfilePage ? "person" : "person-outline"} 
-          size={24} 
+          size={28} 
           color={isProfilePage ? "#fff" : "#000"} 
         />
       </TouchableOpacity>
