@@ -10,14 +10,19 @@ import {
   ScrollView,
   Modal,
   TouchableWithoutFeedback,
+  ActivityIndicator,
+  Platform,
+  Alert,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
 import { getCurrentUser } from '../(auth)/services/authService';
-import { auth, db } from '../config/firebase';
-import { collection, query, where, orderBy, doc, getDoc, getDocs } from 'firebase/firestore';
+import { auth, db, storage } from '../config/firebase';
+import { collection, query, where, orderBy, doc, getDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
+import * as ImagePicker from 'expo-image-picker';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 export default function ProfilePage() {
   // Önce tab tipleri için bir type tanımlayalım
@@ -26,7 +31,13 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<TabType>('reported');
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [reportedItems, setReportedItems] = useState<any[]>([]); // State'i buraya taşıyalım
+  const [cleanedItems, setCleanedItems] = useState<any[]>([]); // Temizlenen öğeler için yeni state
   const slideAnim = useRef(new Animated.Value(0)).current;
+
+  // Profil fotoğrafı yükleme için state'ler
+  const [photoUploadModal, setPhotoUploadModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const animateSlider = (position: number) => {
     Animated.spring(slideAnim, {
@@ -55,7 +66,14 @@ export default function ProfilePage() {
         if (currentUser) {
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
           if (userDoc.exists()) {
-            setUserData(userDoc.data());
+            const userData = userDoc.data();
+            console.log('User data retrieved:', {
+              hasPhotoURL: Boolean(userData.photoURL),
+              hasProfilePicture: Boolean(userData.profilePicture),
+              photoURL: userData.photoURL || 'none',
+              profilePicture: userData.profilePicture || 'none'
+            });
+            setUserData(userData);
           }
         }
       } catch (error) {
@@ -126,6 +144,61 @@ export default function ProfilePage() {
     }
   }, [activeTab]);
 
+  // Cleaned items için useEffect ekleyelim
+  useEffect(() => {
+    const fetchCleanedItems = async () => {
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          // trashReports koleksiyonundan kullanıcının temizlediği atıkları getir
+          const cleanedTrashReportsRef = collection(db, 'trashReports');
+          const cleanedTrashQuery = query(
+            cleanedTrashReportsRef,
+            where('cleanedBy', '==', currentUser.uid),
+            where('status', '==', 'cleaned')
+          );
+          const cleanedTrashSnapshot = await getDocs(cleanedTrashQuery);
+          const cleanedTrashReports = cleanedTrashSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            source: 'trashReports'
+          }));
+          
+          // cleanedReports koleksiyonundan kullanıcının temizlediği atıkları getir
+          const cleanedReportsRef = collection(db, 'cleanedReports');
+          const cleanedReportsQuery = query(
+            cleanedReportsRef,
+            where('cleanedBy', '==', currentUser.uid)
+          );
+          const cleanedReportsSnapshot = await getDocs(cleanedReportsQuery);
+          const cleanedReports = cleanedReportsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            source: 'cleanedReports'
+          }));
+          
+          // İki koleksiyondan gelen verileri birleştir - ID'ler çakışabileceği için dikkatli ol
+          const allCleanedItems = [...cleanedTrashReports];
+          
+          // cleanedReports'tan gelen öğeleri ekle, ancak aynı ID'ye sahip olanları dahil etme
+          cleanedReports.forEach(report => {
+            if (!allCleanedItems.some(item => item.id === report.id)) {
+              allCleanedItems.push(report);
+            }
+          });
+          
+          setCleanedItems(allCleanedItems);
+        }
+      } catch (error) {
+        console.error('Error fetching cleaned items:', error);
+      }
+    };
+
+    if (activeTab === 'cleaned') {
+      fetchCleanedItems();
+    }
+  }, [activeTab]);
+
   // Menü işlemleri
   const toggleMenu = () => {
     setMenuVisible(!menuVisible);
@@ -158,6 +231,125 @@ export default function ProfilePage() {
   // Puan bilgisi modalını aç/kapat
   const togglePointsInfo = () => {
     setPointsInfoVisible(!pointsInfoVisible);
+  };
+
+  // Görsel seçme ve yükleme işlemleri için fonksiyonlar
+  const pickImage = async () => {
+    try {
+      // İzinleri kontrol et
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('İzin Gerekli', 'Galeriden fotoğraf seçebilmek için izin vermeniz gerekiyor.');
+          return;
+        }
+      }
+      
+      // Galeriyi aç
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+      
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        uploadImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Fotoğraf seçme hatası:', error);
+      Alert.alert('Hata', 'Fotoğraf seçilirken bir hata oluştu.');
+    }
+  };
+  
+  const takePicture = async () => {
+    try {
+      // İzinleri kontrol et
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('İzin Gerekli', 'Kamera kullanabilmek için izin vermeniz gerekiyor.');
+          return;
+        }
+      }
+      
+      // Kamerayı aç
+      let result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+      
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        uploadImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Kamera kullanma hatası:', error);
+      Alert.alert('Hata', 'Fotoğraf çekilirken bir hata oluştu.');
+    }
+  };
+  
+  const uploadImage = async (uri: string) => {
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
+      setPhotoUploadModal(false);
+      
+      // URI'den blob oluştur
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('Kullanıcı oturumu bulunamadı.');
+      }
+      
+      // Firebase Storage'a yükle
+      const storageRef = ref(storage, `profile_images/${currentUser.uid}_${new Date().getTime()}`);
+      const uploadTask = uploadBytesResumable(storageRef, blob);
+      
+      // İlerleme takibi
+      uploadTask.on('state_changed',
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(progress);
+        },
+        (error) => {
+          console.error('Fotoğraf yükleme hatası:', error);
+          Alert.alert('Hata', 'Profil fotoğrafı yüklenirken bir hata oluştu.');
+          setIsUploading(false);
+        },
+        async () => {
+          // Yükleme tamamlandı, URL'yi al
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          
+          // Kullanıcı belgesini güncelle
+          const userRef = doc(db, 'users', currentUser.uid);
+          await updateDoc(userRef, {
+            photoURL: downloadURL,
+            profilePicture: downloadURL // Geriye dönük uyumluluk için iki alanı da güncelle
+          });
+          
+          // Kullanıcı verilerini yeniden yükle
+          const userDoc = await getDoc(userRef);
+          if (userDoc.exists()) {
+            setUserData(userDoc.data());
+          }
+          
+          setIsUploading(false);
+          Alert.alert('Başarılı', 'Profil fotoğrafınız güncellendi.');
+        }
+      );
+    } catch (error) {
+      console.error('Fotoğraf yükleme işlemi hatası:', error);
+      Alert.alert('Hata', 'Profil fotoğrafı yüklenirken bir hata oluştu.');
+      setIsUploading(false);
+    }
+  };
+  
+  // Profil fotoğrafına tıklama
+  const handleProfileImagePress = () => {
+    setPhotoUploadModal(true);
   };
 
   return (
@@ -231,39 +423,51 @@ export default function ProfilePage() {
         <View style={styles.profileContent}>
           {/* Profile Image ve Puan */}
           <View style={styles.profileImageContainer}>
-            <Image
-              source={require('../../assets/images/profile-2.jpg')}
-              style={styles.profileImage}
-            />
-            
-            {/* Puan Göstergesi */}
-            <TouchableOpacity 
-              style={styles.pointsBadge}
-              onPress={togglePointsInfo}
-            >
-              <Text style={styles.pointsBadgeText} numberOfLines={1} ellipsizeMode="tail">
-                {userData?.points} P
-              </Text>
+            <TouchableOpacity onPress={handleProfileImagePress}>
+              {userData?.photoURL ? (
+                <View>
+                  <Image
+                    source={{ uri: userData.photoURL }}
+                    style={styles.profileImage}
+                  />
+                  <View style={styles.editIconContainer}>
+                    <MaterialIcons name="photo-camera" size={20} color="#fff" />
+                  </View>
+                </View>
+              ) : userData?.profilePicture ? (
+                <View>
+                  <Image
+                    source={{ uri: userData.profilePicture }}
+                    style={styles.profileImage}
+                  />
+                  <View style={styles.editIconContainer}>
+                    <MaterialIcons name="photo-camera" size={20} color="#fff" />
+                  </View>
+                </View>
+              ) : (
+                <View style={[styles.profileImage, styles.defaultProfileImage]}>
+                  <Ionicons name="person" size={50} color="#4B9363" />
+                  <View style={styles.editIconContainer}>
+                    <MaterialIcons name="photo-camera" size={20} color="#fff" />
+                  </View>
+                </View>
+              )}
             </TouchableOpacity>
-            
-            {/* Bilgi Butonu */}
-            {/* <TouchableOpacity 
-              style={styles.infoButton}
-              onPress={togglePointsInfo}
-            >
-              <Ionicons name="information-circle" size={20} color="#fff" />
-            </TouchableOpacity> */}
           </View>
           
           <Text style={styles.userName}>{userData?.name || 'Loading...'}</Text>
           <Text style={styles.userNickname}>@{userData?.username || 'Loading...'}</Text>
           
-          <Text style={styles.memberSince}>
-            Member since {userData?.createdAt?.toDate().toLocaleDateString('en-US', {
-              month: 'long',
-              year: 'numeric'
-            }) || 'Loading...'}
-          </Text>
+          {/* Puan Göstergesi - Kullanıcı adından sonra yerleştirildi */}
+          <TouchableOpacity 
+            style={styles.pointsBadgeStandalone}
+            onPress={togglePointsInfo}
+          >
+            <Text style={styles.pointsBadgeText} numberOfLines={1} ellipsizeMode="tail">
+              {userData?.points || 0} P
+            </Text>
+            <Ionicons name="leaf" size={12} color="#fff" style={{marginLeft: 8}} />
+          </TouchableOpacity>
 
           <View style={styles.statsContainer}>
             <TouchableOpacity 
@@ -280,7 +484,7 @@ export default function ProfilePage() {
               style={styles.statItem} 
               onPress={() => handleTabPress('cleaned')}
             >
-              <Text style={styles.statNumber}>{userData?.cleaned || 0}</Text>
+              <Text style={styles.statNumber}>{cleanedItems?.length || 0}</Text>
               <Text style={styles.statLabel}>Cleaned</Text>
             </TouchableOpacity>
             
@@ -374,9 +578,121 @@ export default function ProfilePage() {
               )}
             </View>
           )}
+          {activeTab === 'cleaned' && (
+            <View style={styles.postsContainer}>
+              {cleanedItems && cleanedItems.length > 0 ? (
+                cleanedItems.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.postCard}
+                    onPress={() => router.push({
+                      pathname: '/(tabs)/TrashDetailPage',
+                      params: { id: item.id }
+                    })}
+                  >
+                    {item.imageUrls && item.imageUrls.length > 0 ? (
+                      <Image
+                        source={{ uri: item.imageUrls[0] }}
+                        style={styles.postImage}
+                      />
+                    ) : item.afterCleaningImage ? (
+                      <Image
+                        source={{ uri: item.afterCleaningImage }}
+                        style={styles.postImage}
+                      />
+                    ) : item.beforeCleaningImage ? (
+                      <Image
+                        source={{ uri: item.beforeCleaningImage }}
+                        style={styles.postImage}
+                      />
+                    ) : (
+                      <View style={[styles.postImage, styles.defaultPostImage]}>
+                        <Ionicons name="image-outline" size={30} color="#ccc" />
+                      </View>
+                    )}
+                    <View style={styles.postInfo}>
+                      <Text style={styles.cleanedTitle}>CLEANED</Text>
+                      <View style={styles.locationContainer}>
+                        <Ionicons name="location-outline" size={16} color="#666" />
+                        <Text style={styles.postLocation}>
+                          {item.location ? `${item.location.latitude.toFixed(4)}, ${item.location.longitude.toFixed(4)}` : 'No Location'}
+                        </Text>
+                      </View>
+                      <Text style={styles.postDate}>
+                        {item.cleanedAt ? new Date(item.cleanedAt.seconds * 1000).toLocaleDateString() : 
+                         item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'No Date'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.noPostsText}>No cleaned items found</Text>
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
 
+      {/* Photo Upload Modal */}
+      <Modal
+        transparent={true}
+        visible={photoUploadModal}
+        animationType="slide"
+        onRequestClose={() => setPhotoUploadModal(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setPhotoUploadModal(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.photoUploadModal}>
+                <Text style={styles.photoUploadTitle}>Profil Fotoğrafı Ekle</Text>
+                
+                <TouchableOpacity 
+                  style={styles.photoUploadOption}
+                  onPress={takePicture}
+                >
+                  <Ionicons name="camera" size={24} color="#4B9363" />
+                  <Text style={styles.photoUploadOptionText}>Kamera ile Çek</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.photoUploadOption}
+                  onPress={pickImage}
+                >
+                  <Ionicons name="image" size={24} color="#4B9363" />
+                  <Text style={styles.photoUploadOptionText}>Galeriden Seç</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.photoUploadCancel}
+                  onPress={() => setPhotoUploadModal(false)}
+                >
+                  <Text style={styles.photoUploadCancelText}>İptal</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+      
+      {/* Upload Progress Indicator */}
+      {isUploading && (
+        <View style={styles.uploadProgressContainer}>
+          <View style={styles.uploadProgressBox}>
+            <Text style={styles.uploadProgressTitle}>Fotoğraf Yükleniyor</Text>
+            <ActivityIndicator size="large" color="#4B9363" />
+            <View style={styles.progressBarContainer}>
+              <View 
+                style={[
+                  styles.progressBar, 
+                  { width: `${uploadProgress}%` }
+                ]} 
+              />
+            </View>
+            <Text style={styles.uploadProgressText}>{Math.round(uploadProgress)}%</Text>
+          </View>
+        </View>
+      )}
+      
       {/* Points Info Modal */}
       <Modal
         transparent={true}
@@ -490,29 +806,25 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderRadius: 60,
   },
-  pointsBadge: {
-    position: 'absolute',
-    bottom: 0, // Profil fotoğrafının altında
-    right: -18, // Sağa taşı, profil fotoğrafından taşmayacak şekilde
+  pointsBadgeStandalone: {
     backgroundColor: '#4B9363',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#D9D9D9',
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
-    minWidth: 50, // Minimum genişlik ayarla
-    maxWidth: 100, // Maximum genişlik sınırla
-    // elevation: 3,
-    // shadowColor: '#000',
-    // shadowOffset: { width: 0, height: 2 },
-    // shadowOpacity: 0.2,
-    // shadowRadius: 3,
+    justifyContent: 'center',
+    marginBottom: 12,
+    marginTop: 2,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   pointsBadgeText: {
     color: 'white',
-    fontSize: 14, // Biraz küçült
+    fontSize: 14,
     fontWeight: 'bold',
   },
   infoButton: {
@@ -776,5 +1088,118 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  defaultProfileImage: {
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editIconContainer: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#4B9363',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  photoUploadModal: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  },
+  photoUploadTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  photoUploadOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  photoUploadOptionText: {
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 15,
+  },
+  photoUploadCancel: {
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  photoUploadCancelText: {
+    fontSize: 16,
+    color: '#FF3B30',
+    fontWeight: '500',
+  },
+  uploadProgressContainer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  uploadProgressBox: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  uploadProgressTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#333',
+  },
+  progressBarContainer: {
+    width: '100%',
+    height: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+    marginVertical: 15,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#4B9363',
+  },
+  uploadProgressText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  cleanedTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4B9363',
+    marginBottom: 4,
+  },
+  defaultPostImage: {
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
