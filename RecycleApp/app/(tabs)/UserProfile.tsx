@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -6,194 +6,203 @@ import {
   Image,
   TouchableOpacity,
   SafeAreaView,
+  Animated,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
+import { auth, db } from '../config/firebase';
+import { collection, query, where, orderBy, doc, getDoc, getDocs } from 'firebase/firestore';
 
 export default function UserProfile() {
-  const [activeTab, setActiveTab] = useState('reported'); // 'reported', 'cleaned', veya 'post'
+  // Tab tipleri için type tanımı
+  type TabType = 'reported' | 'cleaned' | 'post';
 
-  const renderReportedContent = () => {
-    if (activeTab !== 'reported') return null;
+  const { userId } = useLocalSearchParams();
+  const [activeTab, setActiveTab] = useState<TabType>('reported');
+  const [userData, setUserData] = useState<any>(null);
+  const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [reportedItems, setReportedItems] = useState<any[]>([]);
+  const [cleanedItems, setCleanedItems] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Animasyon değeri
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
-    const reportedItems = Array(10).fill(null);
+  // Slider animasyonu için fonksiyon
+  const animateSlider = (position: number) => {
+    Animated.spring(slideAnim, {
+      toValue: position,
+      useNativeDriver: true,
+    }).start();
+  };
 
+  // Tab seçme işlevi
+  const handleTabPress = (tab: TabType) => {
+    setActiveTab(tab);
+    animateSlider(tab === 'reported' ? 0 : tab === 'cleaned' ? 120 : 240);
+  };
+
+  // Kullanıcı verilerini fetch etme
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setIsLoading(true);
+        if (!userId) {
+          console.error('No userId provided');
+          router.back();
+          return;
+        }
+        
+        // Kullanıcı bilgilerini getir
+        const userDoc = await getDoc(doc(db, 'users', userId as string));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          console.log('User data retrieved:', userData);
+          setUserData(userData);
+        } else {
+          console.error('User not found');
+          router.back();
+          return;
+        }
+        
+        // Kullanıcının postlarını getir
+        await fetchUserPosts();
+        
+        // Reported items'ları getir
+        await fetchReportedItems();
+        
+        // Cleaned items'ları getir
+        await fetchCleanedItems();
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [userId]);
+
+  // Kullanıcının postlarını getir
+  const fetchUserPosts = async () => {
+    try {
+      if (!userId) return;
+      
+      const postsRef = collection(db, 'posts');
+      const q = query(
+        postsRef,
+        where('authorId', '==', userId)
+      );
+      const querySnapshot = await getDocs(q);
+      const posts = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      console.log('Fetched posts:', posts.length);
+      setUserPosts(posts);
+    } catch (error) {
+      console.error('Error fetching user posts:', error);
+    }
+  };
+
+  // Reported items'ları getir
+  const fetchReportedItems = async () => {
+    try {
+      if (!userId) return;
+      
+      const reportsRef = collection(db, 'trashReports');
+      const q = query(
+        reportsRef,
+        where('authorId', '==', userId),
+        where('status', '==', 'reported')
+      );
+      const querySnapshot = await getDocs(q);
+      const reports = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      console.log('Fetched reported items:', reports.length);
+      setReportedItems(reports);
+    } catch (error) {
+      console.error('Error fetching reported items:', error);
+    }
+  };
+
+  // Cleaned items'ları getir
+  const fetchCleanedItems = async () => {
+    try {
+      if (!userId) return;
+      
+      // trashReports koleksiyonundan kullanıcının temizlediği atıkları getir
+      const cleanedTrashReportsRef = collection(db, 'trashReports');
+      const cleanedTrashQuery = query(
+        cleanedTrashReportsRef,
+        where('cleanedBy', '==', userId),
+        where('status', '==', 'cleaned')
+      );
+      const cleanedTrashSnapshot = await getDocs(cleanedTrashQuery);
+      const cleanedTrashReports = cleanedTrashSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        source: 'trashReports'
+      }));
+      
+      // cleanedReports koleksiyonundan kullanıcının temizlediği atıkları getir
+      const cleanedReportsRef = collection(db, 'cleanedReports');
+      const cleanedReportsQuery = query(
+        cleanedReportsRef,
+        where('cleanedBy', '==', userId)
+      );
+      const cleanedReportsSnapshot = await getDocs(cleanedReportsQuery);
+      const cleanedReports = cleanedReportsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        source: 'cleanedReports'
+      }));
+      
+      // İki koleksiyondan gelen verileri birleştir - ID'ler çakışabileceği için dikkatli ol
+      const allCleanedItems = [...cleanedTrashReports];
+      
+      // cleanedReports'tan gelen öğeleri ekle, ancak aynı ID'ye sahip olanları dahil etme
+      cleanedReports.forEach(report => {
+        if (!allCleanedItems.some(item => item.id === report.id)) {
+          allCleanedItems.push(report);
+        }
+      });
+      
+      console.log('Fetched all cleaned items:', allCleanedItems.length);
+      setCleanedItems(allCleanedItems);
+    } catch (error) {
+      console.error('Error fetching cleaned items:', error);
+    }
+  };
+
+  // Yükleme durumunda gösterilecek ekran
+  if (isLoading) {
     return (
-      <ScrollView 
-        style={styles.cleanedContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {reportedItems.map((_, index) => (
-          <TouchableOpacity key={index} style={styles.cleanedCard}>
-            <Image
-              source={require('../../assets/images/plastic-waste.jpg')}
-              style={styles.cleanedImage}
-            />
-            <View style={styles.cleanedContent}>
-              <Text style={styles.reportedTitle}>REPORTED</Text>
-              <View style={styles.wasteTypesContainer}>
-                <View style={styles.wasteTypes}>
-                  <MaterialCommunityIcons name="bottle-wine" size={20} color="#4B9363" />
-                  <MaterialCommunityIcons name="newspaper" size={20} color="#4B9363" />
-                  <MaterialCommunityIcons name="glass-wine" size={20} color="#4B9363" />
-                  <MaterialCommunityIcons name="smoking" size={20} color="#4B9363" />
-                </View>
-                <View style={styles.trashIcons}>
-                  <MaterialCommunityIcons name="delete" size={20} color="#4B9363" style={{ marginRight: 4 }} />
-                  <MaterialCommunityIcons name="delete-outline" size={20} color="#4B9363" />
-                </View>
-              </View>
-              <View style={styles.locationDateContainer}>
-                <View style={styles.locationContainer}>
-                  <Ionicons name="location-outline" size={16} color="#666" />
-                  <Text style={styles.locationText}>Sakarya, TR</Text>
-                </View>
-                <View style={styles.dateContainer}>
-                  <Ionicons name="calendar-outline" size={16} color="#666" />
-                  <Text style={styles.dateText}>10/03/2024</Text>
-                </View>
-              </View>
-            </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <MaterialIcons name="chevron-left" size={24} color="#000" />
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+          <Text style={styles.headerTitle}>USER PROFILE</Text>
+          <View style={{width: 40}} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4B9363" />
+          <Text style={styles.loadingText}>Yükleniyor...</Text>
+        </View>
+        <BottomNavigation />
+      </SafeAreaView>
     );
-  };
-
-  const renderPosts = () => {
-    if (activeTab !== 'post') return null;
-
-    return (
-      <View style={styles.postsContainer}>
-        {/* İlk Post */}
-        <TouchableOpacity style={styles.postCard}>
-          <Image
-            source={require('../../assets/images/plastic-waste.jpg')}
-            style={styles.postImage}
-          />
-          <View style={styles.postContent}>
-            <Text style={styles.postTitle} numberOfLines={1} ellipsizeMode="tail">
-              PLASTİK ATIKLARIN GERİ DÖNÜŞÜMÜ
-            </Text>
-            <Text style={styles.postDescription} numberOfLines={1} ellipsizeMode="tail">
-              Lorem ipsum dolor sit amet consectetur
-            </Text>
-            <View style={styles.postTags}>
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>plastic</Text>
-              </View>
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>waste</Text>
-              </View>
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>recycle</Text>
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-
-        {/* İkinci Post */}
-        <TouchableOpacity style={styles.postCard}>
-          <Image
-            source={require('../../assets/images/plastic-waste.jpg')}
-            style={styles.postImage}
-          />
-          <View style={styles.postContent}>
-            <Text style={styles.postTitle} numberOfLines={1} ellipsizeMode="tail">
-              PLASTİK ATIKLARIN GERİ DÖNÜŞÜMÜ
-            </Text>
-            <Text style={styles.postDescription} numberOfLines={1} ellipsizeMode="tail">
-              Lorem ipsum dolor sit amet consectetur
-            </Text>
-            <View style={styles.postTags}>
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>plastic</Text>
-              </View>
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>waste</Text>
-              </View>
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>recycle</Text>
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-
-        {/* Üçüncü Post */}
-        <TouchableOpacity style={styles.postCard}>
-          <Image
-            source={require('../../assets/images/plastic-waste.jpg')}
-            style={styles.postImage}
-          />
-          <View style={styles.postContent}>
-            <Text style={styles.postTitle} numberOfLines={1} ellipsizeMode="tail">
-              PLASTİK ATIKLARIN GERİ DÖNÜŞÜMÜ
-            </Text>
-            <Text style={styles.postDescription} numberOfLines={1} ellipsizeMode="tail">
-              Lorem ipsum dolor sit amet consectetur
-            </Text>
-            <View style={styles.postTags}>
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>plastic</Text>
-              </View>
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>waste</Text>
-              </View>
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>recycle</Text>
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
-  const renderCleanedContent = () => {
-    if (activeTab !== 'cleaned') return null;
-
-    const cleanedItems = Array(7).fill(null);
-
-    return (
-      <ScrollView style={styles.cleanedContainer}>
-        {cleanedItems.map((_, index) => (
-          <TouchableOpacity key={index} style={styles.cleanedCard}>
-            <Image
-              source={require('../../assets/images/plastic-waste.jpg')}
-              style={styles.cleanedImage}
-            />
-            <View style={styles.cleanedContent}>
-              <Text style={styles.cleanedTitle}>CLEANED</Text>
-              <View style={styles.wasteTypesContainer}>
-                <View style={styles.wasteTypes}>
-                  <MaterialCommunityIcons name="bottle-wine" size={20} color="#4B9363" />
-                  <MaterialCommunityIcons name="newspaper" size={20} color="#4B9363" />
-                  <MaterialCommunityIcons name="glass-wine" size={20} color="#4B9363" />
-                  <MaterialCommunityIcons name="smoking" size={20} color="#4B9363" />
-                </View>
-                <View style={styles.trashIcons}>
-                  <MaterialCommunityIcons name="delete" size={20} color="#4B9363" style={{ marginRight: 4 }} />
-                  <MaterialCommunityIcons name="delete-outline" size={20} color="#4B9363" />
-                </View>
-              </View>
-              <View style={styles.locationDateContainer}>
-                <View style={styles.locationContainer}>
-                  <Ionicons name="location-outline" size={16} color="#666" />
-                  <Text style={styles.locationText}>Sakarya, TR</Text>
-                </View>
-                <View style={styles.dateContainer}>
-                  <Ionicons name="calendar-outline" size={16} color="#666" />
-                  <Text style={styles.dateText}>10/03/2024</Text>
-                </View>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    );
-  };
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -203,40 +212,52 @@ export default function UserProfile() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <MaterialIcons name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>USER PROFILE</Text>
-        <TouchableOpacity style={styles.alertButton}>
-          <Ionicons name="alert-circle-outline" size={24} color="#000" />
-        </TouchableOpacity>
+        <View style={{width: 40}} />
       </View>
 
-      {/* Main Container */}
-      <View style={styles.mainContainer}>
+      {/* Main Content Container */}
+      <ScrollView style={styles.mainContainer}>
         {/* Profile Content */}
         <View style={styles.profileContent}>
-          <Image
-            source={require('../../assets/images/profile.jpg')}
-            style={styles.profileImage}
-          />
+          {/* Profile Image ve Puan */}
+          <View style={styles.profileImageContainer}>
+            {userData?.photoURL ? (
+              <Image
+                source={{ uri: userData.photoURL }}
+                style={styles.profileImage}
+              />
+            ) : userData?.profilePicture ? (
+              <Image
+                source={{ uri: userData.profilePicture }}
+                style={styles.profileImage}
+              />
+            ) : (
+              <View style={[styles.profileImage, styles.defaultProfileImage]}>
+                <Ionicons name="person" size={50} color="#4B9363" />
+              </View>
+            )}
+          </View>
           
-          <Text style={styles.userName}>Fahri Coşkun</Text>
-          <Text style={styles.userNickname}>@wiodex</Text>
+          <Text style={styles.userName}>{userData?.name || 'User'}</Text>
+          <Text style={styles.userNickname}>@{userData?.username || 'username'}</Text>
           
-        {/* <Text style={styles.memberSince}>Member since January 2025</Text>
-
-<View style={styles.pointsContainer}>
-  <Text style={styles.pointsNumber}>200</Text>
-  <Text style={styles.pointsText}>Point</Text>
-</View> */}
-
+          {/* Puan Göstergesi - Kullanıcı adından sonra yerleştirildi */}
+          <View style={styles.pointsBadgeStandalone}>
+            <Text style={styles.pointsBadgeText} numberOfLines={1} ellipsizeMode="tail">
+              {userData?.points || 0} P
+            </Text>
+            <Ionicons name="leaf" size={12} color="#fff" style={{marginLeft: 4}} />
+          </View>
 
           <View style={styles.statsContainer}>
             <TouchableOpacity 
               style={styles.statItem} 
-              onPress={() => setActiveTab('reported')}
+              onPress={() => handleTabPress('reported')}
             >
-              <Text style={styles.statNumber}>10</Text>
+              <Text style={styles.statNumber}>{reportedItems?.length || 0}</Text>
               <Text style={styles.statLabel}>Reported</Text>
             </TouchableOpacity>
             
@@ -244,9 +265,9 @@ export default function UserProfile() {
             
             <TouchableOpacity 
               style={styles.statItem} 
-              onPress={() => setActiveTab('cleaned')}
+              onPress={() => handleTabPress('cleaned')}
             >
-              <Text style={styles.statNumber}>7</Text>
+              <Text style={styles.statNumber}>{cleanedItems?.length || 0}</Text>
               <Text style={styles.statLabel}>Cleaned</Text>
             </TouchableOpacity>
             
@@ -254,27 +275,153 @@ export default function UserProfile() {
             
             <TouchableOpacity 
               style={styles.statItem} 
-              onPress={() => setActiveTab('post')}
+              onPress={() => handleTabPress('post')}
             >
-              <Text style={styles.statNumber}>3</Text>
+              <Text style={styles.statNumber}>{userPosts?.length || 0}</Text>
               <Text style={styles.statLabel}>Post</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.progressContainer}>
             <View style={styles.baseProgress} />
-            <View style={[
-              styles.activeProgress,
-              { left: activeTab === 'reported' ? 0 : activeTab === 'cleaned' ? 120 : 240 }
-            ]} />
+            <Animated.View
+              style={[
+                styles.activeProgress,
+                {
+                  transform: [{ translateX: slideAnim }],
+                },
+              ]}
+            />
           </View>
-          {renderReportedContent()}
-          {renderCleanedContent()}
-          {renderPosts()}
-        </View>
-      </View>
 
-      {/* Bottom Navigation */}
+          {activeTab === 'post' && (
+            <View style={styles.postsContainer}>
+              {userPosts && userPosts.length > 0 ? (
+                userPosts.map((post) => (
+                  <TouchableOpacity
+                    key={post.id}
+                    style={styles.postCard}
+                    onPress={() => router.push({
+                      pathname: '/(tabs)/PostDetail',
+                      params: { id: post.id }
+                    })}
+                  >
+                    <Image
+                      source={{ uri: post.imageUrl }}
+                      style={styles.postImage}
+                    />
+                    <View style={styles.postInfo}>
+                      <Text style={styles.postTitle}>{post.title || 'No Title'}</Text>
+                      <Text style={styles.postLocation}>{post.location || 'No Location'}</Text>
+                      <Text style={styles.postDate}>
+                        {post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleDateString() : 'No Date'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.noPostsText}>No posts found</Text>
+              )}
+            </View>
+          )}
+
+          {activeTab === 'reported' && (
+            <View style={styles.postsContainer}>
+              {reportedItems && reportedItems.length > 0 ? (
+                reportedItems.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.postCard}
+                    onPress={() => router.push({
+                      pathname: '/(tabs)/TrashDetailPage',
+                      params: { id: item.id }
+                    })}
+                  >
+                    {item.imageUrls && item.imageUrls.length > 0 ? (
+                      <Image
+                        source={{ uri: item.imageUrls[0] }}
+                        style={styles.postImage}
+                      />
+                    ) : (
+                      <View style={[styles.postImage, { backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }]}>
+                        <Ionicons name="image-outline" size={30} color="#ccc" />
+                      </View>
+                    )}
+                    <View style={styles.postInfo}>
+                      <Text style={styles.reportedTitle}>REPORTED</Text>
+                      <View style={styles.locationContainer}>
+                        <Ionicons name="location-outline" size={16} color="#666" />
+                        <Text style={styles.postLocation}>
+                          {item.location ? `${item.location.latitude.toFixed(4)}, ${item.location.longitude.toFixed(4)}` : 'No Location'}
+                        </Text>
+                      </View>
+                      <Text style={styles.postDate}>
+                        {item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'No Date'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.noPostsText}>No reported items found</Text>
+              )}
+            </View>
+          )}
+
+          {activeTab === 'cleaned' && (
+            <View style={styles.postsContainer}>
+              {cleanedItems && cleanedItems.length > 0 ? (
+                cleanedItems.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.postCard}
+                    onPress={() => router.push({
+                      pathname: '/(tabs)/TrashDetailPage',
+                      params: { id: item.id }
+                    })}
+                  >
+                    {item.imageUrls && item.imageUrls.length > 0 ? (
+                      <Image
+                        source={{ uri: item.imageUrls[0] }}
+                        style={styles.postImage}
+                      />
+                    ) : item.afterCleaningImage ? (
+                      <Image
+                        source={{ uri: item.afterCleaningImage }}
+                        style={styles.postImage}
+                      />
+                    ) : item.beforeCleaningImage ? (
+                      <Image
+                        source={{ uri: item.beforeCleaningImage }}
+                        style={styles.postImage}
+                      />
+                    ) : (
+                      <View style={[styles.postImage, { backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }]}>
+                        <Ionicons name="image-outline" size={30} color="#ccc" />
+                      </View>
+                    )}
+                    <View style={styles.postInfo}>
+                      <Text style={styles.cleanedTitle}>CLEANED</Text>
+                      <View style={styles.locationContainer}>
+                        <Ionicons name="location-outline" size={16} color="#666" />
+                        <Text style={styles.postLocation}>
+                          {item.location ? `${item.location.latitude.toFixed(4)}, ${item.location.longitude.toFixed(4)}` : 'No Location'}
+                        </Text>
+                      </View>
+                      <Text style={styles.postDate}>
+                        {item.cleanedAt ? new Date(item.cleanedAt.seconds * 1000).toLocaleDateString() : 
+                         item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'No Date'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.noPostsText}>No cleaned items found</Text>
+              )}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+
       <BottomNavigation />
     </SafeAreaView>
   );
@@ -289,72 +436,89 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E8E8E8',
   },
   mainContainer: {
     flex: 1,
   },
+  profileContent: {
+    alignItems: 'center',
+    paddingTop: 24,
+    paddingBottom: 100, // Alt kısımda extra boşluk
+  },
   backButton: {
-    padding: 4,
+    padding: 8,
+    width: 40,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
   },
-  alertButton: {
-    padding: 4,
-  },
-  profileContent: {
-    alignItems: 'center',
-    paddingTop: 24,
+  loadingContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  profileImageContainer: {
+    position: 'relative',
+    marginBottom: 16,
+    alignItems: 'center',
   },
   profileImage: {
     width: 100,
     height: 100,
-    borderColor: '#696969',
+    borderColor: '#D9D9D9',
     borderWidth: 2,
     borderRadius: 60,
-    marginBottom: 16, // Profil fotoğrafı ile isim arası
+  },
+  defaultProfileImage: {
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pointsBadgeStandalone: {
+    backgroundColor: '#4B9363',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    marginTop: 2,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  pointsBadgeText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   userName: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 4, // İsim ile nickname arası
+    marginBottom: 4,
   },
   userNickname: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 16, // Nickname ile member since arası
-  },
-  memberSince: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 14,
-    color: '#696969',
-    marginBottom: 8,
-    fontStyle: 'italic',
-  },
-  pointsContainer: {
-    alignItems: 'center',
-    marginBottom: 6, // Points ile stats arası
-  },
-  pointsNumber: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 22,
-    color: '#4B9363',
-  },
-  pointsText: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 12,
-    color: '#666',
+    marginBottom: 16,
   },
   statsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 8,
   },
   statItem: {
     alignItems: 'center',
@@ -389,142 +553,76 @@ const styles = StyleSheet.create({
   },
   activeProgress: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
     width: 120,
     height: 2,
     backgroundColor: '#4B9363',
   },
   postsContainer: {
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    marginTop: 24,
     width: '100%',
-    gap: 8,
-    alignItems: 'center',
+    paddingHorizontal: 24,
+    marginTop: 16,
+    flex: 1,
   },
   postCard: {
     flexDirection: 'row',
     backgroundColor: '#fff',
-    borderRadius: 8,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    width: 360,
+    borderRadius: 12,
+    marginBottom: 12,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    minHeight: 100,
   },
   postImage: {
-    width: 100,
-    height: 100,
+    width: 80,
+    height: 80,
+    borderRadius: 8,
   },
-  postContent: {
+  postInfo: {
     flex: 1,
-    padding: 12,
+    marginLeft: 12,
+    justifyContent: 'center',
   },
   postTitle: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: '600',
     marginBottom: 4,
-    width: 240,
   },
-  postDescription: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 12,
-    color: '#666666',
-    marginBottom: 8,
-    width: 240,
-  },
-  postTags: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  tag: {
-    backgroundColor: '#E8F5E9',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  tagText: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 10,
-    color: '#4B9363',
-  },
-  cleanedContainer: {
-    flex: 1,
-    width: '100%',
-    marginTop: 32,
-  },
-  cleanedCard: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    width: 360,
-    height: 100,
-    marginBottom: 8,
-    alignSelf: 'center',
-  },
-  cleanedImage: {
-    width: 100,
-    height: 100,
-  },
-  cleanedContent: {
-    flex: 1,
-    padding: 12,
+  reportedTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FF0000',
+    marginBottom: 4,
   },
   cleanedTitle: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: '600',
     color: '#4B9363',
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  wasteTypesContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+  postLocation: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
   },
-  wasteTypes: {
-    flexDirection: 'row',
-    gap: 4,
+  postDate: {
+    fontSize: 12,
+    color: '#999',
   },
-  trashIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  locationDateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  noPostsText: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#666',
+    marginTop: 20,
+    fontFamily: 'Poppins-Regular',
   },
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    gap: 4,
+    marginBottom: 4,
   },
-  locationText: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  dateText: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-  },
-  reportedTitle: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 14,
-    color: '#FF0000',
-    marginBottom: 8,
-  },
-
 }); 
