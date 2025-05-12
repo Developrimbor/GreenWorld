@@ -69,6 +69,7 @@ export default function MapScreen() {
   // Hata mesajı state'leri
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showNoSpotsModal, setShowNoSpotsModal] = useState(false);
 
   const requestLocationPermission = async () => {
     try {
@@ -336,11 +337,11 @@ export default function MapScreen() {
       setVisibleTrashReports(visibleSpots);
       
       if (visibleSpots.length === 0) {
-        Alert.alert('Bilgi', 'Bu alanda görüntülenecek atık noktası bulunamadı.');
+        setShowNoSpotsModal(true);
       }
     }).catch(error => {
-      console.error('Harita sınırları alınamadı:', error);
-      Alert.alert('Hata', 'Atık noktaları görüntülenemedi. Lütfen tekrar deneyin.');
+      console.error('Map boundaries could not be obtained:', error);
+      Alert.alert('Error', 'Waste points could not be displayed. Please try again.');
     });
   };
 
@@ -695,14 +696,14 @@ export default function MapScreen() {
             <TouchableWithoutFeedback>
               <View style={styles.infoDialogContainer}>
                 <View style={styles.infoDialogHeader}>
-                  <Text style={styles.infoDialogTitle}>Konum Doğrulama Sistemi</Text>
-                  <TouchableOpacity onPress={() => setShowInfoDialog(false)}>
+                  <Text style={styles.infoDialogTitle}>Location Verification System</Text>
+                  {/* <TouchableOpacity onPress={() => setShowInfoDialog(false)}>
                     <Ionicons name="close" size={24} color="#000" />
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
                 </View>
 
                 <Text style={styles.infoDialogDescription}>
-                  RecycleApp, atık temizleme işlemlerinin gerçek ve doğru olmasını sağlamak için konum doğrulama sistemini kullanır.
+                  RecycleApp uses location verification to ensure that waste removal is real and accurate.
                 </Text>
 
                 <View style={styles.infoStep}>
@@ -710,7 +711,7 @@ export default function MapScreen() {
                     <Text style={styles.infoStepNumberText}>1</Text>
                   </View>
                   <Text style={styles.infoStepText}>
-                    Atık bildirimi yaparken, uygulama konumunuzu alır ve çevrenizde 30 metrelik bir alan belirler.
+                    When reporting waste, the app takes your location and defines a 30-meter radius around you.
                   </Text>
                 </View>
 
@@ -719,7 +720,7 @@ export default function MapScreen() {
                     <Text style={styles.infoStepNumberText}>2</Text>
                   </View>
                   <Text style={styles.infoStepText}>
-                    Atık noktası yalnızca bu alan içinde işaretlenebilir, bu da atığın gerçekten orada olduğunu doğrular.
+                    The waste point can only be marked within this area, which confirms that the waste is actually there.
                   </Text>
                 </View>
 
@@ -728,7 +729,7 @@ export default function MapScreen() {
                     <Text style={styles.infoStepNumberText}>3</Text>
                   </View>
                   <Text style={styles.infoStepText}>
-                    Temizlik yapmak istediğinizde, atık noktasına en fazla 100 metre mesafede olmanız gerekir.
+                    When cleaning, you must be within 100 meters of the waste point.
                   </Text>
                 </View>
 
@@ -737,7 +738,7 @@ export default function MapScreen() {
                     <Text style={styles.infoStepNumberText}>4</Text>
                   </View>
                   <Text style={styles.infoStepText}>
-                    Bu sistem, sahte bildirimler ve temizlikleri engelleyerek uygulamanın güvenilirliğini sağlar.
+                    This system prevents false reports and cleanings, ensuring the reliability of the app.
                   </Text>
                 </View>
 
@@ -750,7 +751,7 @@ export default function MapScreen() {
                     });
                   }}
                 >
-                  <Text style={styles.infoDialogButtonText}>Anladım, Devam Et</Text>
+                  <Text style={styles.infoDialogButtonText}>Let's Clean Up</Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
@@ -774,6 +775,26 @@ export default function MapScreen() {
               onPress={() => closeErrorModal()}
             >
               <Text style={styles.errorModalButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* No Waste Points Modal */}
+      <Modal
+        visible={showNoSpotsModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowNoSpotsModal(false)}
+      >
+        <View style={styles.errorModalOverlay}>
+          <View style={styles.noSpotsModalContainer}>
+            <Text style={styles.noSpotsModalTitle}>No waste points to display in this field.</Text>
+            <TouchableOpacity 
+              style={styles.noSpotsModalButton}
+              onPress={() => setShowNoSpotsModal(false)}
+            >
+              <Text style={styles.noSpotsModalButtonText}>OK</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -805,6 +826,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     padding: 8,
+    paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: 'transparent',
@@ -845,7 +867,7 @@ const styles = StyleSheet.create({
   topButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     paddingBottom: 8,
     backgroundColor: 'transparent',
     zIndex: 10,
@@ -853,7 +875,7 @@ const styles = StyleSheet.create({
   topButton: {
     width: 40,
     height: 40,
-    borderRadius: 24,
+    borderRadius: 8,
     backgroundColor: '#4B9363',
     alignItems: 'center',
     justifyContent: 'center',
@@ -872,7 +894,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     paddingVertical: 8,
     justifyContent: 'space-between',
     backgroundColor: 'transparent',
@@ -881,11 +903,11 @@ const styles = StyleSheet.create({
   reportButton: {
     flexDirection: 'row',
     backgroundColor: 'rgba(255, 255, 255, 1)', // Yarı şeffaf beyaz
-    borderRadius: 24,
-    paddingHorizontal: 20,
+    borderRadius: 8,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     alignItems: 'center',
-    justifyContent: 'center',
+    // justifyContent: 'center',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: {
@@ -904,11 +926,11 @@ const styles = StyleSheet.create({
   viewButton: {
     flexDirection: 'row',
     backgroundColor: 'rgba(255, 255, 255, 1)', // Yarı şeffaf beyaz
-    borderRadius: 24,
-    paddingHorizontal: 20,
+    borderRadius: 8,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     alignItems: 'center',
-    justifyContent: 'center',
+    // justifyContent: 'center',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: {
@@ -921,6 +943,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#000',
     fontFamily: 'Poppins-Medium',
+    textAlign: 'center',
     fontSize: 14,
     marginLeft: 8,
   },
@@ -932,12 +955,12 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     position: 'absolute',
-    left: 16,
+    left: 24,
     bottom: 80,
     backgroundColor: '#4B9363',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 24,
+    borderRadius: 8,
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: {
@@ -1073,7 +1096,7 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     position: 'absolute',
-    right: 16,
+    right: 24,
     bottom: 80,
     backgroundColor: '#e74c3c',
     paddingHorizontal: 24,
@@ -1163,5 +1186,39 @@ const styles = StyleSheet.create({
     // backgroundColor: '#E8E8E8',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  noSpotsModalContainer: {
+    width: '85%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  noSpotsModalTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+    color: '#333',
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  noSpotsModalButton: {
+    backgroundColor: '#4B9363',
+    paddingHorizontal: 40,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  noSpotsModalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
   },
 }); 
