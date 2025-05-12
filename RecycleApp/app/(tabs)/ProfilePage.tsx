@@ -44,6 +44,9 @@ export default function ProfilePage() {
 
   // Menü için state ekliyoruz
   const [menuVisible, setMenuVisible] = useState(false);
+  
+  // Puan bilgisi modalı için state
+  const [pointsInfoVisible, setPointsInfoVisible] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -152,6 +155,11 @@ export default function ProfilePage() {
     }
   };
 
+  // Puan bilgisi modalını aç/kapat
+  const togglePointsInfo = () => {
+    setPointsInfoVisible(!pointsInfoVisible);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -221,10 +229,31 @@ export default function ProfilePage() {
       <ScrollView style={styles.mainContainer}>
         {/* Profile Content */}
         <View style={styles.profileContent}>
-          <Image
-            source={require('../../assets/images/profile-2.jpg')}
-            style={styles.profileImage}
-          />
+          {/* Profile Image ve Puan */}
+          <View style={styles.profileImageContainer}>
+            <Image
+              source={require('../../assets/images/profile-2.jpg')}
+              style={styles.profileImage}
+            />
+            
+            {/* Puan Göstergesi */}
+            <TouchableOpacity 
+              style={styles.pointsBadge}
+              onPress={togglePointsInfo}
+            >
+              <Text style={styles.pointsBadgeText} numberOfLines={1} ellipsizeMode="tail">
+                {userData?.points || 100000} P
+              </Text>
+            </TouchableOpacity>
+            
+            {/* Bilgi Butonu */}
+            {/* <TouchableOpacity 
+              style={styles.infoButton}
+              onPress={togglePointsInfo}
+            >
+              <Ionicons name="information-circle" size={20} color="#fff" />
+            </TouchableOpacity> */}
+          </View>
           
           <Text style={styles.userName}>{userData?.name || 'Loading...'}</Text>
           <Text style={styles.userNickname}>@{userData?.username || 'Loading...'}</Text>
@@ -235,11 +264,6 @@ export default function ProfilePage() {
               year: 'numeric'
             }) || 'Loading...'}
           </Text>
-          
-          <View style={styles.pointsContainer}>
-            <Text style={styles.pointsNumber}>{userData?.points || 0}</Text>
-            <Text style={styles.pointsText}>Point</Text>
-          </View>
 
           <View style={styles.statsContainer}>
             <TouchableOpacity 
@@ -353,6 +377,67 @@ export default function ProfilePage() {
         </View>
       </ScrollView>
 
+      {/* Points Info Modal */}
+      <Modal
+        transparent={true}
+        visible={pointsInfoVisible}
+        animationType="fade"
+        onRequestClose={() => setPointsInfoVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setPointsInfoVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.pointsInfoModal}>
+                <View style={styles.pointsInfoHeader}>
+                  <Text style={styles.pointsInfoTitle}>Puan Sistemi</Text>
+                  <TouchableOpacity onPress={() => setPointsInfoVisible(false)}>
+                    <Ionicons name="close" size={24} color="#000" />
+                  </TouchableOpacity>
+                </View>
+                
+                <View style={styles.pointsInfoContent}>
+                  <Text style={styles.pointsInfoText}>
+                    GreenWorld puanları, çevre bilinci ve katkılarınızı gösteren bir değerdir. 
+                    Puanlarınızı şu şekilde artırabilirsiniz:
+                  </Text>
+                  
+                  <View style={styles.pointsInfoItem}>
+                    <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
+                    <Text style={styles.pointsInfoItemText}>Atık bildirimleri yapmak: +10 puan</Text>
+                  </View>
+                  
+                  <View style={styles.pointsInfoItem}>
+                    <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
+                    <Text style={styles.pointsInfoItemText}>Atık temizlemek: +20 puan</Text>
+                  </View>
+                  
+                  <View style={styles.pointsInfoItem}>
+                    <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
+                    <Text style={styles.pointsInfoItemText}>Post paylaşmak: +5 puan</Text>
+                  </View>
+                  
+                  <View style={styles.pointsInfoItem}>
+                    <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
+                    <Text style={styles.pointsInfoItemText}>Aktif olarak uygulamayı kullanmak: +1 puan/gün</Text>
+                  </View>
+                  
+                  <Text style={styles.pointsInfoText}>
+                    Daha yüksek puanlar elde ederek çeşitli ödüller kazanabilir ve topluluk içinde daha fazla tanınırlık elde edebilirsiniz.
+                  </Text>
+                </View>
+                
+                <TouchableOpacity 
+                  style={styles.pointsInfoButton}
+                  onPress={() => setPointsInfoVisible(false)}
+                >
+                  <Text style={styles.pointsInfoButtonText}>Anladım</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       <BottomNavigation />
     </SafeAreaView>
   );
@@ -393,13 +478,56 @@ const styles = StyleSheet.create({
     padding: 8,
     width: 40,
   },
+  profileImageContainer: {
+    position: 'relative',
+    marginBottom: 16,
+    alignItems: 'center', // Profil fotoğrafını ortala
+  },
   profileImage: {
     width: 100,
     height: 100,
-    borderColor: '#696969',
+    borderColor: '#D9D9D9',
     borderWidth: 2,
     borderRadius: 60,
-    marginBottom: 16, // Profil fotoğrafı ile isim arası
+  },
+  pointsBadge: {
+    position: 'absolute',
+    bottom: 0, // Profil fotoğrafının altında
+    right: -18, // Sağa taşı, profil fotoğrafından taşmayacak şekilde
+    backgroundColor: '#4B9363',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#D9D9D9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 50, // Minimum genişlik ayarla
+    maxWidth: 100, // Maximum genişlik sınırla
+    // elevation: 3,
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.2,
+    // shadowRadius: 3,
+  },
+  pointsBadgeText: {
+    color: 'white',
+    fontSize: 14, // Biraz küçült
+    fontWeight: 'bold',
+  },
+  infoButton: {
+    position: 'absolute',
+    right: -35,
+    bottom: 20,
+    backgroundColor: '#4B9363',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: '#D9D9D9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
   },
   userName: {
     fontSize: 20,
@@ -415,27 +543,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     fontSize: 14,
     color: '#696969',
-    marginBottom: 16, // Member since ile points arası
-  },
-  pointsContainer: {
-    alignItems: 'center',
-    marginBottom: 6, // Points ile stats arası
-  },
-  pointsNumber: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 28,
-    color: '#4B9363',
-    marginBottom: 4, // Sayı ile Point yazısı arası
-  },
-  pointsText: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 12,
-    color: '#666',
+    marginBottom: 16, // Member since ile stats arası
   },
   statsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 8,
   },
   statItem: {
     alignItems: 'center',
@@ -461,6 +574,7 @@ const styles = StyleSheet.create({
     width: 360,
     height: 2,
     marginTop: 16,
+
   },
   baseProgress: {
     position: 'absolute',
@@ -605,5 +719,62 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'red',
     fontWeight: '400',
+  },
+  // Puan bilgisi modal stilleri
+  pointsInfoModal: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    width: '85%',
+    maxHeight: '80%',
+    padding: 24,
+    alignSelf: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  pointsInfoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  pointsInfoTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#4B9363',
+  },
+  pointsInfoContent: {
+    marginBottom: 16,
+  },
+  pointsInfoText: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  pointsInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    paddingLeft: 8,
+  },
+  pointsInfoItemText: {
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 8,
+  },
+  pointsInfoButton: {
+    backgroundColor: '#4B9363',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  pointsInfoButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
