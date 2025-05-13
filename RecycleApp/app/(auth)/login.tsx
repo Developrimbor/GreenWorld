@@ -159,7 +159,7 @@ export default function LoginScreen() {
                 <Ionicons name="checkmark" size={16} color="#fff" />
               )}
             </View>
-            <Text style={styles.optionText}>Remember me</Text>
+            <Text style={styles.optionText}>Remember Me</Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => {}} activeOpacity={0.7}>
@@ -177,7 +177,7 @@ export default function LoginScreen() {
 
         <TouchableOpacity 
           style={styles.googleButton} 
-          onPress={handleGoogleLogin}
+          // onPress={handleGoogleLogin}
           activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>LOG IN WITH GOOGLE</Text>
