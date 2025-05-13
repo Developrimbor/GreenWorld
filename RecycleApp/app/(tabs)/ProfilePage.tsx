@@ -179,18 +179,16 @@ export default function ProfilePage() {
     setMenuVisible(false);
     
     switch (option) {
-      case 'logout':
-        handleLogout();
-        break;
       case 'liked':
-        // Burada Liked Posts sayfasına yönlendirme yapılabilir
-        break;
-      case 'saved':
-        // Burada Saved Posts sayfasına yönlendirme yapılabilir
+        // Liked Posts sayfasına yönlendirme
+        router.push('/(tabs)/LikedPostsPage');
         break;
       case 'settings':
         // Settings sayfasına yönlendir
         router.push('/(tabs)/SettingsPage');
+        break;
+      case 'logout':
+        handleLogout();
         break;
       default:
         break;
@@ -356,13 +354,6 @@ export default function ProfilePage() {
                     onPress={() => handleMenuOption('liked')}
                   >
                     <Text style={styles.menuItemText}>Liked Posts</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={styles.menuItem}
-                    onPress={() => handleMenuOption('saved')}
-                  >
-                    <Text style={styles.menuItemText}>Saved Posts</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
