@@ -13,7 +13,7 @@ import {
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 // Import kısmına eklenecek
-import { deleteDoc } from 'firebase/firestore';
+import { deleteDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { auth } from '../config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -91,6 +91,9 @@ export default function PostDetail() {
             authorId: postData.authorId || '',
             authorImage: authorPhotoURL || '', // Yazarın profil fotoğrafı URL'si
           });
+
+          // Kontrol et kullanıcı bu postu beğenmiş mi
+          checkIfPostLiked(id as string);
         } else {
           router.back(); // Post bulunamazsa geri dön
         }
@@ -106,6 +109,54 @@ export default function PostDetail() {
       router.back();
     }
   }, [id]);
+
+  // Kullanıcının postu beğenip beğenmediğini kontrol eden fonksiyon
+  const checkIfPostLiked = async (postId: string) => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const likedPosts = userData.likedPosts || [];
+        setIsLiked(likedPosts.includes(postId));
+      }
+    } catch (error) {
+      // Hata durumunu sessizce ele al
+    }
+  };
+
+  // Beğeni durumunu güncelleme
+  const handleLikeToggle = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        Alert.alert('Hata', 'Bu işlemi gerçekleştirmek için giriş yapmalısınız.');
+        return;
+      }
+      
+      const userRef = doc(db, 'users', currentUser.uid);
+      const newLikeState = !isLiked;
+      
+      // Beğeni durumunu güncelle
+      if (newLikeState) {
+        // Post'u beğen
+        await updateDoc(userRef, {
+          likedPosts: arrayUnion(post?.id)
+        });
+      } else {
+        // Beğeniyi kaldır
+        await updateDoc(userRef, {
+          likedPosts: arrayRemove(post?.id)
+        });
+      }
+      
+      setIsLiked(newLikeState);
+    } catch (error) {
+      Alert.alert('Hata', 'Beğeni işlemi gerçekleştirilemedi. Lütfen tekrar deneyin.');
+    }
+  };
 
   // Kullanıcı profil sayfası yönlendirmesi için fonksiyon
   const handleProfileNavigation = () => {
@@ -220,23 +271,13 @@ export default function PostDetail() {
         </TouchableOpacity>
         <View style={styles.actionButtons}>
           <TouchableOpacity 
-            onPress={() => setIsLiked(!isLiked)}
+            onPress={handleLikeToggle}
             style={styles.actionButton}
           >
             <Ionicons 
               name={isLiked ? "heart" : "heart-outline"} 
               size={24} 
               color={isLiked ? "#FF0000" : "#000"} 
-            />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={() => setIsSaved(!isSaved)}
-            style={styles.actionButton}
-          >
-            <Ionicons 
-              name={isSaved ? "bookmark" : "bookmark-outline"} 
-              size={24} 
-              color={isSaved ? "#4B9363" : "#000"} 
             />
           </TouchableOpacity>
         </View>
