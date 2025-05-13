@@ -30,8 +30,11 @@ export default function ProfilePage() {
 
   const [activeTab, setActiveTab] = useState<TabType>('reported');
   const [userPosts, setUserPosts] = useState<any[]>([]);
-  const [reportedItems, setReportedItems] = useState<any[]>([]); // State'i buraya taşıyalım
-  const [cleanedItems, setCleanedItems] = useState<any[]>([]); // Temizlenen öğeler için yeni state
+  const [reportedItems, setReportedItems] = useState<any[]>([]);
+  const [cleanedItems, setCleanedItems] = useState<any[]>([]);
+  const [reportedCount, setReportedCount] = useState(0);
+  const [cleanedCount, setCleanedCount] = useState(0);
+  const [postsCount, setPostsCount] = useState(0);
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   // Profil fotoğrafı yükleme için state'ler
@@ -59,51 +62,103 @@ export default function ProfilePage() {
   // Puan bilgisi modalı için state
   const [pointsInfoVisible, setPointsInfoVisible] = useState(false);
 
+  // Sayfa yüklendiğinde sayıları ve verileri hızlıca getir
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchAllData = async () => {
       try {
         const currentUser = auth.currentUser;
-        if (currentUser) {
-          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            console.log('User data retrieved:', {
-              hasPhotoURL: Boolean(userData.photoURL),
-              hasProfilePicture: Boolean(userData.profilePicture),
-              photoURL: userData.photoURL || 'none',
-              profilePicture: userData.profilePicture || 'none'
-            });
-            setUserData(userData);
-          }
+        if (!currentUser) return;
+
+        // Kullanıcı bilgilerini getir
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) {
+          setUserData(userDoc.data());
         }
+
+        // Tüm verileri paralel olarak getir
+        const [reportsSnapshot, cleanedTrashSnapshot, cleanedReportsSnapshot, postsSnapshot] = await Promise.all([
+          // Reported items (bildirilen atıklar)
+          getDocs(query(
+            collection(db, 'trashReports'),
+            where('authorId', '==', currentUser.uid)
+          )),
+          
+          // Cleaned items - trashReports koleksiyonundan
+          getDocs(query(
+            collection(db, 'trashReports'),
+            where('cleanedBy', '==', currentUser.uid),
+            where('status', '==', 'cleaned')
+          )),
+          
+          // Cleaned items - cleanedReports koleksiyonundan
+          getDocs(query(
+            collection(db, 'cleanedReports'),
+            where('cleanedBy', '==', currentUser.uid)
+          )),
+          
+          // Posts
+          getDocs(query(
+            collection(db, 'posts'),
+            where('authorId', '==', currentUser.uid)
+          ))
+        ]);
+
+        // Reported items için
+        const reports = reportsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setReportedItems(reports);
+        setReportedCount(reports.length);
+        
+        // Cleaned items için
+        const cleanedTrashReports = cleanedTrashSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          source: 'trashReports'
+        }));
+        
+        const cleanedReports = cleanedReportsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          source: 'cleanedReports'
+        }));
+        
+        // Mükerrer temizleme kayıtlarını önle
+        const cleanedIds = new Set<string>();
+        const allCleanedItems: any[] = [];
+        
+        cleanedTrashReports.forEach(item => {
+          if (!cleanedIds.has(item.id)) {
+            cleanedIds.add(item.id);
+            allCleanedItems.push(item);
+          }
+        });
+        
+        cleanedReports.forEach(item => {
+          if (!cleanedIds.has(item.id)) {
+            cleanedIds.add(item.id);
+            allCleanedItems.push(item);
+          }
+        });
+        
+        setCleanedItems(allCleanedItems);
+        setCleanedCount(cleanedIds.size);
+        
+        // Posts için
+        const posts = postsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setUserPosts(posts);
+        setPostsCount(posts.length);
+        
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        // Hata durumunu sessizce ele al
       }
     };
 
-    const fetchUserPosts = async () => {
-      try {
-        const currentUser = auth.currentUser;
-        if (currentUser) {
-          const postsRef = collection(db, 'posts');
-          const q = query(
-            postsRef,
-            where('authorId', '==', currentUser.uid)
-          );
-          const querySnapshot = await getDocs(q);
-          const posts = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          console.log('Fetched posts:', posts); // Log ekleyelim
-          setUserPosts(posts);
-        }
-      } catch (error) {
-        console.error('Error fetching user posts:', error);
-      }
-    };
-    fetchUserPosts();
-    fetchUserData();
+    fetchAllData();
   }, []);
 
   const handleLogout = async () => {
@@ -111,93 +166,9 @@ export default function ProfilePage() {
       await signOut(auth);
       router.push('/(auth)/login');
     } catch (error) {
-      console.error('Logout error:', error);
+      // Hata durumunu sessizce ele al
     }
   };
-
-  // Reported items için useEffect ekleyelim
-  useEffect(() => {
-    const fetchReportedItems = async () => {
-      try {
-        const currentUser = auth.currentUser;
-        if (currentUser) {
-          const reportsRef = collection(db, 'trashReports');
-          const q = query(
-            reportsRef,
-            where('authorId', '==', currentUser.uid),
-            where('status', '==', 'reported')
-          );
-          const querySnapshot = await getDocs(q);
-          const reports = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          setReportedItems(reports);
-        }
-      } catch (error) {
-        console.error('Error fetching reported items:', error);
-      }
-    };
-
-    if (activeTab === 'reported') {
-      fetchReportedItems();
-    }
-  }, [activeTab]);
-
-  // Cleaned items için useEffect ekleyelim
-  useEffect(() => {
-    const fetchCleanedItems = async () => {
-      try {
-        const currentUser = auth.currentUser;
-        if (currentUser) {
-          // trashReports koleksiyonundan kullanıcının temizlediği atıkları getir
-          const cleanedTrashReportsRef = collection(db, 'trashReports');
-          const cleanedTrashQuery = query(
-            cleanedTrashReportsRef,
-            where('cleanedBy', '==', currentUser.uid),
-            where('status', '==', 'cleaned')
-          );
-          const cleanedTrashSnapshot = await getDocs(cleanedTrashQuery);
-          const cleanedTrashReports = cleanedTrashSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            source: 'trashReports'
-          }));
-          
-          // cleanedReports koleksiyonundan kullanıcının temizlediği atıkları getir
-          const cleanedReportsRef = collection(db, 'cleanedReports');
-          const cleanedReportsQuery = query(
-            cleanedReportsRef,
-            where('cleanedBy', '==', currentUser.uid)
-          );
-          const cleanedReportsSnapshot = await getDocs(cleanedReportsQuery);
-          const cleanedReports = cleanedReportsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            source: 'cleanedReports'
-          }));
-          
-          // İki koleksiyondan gelen verileri birleştir - ID'ler çakışabileceği için dikkatli ol
-          const allCleanedItems = [...cleanedTrashReports];
-          
-          // cleanedReports'tan gelen öğeleri ekle, ancak aynı ID'ye sahip olanları dahil etme
-          cleanedReports.forEach(report => {
-            if (!allCleanedItems.some(item => item.id === report.id)) {
-              allCleanedItems.push(report);
-            }
-          });
-          
-          setCleanedItems(allCleanedItems);
-        }
-      } catch (error) {
-        console.error('Error fetching cleaned items:', error);
-      }
-    };
-
-    if (activeTab === 'cleaned') {
-      fetchCleanedItems();
-    }
-  }, [activeTab]);
 
   // Menü işlemleri
   const toggleMenu = () => {
@@ -213,15 +184,13 @@ export default function ProfilePage() {
         break;
       case 'liked':
         // Burada Liked Posts sayfasına yönlendirme yapılabilir
-        console.log('Liked Posts tıklandı');
         break;
       case 'saved':
         // Burada Saved Posts sayfasına yönlendirme yapılabilir
-        console.log('Saved Posts tıklandı');
         break;
       case 'settings':
-        // Burada Settings sayfasına yönlendirme yapılabilir
-        console.log('Settings tıklandı');
+        // Settings sayfasına yönlendir
+        router.push('/(tabs)/SettingsPage');
         break;
       default:
         break;
@@ -257,7 +226,6 @@ export default function ProfilePage() {
         uploadImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('Fotoğraf seçme hatası:', error);
       Alert.alert('Hata', 'Fotoğraf seçilirken bir hata oluştu.');
     }
   };
@@ -474,7 +442,7 @@ export default function ProfilePage() {
               style={styles.statItem} 
               onPress={() => handleTabPress('reported')}
             >
-              <Text style={styles.statNumber}>{reportedItems?.length || 0}</Text>
+              <Text style={styles.statNumber}>{reportedCount}</Text>
               <Text style={styles.statLabel}>Reported</Text>
             </TouchableOpacity>
             
@@ -484,7 +452,7 @@ export default function ProfilePage() {
               style={styles.statItem} 
               onPress={() => handleTabPress('cleaned')}
             >
-              <Text style={styles.statNumber}>{cleanedItems?.length || 0}</Text>
+              <Text style={styles.statNumber}>{cleanedCount}</Text>
               <Text style={styles.statLabel}>Cleaned</Text>
             </TouchableOpacity>
             
@@ -494,7 +462,7 @@ export default function ProfilePage() {
               style={styles.statItem} 
               onPress={() => handleTabPress('post')}
             >
-              <Text style={styles.statNumber}>{userPosts?.length || 0}</Text>
+              <Text style={styles.statNumber}>{postsCount}</Text>
               <Text style={styles.statLabel}>Post</Text>
             </TouchableOpacity>
           </View>
@@ -549,7 +517,7 @@ export default function ProfilePage() {
                     key={item.id}
                     style={styles.postCard}
                     onPress={() => router.push({
-                      pathname: '/(tabs)/TrashDetailPage',
+                      pathname: item.status === 'cleaned' ? '/(tabs)/CleanedTrashPage' : '/(tabs)/TrashDetailPage',
                       params: { id: item.id }
                     })}
                   >
@@ -560,7 +528,12 @@ export default function ProfilePage() {
                       />
                     )}
                     <View style={styles.postInfo}>
-                      <Text style={styles.postTitle}>REPORTED</Text>
+                      <View style={styles.titleContainer}>
+                        <Text style={styles.postTitle}>REPORTED</Text>
+                        {item.status === 'cleaned' && (
+                          <Text style={styles.cleanedTag}>(CLEANED)</Text>
+                        )}
+                      </View>
                       <View style={styles.locationContainer}>
                         <Ionicons name="location-outline" size={16} color="#666" />
                         <Text style={styles.postLocation}>
@@ -586,7 +559,7 @@ export default function ProfilePage() {
                     key={item.id}
                     style={styles.postCard}
                     onPress={() => router.push({
-                      pathname: '/(tabs)/TrashDetailPage',
+                      pathname: '/(tabs)/CleanedTrashPage',
                       params: { id: item.id }
                     })}
                   >
@@ -1201,5 +1174,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cleanedTag: {
+    // backgroundColor: '#4B9363',
+    color: '#4B9363',
+    fontSize: 12,
+    fontWeight: 'bold',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
   },
 });
