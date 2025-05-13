@@ -579,7 +579,19 @@ export default function MapScreen() {
               key={trash.id}
               coordinate={trash.location}
               pinColor={trash.status === 'cleaned' ? "#4B9363" : "#E74C3C"}
-              onPress={() => router.push({ pathname: '/(tabs)/TrashDetailPage', params: { id: trash.id } })}
+              onPress={() => {
+                if (trash.status === 'cleaned') {
+                  router.push({ 
+                    pathname: '/(tabs)/CleanedTrashPage', 
+                    params: { id: trash.id } 
+                  });
+                } else {
+                  router.push({ 
+                    pathname: '/(tabs)/TrashDetailPage', 
+                    params: { id: trash.id } 
+                  });
+                }
+              }}
             />
           ))}
           {showCircle && userLocation && (
