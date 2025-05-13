@@ -78,7 +78,7 @@ export default function HomePage() {
       setPosts(fetchedPosts);
       setFilteredPosts(fetchedPosts);
     } catch (error) {
-      console.error('Error fetching posts:', error);
+      // Hata durumunu sessizce ele al
     } finally {
       setIsLoading(false);
     }
@@ -343,7 +343,7 @@ export default function HomePage() {
                     style={styles.cardImage} 
                   />
                   <View style={styles.cardContent}>
-                    <Text style={styles.cardTitle}>{post.title}</Text>
+                    <Text style={styles.cardTitle} numberOfLines={2} ellipsizeMode="tail">{post.title}</Text>
                     {post.content && (
                       <Text style={styles.cardDescription} numberOfLines={2}>
                         {post.content}
@@ -351,11 +351,11 @@ export default function HomePage() {
                     )}
                     <View style={styles.cardMetaContainer}>
                       <View style={styles.cardMeta}>
-                        <Ionicons name="calendar-outline" size={16} color="#4B9363" />
+                        <Ionicons name="calendar-outline" size={14} color="#4B9363" />
                         <Text style={styles.cardMetaText}>{post.date}</Text>
                       </View>
                       <View style={styles.cardMeta}>
-                        <Ionicons name="location" size={16} color="#4B9363" />
+                        <Ionicons name="location" size={14} color="#4B9363" />
                         <Text style={styles.cardMetaText}>{post.location}</Text>
                       </View>
                     </View>
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   cardMetaText: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#696969',
     marginLeft: 4,
   },
