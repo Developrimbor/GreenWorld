@@ -19,6 +19,7 @@ export default function TabLayout() {
       <Stack.Screen name="PostDetail" />
       <Stack.Screen name="UserProfile" />
       <Stack.Screen name="ProfilePage" />
+      <Stack.Screen name="LikedPostsPage" />
     </Stack>
   );
 }
