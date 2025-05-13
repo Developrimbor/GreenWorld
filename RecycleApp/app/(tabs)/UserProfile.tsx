@@ -26,6 +26,9 @@ export default function UserProfile() {
   const [userPosts, setUserPosts] = useState<any[]>([]);
   const [reportedItems, setReportedItems] = useState<any[]>([]);
   const [cleanedItems, setCleanedItems] = useState<any[]>([]);
+  const [reportedCount, setReportedCount] = useState(0);
+  const [cleanedCount, setCleanedCount] = useState(0);
+  const [postsCount, setPostsCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   
   // Animasyon değeri
@@ -51,7 +54,6 @@ export default function UserProfile() {
       try {
         setIsLoading(true);
         if (!userId) {
-          console.error('No userId provided');
           router.back();
           return;
         }
@@ -59,127 +61,99 @@ export default function UserProfile() {
         // Kullanıcı bilgilerini getir
         const userDoc = await getDoc(doc(db, 'users', userId as string));
         if (userDoc.exists()) {
-          const userData = userDoc.data();
-          console.log('User data retrieved:', userData);
-          setUserData(userData);
+          setUserData(userDoc.data());
         } else {
-          console.error('User not found');
           router.back();
           return;
         }
         
-        // Kullanıcının postlarını getir
-        await fetchUserPosts();
+        // Tüm verileri paralel olarak getir
+        const [reportsSnapshot, cleanedTrashSnapshot, cleanedReportsSnapshot, postsSnapshot] = await Promise.all([
+          // Reported items (bildirilen atıklar)
+          getDocs(query(
+            collection(db, 'trashReports'),
+            where('authorId', '==', userId)
+          )),
+          
+          // Cleaned items - trashReports koleksiyonundan
+          getDocs(query(
+            collection(db, 'trashReports'),
+            where('cleanedBy', '==', userId),
+            where('status', '==', 'cleaned')
+          )),
+          
+          // Cleaned items - cleanedReports koleksiyonundan
+          getDocs(query(
+            collection(db, 'cleanedReports'),
+            where('cleanedBy', '==', userId)
+          )),
+          
+          // Posts
+          getDocs(query(
+            collection(db, 'posts'),
+            where('authorId', '==', userId)
+          ))
+        ]);
+
+        // Reported items için
+        const reports = reportsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setReportedItems(reports);
+        setReportedCount(reports.length);
         
-        // Reported items'ları getir
-        await fetchReportedItems();
+        // Cleaned items için
+        const cleanedTrashReports = cleanedTrashSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          source: 'trashReports'
+        }));
         
-        // Cleaned items'ları getir
-        await fetchCleanedItems();
+        const cleanedReports = cleanedReportsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          source: 'cleanedReports'
+        }));
         
-        setIsLoading(false);
+        // Mükerrer temizleme kayıtlarını önle
+        const cleanedIds = new Set<string>();
+        const allCleanedItems: any[] = [];
+        
+        cleanedTrashReports.forEach(item => {
+          if (!cleanedIds.has(item.id)) {
+            cleanedIds.add(item.id);
+            allCleanedItems.push(item);
+          }
+        });
+        
+        cleanedReports.forEach(item => {
+          if (!cleanedIds.has(item.id)) {
+            cleanedIds.add(item.id);
+            allCleanedItems.push(item);
+          }
+        });
+        
+        setCleanedItems(allCleanedItems);
+        setCleanedCount(cleanedIds.size);
+        
+        // Posts için
+        const posts = postsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setUserPosts(posts);
+        setPostsCount(posts.length);
+        
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        // Hata durumunu sessizce ele al
+      } finally {
         setIsLoading(false);
       }
     };
 
     fetchUserData();
-  }, [userId]);
-
-  // Kullanıcının postlarını getir
-  const fetchUserPosts = async () => {
-    try {
-      if (!userId) return;
-      
-      const postsRef = collection(db, 'posts');
-      const q = query(
-        postsRef,
-        where('authorId', '==', userId)
-      );
-      const querySnapshot = await getDocs(q);
-      const posts = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      console.log('Fetched posts:', posts.length);
-      setUserPosts(posts);
-    } catch (error) {
-      console.error('Error fetching user posts:', error);
-    }
-  };
-
-  // Reported items'ları getir
-  const fetchReportedItems = async () => {
-    try {
-      if (!userId) return;
-      
-      const reportsRef = collection(db, 'trashReports');
-      const q = query(
-        reportsRef,
-        where('authorId', '==', userId),
-        where('status', '==', 'reported')
-      );
-      const querySnapshot = await getDocs(q);
-      const reports = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      console.log('Fetched reported items:', reports.length);
-      setReportedItems(reports);
-    } catch (error) {
-      console.error('Error fetching reported items:', error);
-    }
-  };
-
-  // Cleaned items'ları getir
-  const fetchCleanedItems = async () => {
-    try {
-      if (!userId) return;
-      
-      // trashReports koleksiyonundan kullanıcının temizlediği atıkları getir
-      const cleanedTrashReportsRef = collection(db, 'trashReports');
-      const cleanedTrashQuery = query(
-        cleanedTrashReportsRef,
-        where('cleanedBy', '==', userId),
-        where('status', '==', 'cleaned')
-      );
-      const cleanedTrashSnapshot = await getDocs(cleanedTrashQuery);
-      const cleanedTrashReports = cleanedTrashSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        source: 'trashReports'
-      }));
-      
-      // cleanedReports koleksiyonundan kullanıcının temizlediği atıkları getir
-      const cleanedReportsRef = collection(db, 'cleanedReports');
-      const cleanedReportsQuery = query(
-        cleanedReportsRef,
-        where('cleanedBy', '==', userId)
-      );
-      const cleanedReportsSnapshot = await getDocs(cleanedReportsQuery);
-      const cleanedReports = cleanedReportsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        source: 'cleanedReports'
-      }));
-      
-      // İki koleksiyondan gelen verileri birleştir - ID'ler çakışabileceği için dikkatli ol
-      const allCleanedItems = [...cleanedTrashReports];
-      
-      // cleanedReports'tan gelen öğeleri ekle, ancak aynı ID'ye sahip olanları dahil etme
-      cleanedReports.forEach(report => {
-        if (!allCleanedItems.some(item => item.id === report.id)) {
-          allCleanedItems.push(report);
-        }
-      });
-      
-      console.log('Fetched all cleaned items:', allCleanedItems.length);
-      setCleanedItems(allCleanedItems);
-    } catch (error) {
-      console.error('Error fetching cleaned items:', error);
-    }
-  };
+  }, [userId, router]);
 
   // Yükleme durumunda gösterilecek ekran
   if (isLoading) {
@@ -230,10 +204,10 @@ export default function UserProfile() {
                 style={styles.profileImage}
               />
             ) : userData?.profilePicture ? (
-              <Image
+          <Image
                 source={{ uri: userData.profilePicture }}
-                style={styles.profileImage}
-              />
+            style={styles.profileImage}
+          />
             ) : (
               <View style={[styles.profileImage, styles.defaultProfileImage]}>
                 <Ionicons name="person" size={50} color="#4B9363" />
@@ -257,7 +231,7 @@ export default function UserProfile() {
               style={styles.statItem} 
               onPress={() => handleTabPress('reported')}
             >
-              <Text style={styles.statNumber}>{reportedItems?.length || 0}</Text>
+              <Text style={styles.statNumber}>{reportedCount}</Text>
               <Text style={styles.statLabel}>Reported</Text>
             </TouchableOpacity>
             
@@ -267,7 +241,7 @@ export default function UserProfile() {
               style={styles.statItem} 
               onPress={() => handleTabPress('cleaned')}
             >
-              <Text style={styles.statNumber}>{cleanedItems?.length || 0}</Text>
+              <Text style={styles.statNumber}>{cleanedCount}</Text>
               <Text style={styles.statLabel}>Cleaned</Text>
             </TouchableOpacity>
             
@@ -277,7 +251,7 @@ export default function UserProfile() {
               style={styles.statItem} 
               onPress={() => handleTabPress('post')}
             >
-              <Text style={styles.statNumber}>{userPosts?.length || 0}</Text>
+              <Text style={styles.statNumber}>{postsCount}</Text>
               <Text style={styles.statLabel}>Post</Text>
             </TouchableOpacity>
           </View>
@@ -286,7 +260,7 @@ export default function UserProfile() {
             <View style={styles.baseProgress} />
             <Animated.View
               style={[
-                styles.activeProgress,
+              styles.activeProgress,
                 {
                   transform: [{ translateX: slideAnim }],
                 },
@@ -333,7 +307,7 @@ export default function UserProfile() {
                     key={item.id}
                     style={styles.postCard}
                     onPress={() => router.push({
-                      pathname: '/(tabs)/TrashDetailPage',
+                      pathname: item.status === 'cleaned' ? '/(tabs)/CleanedTrashPage' : '/(tabs)/TrashDetailPage',
                       params: { id: item.id }
                     })}
                   >
@@ -348,7 +322,12 @@ export default function UserProfile() {
                       </View>
                     )}
                     <View style={styles.postInfo}>
-                      <Text style={styles.reportedTitle}>REPORTED</Text>
+                      <View style={styles.titleContainer}>
+                        <Text style={styles.reportedTitle}>REPORTED</Text>
+                        {item.status === 'cleaned' && (
+                          <Text style={styles.cleanedTag}>(CLEANED)</Text>
+                        )}
+                      </View>
                       <View style={styles.locationContainer}>
                         <Ionicons name="location-outline" size={16} color="#666" />
                         <Text style={styles.postLocation}>
@@ -375,7 +354,7 @@ export default function UserProfile() {
                     key={item.id}
                     style={styles.postCard}
                     onPress={() => router.push({
-                      pathname: '/(tabs)/TrashDetailPage',
+                      pathname: '/(tabs)/CleanedTrashPage',
                       params: { id: item.id }
                     })}
                   >
@@ -624,5 +603,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     marginBottom: 4,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cleanedTag: {
+    backgroundColor: '#4B9363',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 4,
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 }); 
