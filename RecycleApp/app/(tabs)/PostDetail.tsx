@@ -53,7 +53,6 @@ export default function PostDetail() {
       Alert.alert('Başarılı', 'Gönderi başarıyla silindi');
       router.push("/(tabs)/ProfilePage");
     } catch (error) {
-      console.error('Error deleting post:', error);
       Alert.alert('Hata', 'Gönderi silinirken bir hata oluştu');
       setDeleteModalVisible(false);
     }
@@ -62,11 +61,9 @@ export default function PostDetail() {
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        console.log('Fetching post with ID:', id); // Debug için
         const postDoc = await getDoc(doc(db, 'posts', id as string));
         if (postDoc.exists()) {
           const postData = postDoc.data();
-          console.log('Post data:', postData); // Debug için
           
           // Post sahibinin bilgilerini getir
           let authorPhotoURL = '';
@@ -77,10 +74,9 @@ export default function PostDetail() {
                 const userData = userDoc.data();
                 // Profil fotoğrafı için photoURL veya profilePicture alanını kontrol et
                 authorPhotoURL = userData.photoURL || userData.profilePicture || '';
-                console.log('Author photo URL:', authorPhotoURL);
               }
             } catch (error) {
-              console.error('Error fetching author data:', error);
+              // Hata durumunu sessizce ele al
             }
           }
           
@@ -96,11 +92,9 @@ export default function PostDetail() {
             authorImage: authorPhotoURL || '', // Yazarın profil fotoğrafı URL'si
           });
         } else {
-          console.log('Post not found'); // Debug için
           router.back(); // Post bulunamazsa geri dön
         }
       } catch (error) {
-        console.error('Error fetching post:', error);
         Alert.alert('Hata', 'Post yüklenirken bir hata oluştu.');
         router.back();
       }
@@ -154,7 +148,6 @@ export default function PostDetail() {
             <TouchableOpacity 
               style={styles.actionButton}
               onPress={() => {
-                console.log('Navigating to EditPost with ID:', post.id);
                 router.push(`/(tabs)/EditPost?id=${post.id}`);
               }}
             >
