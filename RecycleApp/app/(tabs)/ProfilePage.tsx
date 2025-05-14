@@ -669,7 +669,7 @@ export default function ProfilePage() {
             <TouchableWithoutFeedback>
               <View style={styles.pointsInfoModal}>
                 <View style={styles.pointsInfoHeader}>
-                  <Text style={styles.pointsInfoTitle}>Puan Sistemi</Text>
+                  <Text style={styles.pointsInfoTitle}>Point System</Text>
                   <TouchableOpacity onPress={() => setPointsInfoVisible(false)}>
                     <Ionicons name="close" size={24} color="#000" />
                   </TouchableOpacity>
@@ -677,32 +677,32 @@ export default function ProfilePage() {
                 
                 <View style={styles.pointsInfoContent}>
                   <Text style={styles.pointsInfoText}>
-                    GreenWorld puanları, çevre bilinci ve katkılarınızı gösteren bir değerdir. 
-                    Puanlarınızı şu şekilde artırabilirsiniz:
+                    GreenWorld points are a value that shows your environmental awareness and contributions. 
+                    You can increase your points in the following ways:
                   </Text>
                   
                   <View style={styles.pointsInfoItem}>
                     <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
-                    <Text style={styles.pointsInfoItemText}>Atık bildirimleri yapmak: +10 puan</Text>
+                    <Text style={styles.pointsInfoItemText}>Report trash: +10 points</Text>
                   </View>
                   
                   <View style={styles.pointsInfoItem}>
                     <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
-                    <Text style={styles.pointsInfoItemText}>Atık temizlemek: +20 puan</Text>
+                    <Text style={styles.pointsInfoItemText}>Clean trash: +20 points</Text>
                   </View>
                   
                   <View style={styles.pointsInfoItem}>
                     <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
-                    <Text style={styles.pointsInfoItemText}>Post paylaşmak: +5 puan</Text>
+                    <Text style={styles.pointsInfoItemText}>Share post: +5 points</Text>
                   </View>
                   
                   <View style={styles.pointsInfoItem}>
                     <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
-                    <Text style={styles.pointsInfoItemText}>Aktif olarak uygulamayı kullanmak: +1 puan/gün</Text>
+                    <Text style={styles.pointsInfoItemText}>Use the app actively: +1 point/day</Text>
                   </View>
                   
                   <Text style={styles.pointsInfoText}>
-                    Daha yüksek puanlar elde ederek çeşitli ödüller kazanabilir ve topluluk içinde daha fazla tanınırlık elde edebilirsiniz.
+                    By earning higher points, you can earn various rewards and gain more recognition in the community.
                   </Text>
                 </View>
                 
@@ -710,7 +710,7 @@ export default function ProfilePage() {
                   style={styles.pointsInfoButton}
                   onPress={() => setPointsInfoVisible(false)}
                 >
-                  <Text style={styles.pointsInfoButtonText}>Anladım</Text>
+                  <Text style={styles.pointsInfoButtonText}>Ok</Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
@@ -743,7 +743,7 @@ const styles = StyleSheet.create({
   },
   profileContent: {
     alignItems: 'center',
-    paddingTop: 24,
+    paddingTop: 16,
     paddingBottom: 100, // Alt kısımda extra boşluk
   },
   backButton: {
@@ -760,7 +760,7 @@ const styles = StyleSheet.create({
   },
   profileImageContainer: {
     position: 'relative',
-    marginBottom: 16,
+    marginBottom: 8,
     alignItems: 'center', // Profil fotoğrafını ortala
   },
   profileImage: {
@@ -813,7 +813,7 @@ const styles = StyleSheet.create({
   userNickname: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 16, // Nickname ile member since arası
+    marginBottom: 8, // Nickname ile member since arası
   },
   memberSince: {
     fontFamily: 'Poppins-Medium',
@@ -824,7 +824,7 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    // marginTop: 4,
   },
   statItem: {
     alignItems: 'center',
@@ -1046,7 +1046,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
-    marginTop: 8,
+    // marginTop: 8,
   },
   pointsInfoButtonText: {
     color: 'white',
