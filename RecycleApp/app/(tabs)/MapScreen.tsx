@@ -13,8 +13,11 @@ import {
   FlatList,
   Modal,
   TouchableWithoutFeedback,
+  Switch,
+  ScrollView,
+  Platform,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import BottomNavigation from '../../components/BottomNavigation';
 import MapView, { Marker, PROVIDER_GOOGLE, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -26,10 +29,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 const INITIAL_REGION = {
-  latitude: 40.7558,
-  longitude: 30.3954,
-  latitudeDelta: 0.0922,
-  longitudeDelta: 0.0421,
+  latitude: 40.7393,
+  longitude: 30.3312,
+  latitudeDelta: 0.03,
+  longitudeDelta: 0.03,
 };
 
 interface LocationCoords {
@@ -70,6 +73,21 @@ export default function MapScreen() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showNoSpotsModal, setShowNoSpotsModal] = useState(false);
+
+  // Filtreleme için state'ler
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [showReportedTrash, setShowReportedTrash] = useState(true);
+  const [showCleanedTrash, setShowCleanedTrash] = useState(true);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [datePickerType, setDatePickerType] = useState<'start' | 'end'>('start');
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [useDateFilter, setUseDateFilter] = useState(false);
+  
+  // Basit tarih seçici için state'ler
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
 
   const requestLocationPermission = async () => {
     try {
@@ -221,6 +239,34 @@ export default function MapScreen() {
     }
   };
 
+  // Haritayı yakınlaştırma fonksiyonu
+  const handleZoomIn = () => {
+    if (mapRef.current) {
+      // Mevcut region'ı al ve yakınlaştırılmış yeni region hesapla
+      const newRegion = {
+        ...region,
+        latitudeDelta: region.latitudeDelta / 2,
+        longitudeDelta: region.longitudeDelta / 2,
+      };
+      // Haritayı yeni region'a animasyonlu olarak taşı
+      mapRef.current.animateToRegion(newRegion, 300);
+    }
+  };
+
+  // Haritayı uzaklaştırma fonksiyonu
+  const handleZoomOut = () => {
+    if (mapRef.current) {
+      // Mevcut region'ı al ve uzaklaştırılmış yeni region hesapla
+      const newRegion = {
+        ...region,
+        latitudeDelta: region.latitudeDelta * 2,
+        longitudeDelta: region.longitudeDelta * 2,
+      };
+      // Haritayı yeni region'a animasyonlu olarak taşı
+      mapRef.current.animateToRegion(newRegion, 300);
+    }
+  };
+
   const isLocationInCircle = (location: LocationCoords) => {
     if (!userLocation) return false;
     
@@ -293,9 +339,119 @@ export default function MapScreen() {
       };
     });
     settrashReports(data);
-    // Artık başlangıçta atık noktaları gösterilmeyecek
-    setVisibleTrashReports([]);
+    applyFilters(data);
   };
+
+  // Filtreleri uygulayan fonksiyon
+  const applyFilters = (data = trashReports) => {
+    // Başlangıçta tüm verileri filtreleme için hazırla
+    let filteredData = [...data];
+
+    // Status filtreleri (reported ve cleaned)
+    if (!showReportedTrash) {
+      filteredData = filteredData.filter(item => item.status !== 'reported');
+    }
+    if (!showCleanedTrash) {
+      filteredData = filteredData.filter(item => item.status !== 'cleaned');
+    }
+
+    // Tarih filtresi
+    if (useDateFilter && startDate && endDate) {
+      filteredData = filteredData.filter(item => {
+        if (!item.createdAt) return false;
+        
+        const itemDate = item.createdAt.toDate ? item.createdAt.toDate() : new Date(item.createdAt);
+        return itemDate >= startDate && itemDate <= endDate;
+      });
+    }
+
+    // Filtrelenmiş veriyi ayarla
+    setVisibleTrashReports(filteredData);
+  };
+
+  // Tarih seçici değişiklikleri
+  const handleDateChange = () => {
+    setShowDatePicker(false);
+    
+    // Seçili tarih değerlerinden yeni bir Date nesnesi oluştur
+    const selectedDate = new Date(selectedYear, selectedMonth, selectedDay);
+    
+    if (datePickerType === 'start') {
+      // Başlangıç tarihine günün başlangıcını ayarla (00:00:00)
+      const newStartDate = new Date(selectedDate);
+      newStartDate.setHours(0, 0, 0, 0);
+      setStartDate(newStartDate);
+
+      // Bitiş tarihi yoksa veya başlangıç tarihinden önceyse, bitiş tarihini de güncelle
+      if (!endDate || endDate < newStartDate) {
+        const newEndDate = new Date(newStartDate);
+        newEndDate.setHours(23, 59, 59, 999);
+        setEndDate(newEndDate);
+      }
+    } else {
+      // Bitiş tarihine günün sonunu ayarla (23:59:59)
+      const newEndDate = new Date(selectedDate);
+      newEndDate.setHours(23, 59, 59, 999);
+      setEndDate(newEndDate);
+
+      // Başlangıç tarihi yoksa veya bitiş tarihinden sonraysa, başlangıç tarihini de güncelle
+      if (!startDate || startDate > newEndDate) {
+        const newStartDate = new Date(newEndDate);
+        newStartDate.setHours(0, 0, 0, 0);
+        setStartDate(newStartDate);
+      }
+    }
+  };
+
+  // Ay adlarını döndüren yardımcı fonksiyon
+  const getMonthName = (monthIndex: number): string => {
+    const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 
+                   'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+    return months[monthIndex];
+  };
+
+  // Belirli bir ayın gün sayısını döndüren yardımcı fonksiyon
+  const getDaysInMonth = (year: number, month: number): number => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  // Tarih seçici modalını açarken mevcut tarihi seçili olarak ayarlama
+  const openDatePicker = (type: 'start' | 'end') => {
+    if (!useDateFilter) return;
+    
+    setDatePickerType(type);
+    
+    const targetDate = type === 'start' 
+      ? (startDate || new Date()) 
+      : (endDate || new Date());
+    
+    setSelectedYear(targetDate.getFullYear());
+    setSelectedMonth(targetDate.getMonth());
+    setSelectedDay(targetDate.getDate());
+    
+    setShowDatePicker(true);
+  };
+
+  // Filtreleri temizleme
+  const resetFilters = () => {
+    setShowReportedTrash(true);
+    setShowCleanedTrash(true);
+    setStartDate(null);
+    setEndDate(null);
+    setUseDateFilter(false);
+    applyFilters();
+  };
+
+  // Filtreleri uygulama butonu
+  const applyFilterChanges = () => {
+    applyFilters();
+    setShowFilterPanel(false);
+  };
+
+  // Filtrelerden herhangi biri değiştiğinde otomatik olarak filtreleri uygula
+  useEffect(() => {
+    applyFilters();
+  }, [showReportedTrash, showCleanedTrash, useDateFilter, startDate, endDate]);
 
   useEffect(() => {
     fetchtrashReports();
@@ -324,7 +480,7 @@ export default function MapScreen() {
     // Haritanın görünür alanını al
     mapRef.current.getMapBoundaries().then(({northEast, southWest}) => {
       // Görünür alandaki atık noktalarını filtrele
-      const visibleSpots = trashReports.filter(trash => {
+      let visibleSpots = trashReports.filter(trash => {
         const { latitude, longitude } = trash.location;
         return (
           latitude <= northEast.latitude &&
@@ -333,6 +489,24 @@ export default function MapScreen() {
           longitude >= southWest.longitude
         );
       });
+
+      // Mevcut filtreleri uygula
+      if (!showReportedTrash) {
+        visibleSpots = visibleSpots.filter(item => item.status !== 'reported');
+      }
+      if (!showCleanedTrash) {
+        visibleSpots = visibleSpots.filter(item => item.status !== 'cleaned');
+      }
+
+      // Tarih filtresi
+      if (useDateFilter && startDate && endDate) {
+        visibleSpots = visibleSpots.filter(item => {
+          if (!item.createdAt) return false;
+          
+          const itemDate = item.createdAt.toDate ? item.createdAt.toDate() : new Date(item.createdAt);
+          return itemDate >= startDate && itemDate <= endDate;
+        });
+      }
       
       setVisibleTrashReports(visibleSpots);
       
@@ -508,6 +682,45 @@ export default function MapScreen() {
     }
   };
 
+  // Takvim içindeki günleri oluşturma fonksiyonu
+  const renderCalendarDays = () => {
+    const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
+    const firstDayOfMonth = new Date(selectedYear, selectedMonth, 1).getDay();
+    
+    // Boş günler (ay başlangıcından önceki günler için)
+    const emptyDays = [];
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      emptyDays.push(
+        <View key={`empty-${i}`} style={styles.calendarDay} />
+      );
+    }
+    
+    // Ayın günleri
+    const days = [];
+    for (let i = 1; i <= daysInMonth; i++) {
+      const isSelected = i === selectedDay;
+      days.push(
+        <TouchableOpacity
+          key={`day-${i}`}
+          style={[
+            styles.calendarDay,
+            isSelected && styles.selectedCalendarDay
+          ]}
+          onPress={() => setSelectedDay(i)}
+        >
+          <Text style={[
+            styles.calendarDayText,
+            isSelected && styles.selectedCalendarDayText
+          ]}>
+            {i}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+    
+    return [...emptyDays, ...days];
+  };
+
   // Modal kapatıldığında tüm butonları aktif hale getiren fonksiyon
   const closeErrorModal = () => {
     setShowErrorModal(false);
@@ -637,12 +850,32 @@ export default function MapScreen() {
 
         {/* Navigasyon ve Menü Butonları (Harita Üzerinde) */}
         <View style={styles.topButtonsContainer}>
-          <TouchableOpacity style={styles.topButton}>
+          <TouchableOpacity 
+            style={styles.topButton} 
+            onPress={() => setShowFilterPanel(true)}
+          >
             <Ionicons name="menu" size={24} color="#fff" />
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.topButton} onPress={navigateToUserLocation}>
             <Ionicons name="navigate" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Zoom Kontrol Butonları */}
+        <View style={styles.zoomControlContainer}>
+          <TouchableOpacity 
+            style={styles.zoomButton}
+            onPress={handleZoomIn}
+          >
+            <Ionicons name="add" size={24} color="#000" />
+          </TouchableOpacity>
+          <View style={styles.zoomButtonDivider} />
+          <TouchableOpacity 
+            style={styles.zoomButton}
+            onPress={handleZoomOut}
+          >
+            <Ionicons name="remove" size={24} color="#000" />
           </TouchableOpacity>
         </View>
 
@@ -811,6 +1044,282 @@ export default function MapScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Filtreleme Paneli */}
+      <Modal
+        visible={showFilterPanel}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowFilterPanel(false)}
+      >
+        <View style={styles.filterModalOverlay}>
+          <View style={styles.filterModalContainer}>
+            <View style={styles.filterHeader}>
+              <Text style={styles.filterTitle}>Filters</Text>
+              <TouchableOpacity onPress={() => setShowFilterPanel(false)}>
+                <Ionicons name="close" size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.filterScrollView}>
+              {/* Atık Durumu Filtresi */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Trash Status</Text>
+                
+                <View style={styles.filterOption}>
+                  <View style={styles.filterOptionLeft}>
+                    <View style={[styles.statusIndicator, { backgroundColor: '#E74C3C' }]} />
+                    <Text style={styles.filterOptionText}>Reported Trash</Text>
+                  </View>
+                  <Switch
+                    trackColor={{ false: '#dddddd', true: '#4B936380' }}
+                    thumbColor={showReportedTrash ? '#4B9363' : '#f4f3f4'}
+                    onValueChange={() => setShowReportedTrash(!showReportedTrash)}
+                    value={showReportedTrash}
+                  />
+                </View>
+                
+                <View style={styles.filterOption}>
+                  <View style={styles.filterOptionLeft}>
+                    <View style={[styles.statusIndicator, { backgroundColor: '#4B9363' }]} />
+                    <Text style={styles.filterOptionText}>Cleaned Trash</Text>
+                  </View>
+                  <Switch
+                    trackColor={{ false: '#dddddd', true: '#4B936380' }}
+                    thumbColor={showCleanedTrash ? '#4B9363' : '#f4f3f4'}
+                    onValueChange={() => setShowCleanedTrash(!showCleanedTrash)}
+                    value={showCleanedTrash}
+                  />
+                </View>
+              </View>
+
+              {/* Tarih Filtresi */}
+              <View style={styles.filterSection}>
+                <View style={styles.filterSectionTitleRow}>
+                  <Text style={styles.filterSectionTitle}>Date Filter</Text>
+                  <Switch
+                    trackColor={{ false: '#dddddd', true: '#4B936380' }}
+                    thumbColor={useDateFilter ? '#4B9363' : '#f4f3f4'}
+                    onValueChange={() => setUseDateFilter(!useDateFilter)}
+                    value={useDateFilter}
+                  />
+                </View>
+
+                <View style={styles.dateRangeContainer}>
+                  <TouchableOpacity 
+                    style={[styles.dateRangeButton, !useDateFilter && styles.disabledButton]}
+                    onPress={() => openDatePicker('start')}
+                  >
+                    <View style={styles.dateRangeButtonInner}>
+                      <View style={styles.dateRangeIconLabel}>
+                        <FontAwesome name="calendar-o" size={16} color={useDateFilter ? "#4B9363" : "#999"} />
+                        <Text style={styles.dateRangeLabel}>Start Date:</Text>
+                      </View>
+                      <Text style={[styles.dateRangeValue, !useDateFilter && styles.disabledButtonText]}>
+                        {startDate ? startDate.toLocaleDateString() : 'Not Selected'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  <View style={styles.dateRangeSeparator}>
+                    <View style={styles.dateRangeLine} />
+                    <Text style={styles.dateRangeSeparatorText}>and</Text>
+                    <View style={styles.dateRangeLine} />
+                  </View>
+
+                  <TouchableOpacity 
+                    style={[styles.dateRangeButton, !useDateFilter && styles.disabledButton]}
+                    onPress={() => openDatePicker('end')}
+                  >
+                    <View style={styles.dateRangeButtonInner}>
+                      <View style={styles.dateRangeIconLabel}>
+                        <FontAwesome name="calendar-o" size={16} color={useDateFilter ? "#4B9363" : "#999"} />
+                        <Text style={styles.dateRangeLabel}>End Date:</Text>
+                      </View>
+                      <Text style={[styles.dateRangeValue, !useDateFilter && styles.disabledButtonText]}>
+                        {endDate ? endDate.toLocaleDateString() : 'Not Selected'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                {/* {useDateFilter && (
+                  <View style={styles.dateRangeHint}>
+                    <Ionicons name="information-circle-outline" size={16} color="#4B9363" />
+                    <Text style={styles.dateRangeHintText}>
+                      {startDate && endDate 
+                        ? `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()} dates will be shown.`
+                        : 'You can filter by selecting a date range.'}
+                    </Text>
+                  </View>
+                )} */}
+              </View>
+
+              {/* Filtreleme Hakkında Bilgiler
+              <View style={styles.filterInfoContainer}>
+                <View style={styles.filterInfoHeader}>
+                  <Ionicons name="information-circle" size={20} color="#4B9363" />
+                  <Text style={styles.filterInfoTitle}>Map Markings</Text>
+                </View>
+                
+                <View style={styles.filterLegendContainer}>
+                  <View style={styles.filterLegendItem}>
+                    <View style={[styles.statusIndicator, { backgroundColor: '#E74C3C' }]} />
+                    <Text style={styles.filterLegendText}>Reported Trash</Text>
+                  </View>
+                  <View style={styles.filterLegendItem}>
+                    <View style={[styles.statusIndicator, { backgroundColor: '#4B9363' }]} />
+                    <Text style={styles.filterLegendText}>Cleaned Trash</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.filterHintBox}>
+                  <Ionicons name="time-outline" size={18} color="#4B9363" />
+                  <Text style={styles.filterHintText}>
+                    When the date filter is active, the reports for the selected date range will be shown.
+                  </Text>
+                </View>
+              </View> */}
+
+            </ScrollView>
+
+            {/* Butonlar */}
+            <View style={styles.filterButtonBar}>
+              <TouchableOpacity 
+                style={styles.filterButtonReset}
+                onPress={resetFilters}
+              >
+                <Ionicons name="refresh-outline" size={18} color="#666" />
+                <Text style={styles.filterButtonResetText}>Reset</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.filterButtonApply}
+                onPress={applyFilterChanges}
+              >
+                <Ionicons name="checkmark" size={18} color="#FFF" />
+                <Text style={styles.filterButtonApplyText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* DatePicker Modal */}
+      <Modal
+        visible={showDatePicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowDatePicker(false)}>
+          <View style={styles.datePickerOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.datePickerContainer}>
+                <Text style={styles.datePickerTitle}>
+                  {datePickerType === 'start' ? 'Start Date' : 'End Date'} Select
+                </Text>
+                
+                <View style={styles.calendarContainer}>
+                  {/* Yıl ve Ay Seçici */}
+                  <View style={styles.calendarHeader}>
+                    <TouchableOpacity 
+                      style={styles.yearMonthSelector}
+                      onPress={() => {
+                        setSelectedMonth(selectedMonth === 0 ? 11 : selectedMonth - 1);
+                        if (selectedMonth === 0) {
+                          setSelectedYear(selectedYear - 1);
+                        }
+                      }}
+                    >
+                      <Ionicons name="chevron-back" size={24} color="#4B9363" />
+                    </TouchableOpacity>
+                    
+                    <Text style={styles.yearMonthText}>
+                      {getMonthName(selectedMonth)} {selectedYear}
+                    </Text>
+                    
+                    <TouchableOpacity 
+                      style={styles.yearMonthSelector}
+                      onPress={() => {
+                        setSelectedMonth(selectedMonth === 11 ? 0 : selectedMonth + 1);
+                        if (selectedMonth === 11) {
+                          setSelectedYear(selectedYear + 1);
+                        }
+                      }}
+                    >
+                      <Ionicons name="chevron-forward" size={24} color="#4B9363" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Haftanın Günleri */}
+                  <View style={styles.weekDaysContainer}>
+                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day, index) => (
+                      <Text key={index} style={styles.weekDayText}>{day}</Text>
+                    ))}
+                  </View>
+
+                  {/* Takvim Günleri */}
+                  <View style={styles.calendarDaysContainer}>
+                    {renderCalendarDays()}
+                  </View>
+
+                  {/* Hızlı Erişim Butonları */}
+                  <View style={styles.quickAccessContainer}>
+                    <TouchableOpacity 
+                      style={styles.quickAccessButton}
+                      onPress={() => {
+                        const today = new Date();
+                        setSelectedYear(today.getFullYear());
+                        setSelectedMonth(today.getMonth());
+                        setSelectedDay(today.getDate());
+                      }}
+                    >
+                      <Text style={styles.quickAccessButtonText}>Today</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      style={styles.quickAccessButton}
+                      onPress={() => {
+                        // Önceki yıl
+                        setSelectedYear(selectedYear - 1);
+                      }}
+                    >
+                      <Text style={styles.quickAccessButtonText}>-1 Year</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      style={styles.quickAccessButton}
+                      onPress={() => {
+                        // Sonraki yıl
+                        setSelectedYear(selectedYear + 1);
+                      }}
+                    >
+                      <Text style={styles.quickAccessButtonText}>+1 Year</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                
+                <View style={styles.datePickerButtonsRow}>
+                  <TouchableOpacity 
+                    style={styles.datePickerCancelButton}
+                    onPress={() => setShowDatePicker(false)}
+                  >
+                    <Text style={styles.datePickerCancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.datePickerConfirmButton}
+                    onPress={handleDateChange}
+                  >
+                    <Text style={styles.datePickerConfirmButtonText}>Apply</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -841,7 +1350,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'transparent',
+    // backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   searchBar: {
     flexDirection: 'row',
@@ -887,6 +1396,7 @@ const styles = StyleSheet.create({
   topButton: {
     width: 40,
     height: 40,
+    top: 24,
     borderRadius: 8,
     backgroundColor: '#4B9363',
     alignItems: 'center',
@@ -902,7 +1412,7 @@ const styles = StyleSheet.create({
   },
   bottomButtons: {
     position: 'absolute',
-    bottom: 80, // BottomNavigation'ın üzerinde
+    bottom: 100, // BottomNavigation'ın üzerinde
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -1134,6 +1644,7 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: 'rgba(200, 200, 200, 0.8)',
+    borderColor: '#ddd',
   },
   disabledButtonText: {
     color: '#999',
@@ -1231,6 +1742,428 @@ const styles = StyleSheet.create({
   noSpotsModalButtonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '500',
+  },
+  zoomControlContainer: {
+    position: 'absolute',
+    right: 24,
+    bottom: 120, // BottomNavigation'ın üzerinde
+    backgroundColor: 'rgba(255, 255, 255, 1)',
+    borderRadius: 8,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  zoomButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  zoomButtonDivider: {
+    height: 1,
+    // backgroundColor: '#E8E8E8',
+  },
+  // Filtreleme Paneli Stilleri
+  filterModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  filterModalContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    maxHeight: '80%',
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EFEFEF',
+  },
+  filterTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4B9363',
+  },
+  filterScrollView: {
+    maxHeight: 500,
+  },
+  filterSection: {
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  filterSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+    color: '#333',
+  },
+  filterSectionTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  filterOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  filterOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusIndicator: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+  filterOptionText: {
+    fontSize: 15,
+    color: '#444',
+  },
+  dateRangeContainer: {
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  dateRangeButton: {
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#FAFAFA',
+  },
+  dateRangeButtonInner: {
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dateRangeIconLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dateRangeLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+    marginLeft: 8,
+  },
+  dateRangeValue: {
+    fontSize: 14,
+    color: '#4B9363',
+    fontWeight: '500',
+  },
+  dateRangeSeparator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 8,
+  },
+  dateRangeLine: {
+    height: 1,
+    backgroundColor: '#E8E8E8',
+    flex: 1,
+  },
+  dateRangeSeparatorText: {
+    color: '#999',
+    fontSize: 12,
+    marginHorizontal: 8,
+  },
+  dateRangeHint: {
+    flexDirection: 'row',
+    backgroundColor: '#F0F9F0',
+    padding: 8,
+    borderRadius: 6,
+    marginTop: 8,
+    alignItems: 'flex-start',
+  },
+  dateRangeHintText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 6,
+    flex: 1,
+    lineHeight: 16,
+  },
+  calendarNavButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  datePickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  datePickerContainer: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    width: '85%',
+    alignItems: 'center',
+  },
+  datePickerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    color: '#4B9363',
+  },
+  datePickerButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 16,
+  },
+  datePickerCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: '#F0F0F0',
+    marginRight: 8,
+  },
+  datePickerCancelButtonText: {
+    color: '#555',
+    fontSize: 16,
+  },
+  datePickerConfirmButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: '#4B9363',
+    marginLeft: 8,
+  },
+  datePickerConfirmButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  // Tarih Seçici Modal Stilleri
+  customDatePicker: {
+    width: '100%',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 16,
+    marginVertical: 16,
+  },
+  datePickerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 8,
+  },
+  datePickerControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flex: 1,
+  },
+  datePickerLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    width: 60,
+  },
+  datePickerValue: {
+    fontSize: 16,
+    fontWeight: '500',
+    width: 100,
+    textAlign: 'center',
+  },
+  filterInfoContainer: {
+    marginTop: 16,
+    marginBottom: 8,
+    padding: 16,
+    backgroundColor: '#F0F9F0',
+    borderRadius: 8,
+  },
+  filterInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  filterInfoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4B9363',
+    marginLeft: 8,
+  },
+  filterLegendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  filterLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  filterLegendText: {
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 8,
+  },
+  filterHintBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: 8,
+  },
+  filterHintText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 8,
+    flex: 1,
+    lineHeight: 16,
+  },
+  filterButtonBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 16,
+    paddingHorizontal: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#EFEFEF',
+  },
+  filterButtonReset: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: '#F0F0F0',
+    marginRight: 8,
+  },
+  filterButtonResetText: {
+    color: '#666',
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  filterButtonApply: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: '#4B9363',
+    marginLeft: 8,
+  },
+  filterButtonApplyText: {
+    color: '#fff',
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  calendarContainer: {
+    width: '100%',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 16,
+    marginVertical: 16,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  yearMonthSelector: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  yearMonthText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  weekDaysContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  weekDayText: {
+    width: '14%', // 7 günün her biri için
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+    marginBottom: 8,
+  },
+  calendarDaysContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  quickAccessContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 16,
+    flexWrap: 'wrap',
+  },
+  quickAccessButton: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginHorizontal: 4,
+  },
+  quickAccessButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#4B9363',
+  },
+  calendarDay: {
+    width: '14%', // 7 günün her biri için
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  selectedCalendarDay: {
+    backgroundColor: '#4B9363',
+    borderRadius: 20,
+  },
+  calendarDayText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  selectedCalendarDayText: {
+    color: '#FFF',
     fontWeight: '500',
   },
 }); 
