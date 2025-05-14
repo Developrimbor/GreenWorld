@@ -13,14 +13,53 @@ import {
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 // Import kısmına eklenecek
-import { deleteDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { deleteDoc, updateDoc, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
 import { auth } from '../config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import BottomNavigation from '../../components/BottomNavigation';
 import { LinearGradient } from 'expo-linear-gradient';
 
-// PostType içine authorId ekleyelim
+// Bu yorum bloğu, beğeni sistemi için Firebase yaklaşımını açıklar
+/*
+ * Firebase'de Beğeni Sayısı Sistemi
+ *
+ * Sistem 2 ana parçadan oluşur:
+ * 
+ * 1. Post Belgelerinde 'likeCount' Alanı:
+ * - Her post belgesinde (posts koleksiyonunda) likeCount adlı sayaç tutulur
+ * - Bu sayaç, postu beğenen kullanıcı sayısını gösterir
+ * - Avantajı: Post detay sayfasında beğeni sayısını göstermek için extra sorgu yapmaya gerek yoktur
+ * - Firestore'da şöyle görünür: 
+ *   posts/POST_ID/{
+ *     title: "...",
+ *     content: "...",
+ *     likeCount: 42,  <-- Beğeni sayısı burada tutulur
+ *     ...diğer alanlar
+ *   }
+ *
+ * 2. Kullanıcı Belgelerinde 'likedPosts' Dizisi:
+ * - Her kullanıcı belgesinde (users koleksiyonunda) likedPosts adlı dizi tutulur
+ * - Bu dizi, kullanıcının beğendiği postların ID'lerini içerir
+ * - Avantajı: Kullanıcının bir postu beğenip beğenmediğini hızlıca kontrol edebiliriz
+ * - Firestore'da şöyle görünür:
+ *   users/USER_ID/{
+ *     displayName: "...",
+ *     likedPosts: ["post1", "post2", ...],  <-- Beğenilen postların ID'leri
+ *     ...diğer alanlar
+ *   }
+ *
+ * Beğeni Ekleme/Kaldırma İşlemi:
+ * 1. Kullanıcı bir postu beğendiğinde:
+ *    - Post'un likeCount değeri 1 artırılır
+ *    - Kullanıcının likedPosts dizisine post ID'si eklenir
+ * 
+ * 2. Kullanıcı beğenisini kaldırdığında:
+ *    - Post'un likeCount değeri 1 azaltılır
+ *    - Kullanıcının likedPosts dizisinden post ID'si kaldırılır
+ */
+
+// PostType içine authorId, likeCount ekleyelim
 type PostType = {
   id: string;
   title: string;
@@ -29,8 +68,9 @@ type PostType = {
   imageUrl: string;
   author: string;
   date: string;
-  authorId: string; // Eklendi
-  authorImage?: string; // Profil resmi için eklendi
+  authorId: string;
+  authorImage?: string;
+  likeCount: number; // Beğeni sayısı için eklendi
 };
 
 export default function PostDetail() {
@@ -39,6 +79,7 @@ export default function PostDetail() {
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [likeCount, setLikeCount] = useState(0); // Beğeni sayısı için ayrı state ekleyelim
 
   // handleDeletePost fonksiyonunu değiştirelim
   const handleDeletePost = () => {
@@ -65,6 +106,10 @@ export default function PostDetail() {
         if (postDoc.exists()) {
           const postData = postDoc.data();
           
+          // Beğeni sayısını en baştan alalım, undefined ise 0
+          const currentLikeCount = postData.likeCount !== undefined ? postData.likeCount : 0;
+          setLikeCount(Math.max(0, currentLikeCount)); // Negatif değer olmasın
+          
           // Post sahibinin bilgilerini getir
           let authorPhotoURL = '';
           if (postData.authorId) {
@@ -90,6 +135,7 @@ export default function PostDetail() {
             date: postData.createdAt ? new Date(postData.createdAt.toDate()).toLocaleDateString() : new Date().toLocaleDateString(),
             authorId: postData.authorId || '',
             authorImage: authorPhotoURL || '', // Yazarın profil fotoğrafı URL'si
+            likeCount: Math.max(0, currentLikeCount), // Negatif değer olmasın
           });
 
           // Kontrol et kullanıcı bu postu beğenmiş mi
@@ -127,7 +173,7 @@ export default function PostDetail() {
     }
   };
 
-  // Beğeni durumunu güncelleme
+  // Bu fonksiyon, beğeni durumunu güncelleyerek Firebase'i senkronize eder
   const handleLikeToggle = async () => {
     try {
       const currentUser = auth.currentUser;
@@ -136,24 +182,58 @@ export default function PostDetail() {
         return;
       }
       
+      // Kullanıcı ve post referanslarını al
       const userRef = doc(db, 'users', currentUser.uid);
+      const postRef = doc(db, 'posts', post?.id || '');
       const newLikeState = !isLiked;
       
-      // Beğeni durumunu güncelle
+      // Güncel post verilerini al
+      const currentPostDoc = await getDoc(postRef);
+      if (!currentPostDoc.exists()) {
+        Alert.alert('Hata', 'Post bilgilerine erişilemedi.');
+        return;
+      }
+      
+      const currentPostData = currentPostDoc.data();
+      // Mevcut beğeni sayısını al (yoksa 0 kabul et)
+      const currentLikeCount = currentPostData.likeCount !== undefined ? currentPostData.likeCount : 0;
+      
+      // Beğeni durumuna göre Firebase'i güncelle
       if (newLikeState) {
-        // Post'u beğen
+        // 1. BEĞEN: Kullanıcının beğendiği postlar dizisine bu postu ekle
         await updateDoc(userRef, {
           likedPosts: arrayUnion(post?.id)
         });
+        
+        // 2. BEĞEN: Postun beğeni sayısını 1 artır
+        const newLikeCount = currentLikeCount + 1;
+        await updateDoc(postRef, {
+          likeCount: newLikeCount
+        });
+        
+        // 3. BEĞEN: Uygulama state'ini güncelle
+        setLikeCount(newLikeCount);
+        setPost(prev => prev ? {...prev, likeCount: newLikeCount} : null);
       } else {
-        // Beğeniyi kaldır
+        // 1. BEĞENMEKTEN VAZGEÇ: Kullanıcının beğendiği postlar dizisinden bu postu çıkar
         await updateDoc(userRef, {
           likedPosts: arrayRemove(post?.id)
         });
+        
+        // 2. BEĞENMEKTEN VAZGEÇ: Postun beğeni sayısını 1 azalt (negatif olmasını engelle)
+        const newLikeCount = Math.max(0, currentLikeCount - 1);
+        await updateDoc(postRef, {
+          likeCount: newLikeCount
+        });
+        
+        // 3. BEĞENMEKTEN VAZGEÇ: Uygulama state'ini güncelle
+        setLikeCount(newLikeCount);
+        setPost(prev => prev ? {...prev, likeCount: newLikeCount} : null);
       }
       
       setIsLiked(newLikeState);
     } catch (error) {
+      console.error('Beğeni hatası:', error);
       Alert.alert('Hata', 'Beğeni işlemi gerçekleştirilemedi. Lütfen tekrar deneyin.');
     }
   };
@@ -270,16 +350,19 @@ export default function PostDetail() {
           <Text style={styles.authorName}>{post.author}</Text>
         </TouchableOpacity>
         <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            onPress={handleLikeToggle}
-            style={styles.actionButton}
-          >
-            <Ionicons 
-              name={isLiked ? "heart" : "heart-outline"} 
-              size={24} 
-              color={isLiked ? "#FF0000" : "#000"} 
-            />
-          </TouchableOpacity>
+          <View style={styles.likeContainer}>
+            <Text style={styles.likeCount}>{Math.max(0, likeCount)}</Text>
+            <TouchableOpacity 
+              onPress={handleLikeToggle}
+              style={styles.actionButton}
+            >
+              <Ionicons 
+                name={isLiked ? "heart" : "heart-outline"} 
+                size={24} 
+                color={isLiked ? "#FF0000" : "#000"} 
+              />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -479,6 +562,16 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     gap: 8,
+  },
+  likeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  likeCount: {
+    marginRight: 4,
+    fontSize: 14,
+    fontFamily: 'Poppins-Regular',
+    color: '#555',
   },
   // Modal stilleri
   modalOverlay: {
