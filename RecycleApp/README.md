@@ -48,3 +48,30 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+# RecycleApp
+
+Çevre dostu geri dönüşüm ürünlerini paylaşabileceğiniz bir mobil uygulama.
+
+## Yeni Özellikler
+
+### Post Beğeni Sayısı
+
+Artık her postun altında beğeni sayısı gösteriliyor. Kullanıcılar beğendikçe sayı artacak ve herkesce görülebilecek.
+
+#### Mevcut Postların Beğeni Sayısını Güncelleme
+
+Mevcut postların beğeni sayılarını hesaplamak için, uygulama klasöründe aşağıdaki komutu çalıştırın:
+
+```bash
+node scripts/updatePostLikes.js
+```
+
+Bu betik, tüm kullanıcıların beğeni listelerini tarayarak her postun toplam beğeni sayısını hesaplayacak ve güncelleyecektir.
+
+## Önceki Özellikler
+
+- Farklı sayfalardaki (PostDetail, ProfilePage, EditPost) geri butonları standardizasyonu
+- ProfilePage menü geliştirmesi (3 nokta ikonu ve dropdown menü)
+- Puan göstergesi yeniden konumlandırma ve açıklama modalı
+- BottomNavigation iyileştirmesi (aktif sekme vurgusu)
