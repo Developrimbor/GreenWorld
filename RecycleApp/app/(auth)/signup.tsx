@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    padding: 15,
+    paddingHorizontal: 24,
     paddingTop: Platform.OS === 'ios' ? 40 : 20,
   },
   logoContainer: {
