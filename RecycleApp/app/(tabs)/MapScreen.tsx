@@ -16,6 +16,7 @@ import {
   Switch,
   ScrollView,
   Platform,
+  Linking,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import BottomNavigation from '../../components/BottomNavigation';
@@ -91,13 +92,17 @@ export default function MapScreen() {
 
   const requestLocationPermission = async () => {
     try {
-      // Konum izni iste (daha önce denendi mi kontrol edilmeden)
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('İzin Gerekli', 'Konum izni olmadan atık bildirimi yapamazsınız.');
-        return false;
+      // Önce izin durumunu kontrol edelim
+      const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
+      
+      // İzin zaten verilmiş ise
+      if (existingStatus === 'granted') {
+        return true;
       }
-      return true;
+      
+      // İzin henüz istenmemiş veya reddedilmiş ise
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      return status === 'granted';
     } catch (error) {
       console.error('Konum izni alınamadı:', error);
       return false;
@@ -340,6 +345,9 @@ export default function MapScreen() {
     });
     settrashReports(data);
     applyFilters(data);
+
+    // Artık başlangıçta atık noktaları gösterilmeyecek
+    setVisibleTrashReports([]);
   };
 
   // Filtreleri uygulayan fonksiyon
@@ -530,18 +538,49 @@ export default function MapScreen() {
     setIsSearching(true);
     
     try {
+      // Konum izni kontrolü
+      const permissionStatus = await requestLocationPermission();
+      if (!permissionStatus) {
+        Alert.alert(
+          "Location Permission Required", 
+          "Please grant location permission to use the search feature.",
+          [
+            { 
+              text: "Settings", 
+              onPress: () => {
+                // Kullanıcıyı ayarlar sayfasına yönlendir
+                if (Platform.OS === 'ios') {
+                  Linking.openURL('app-settings:');
+                } else {
+                  Linking.openSettings();
+                }
+              } 
+            },
+            { text: "Cancel", style: "cancel" }
+          ]
+        );
+        setIsSearching(false);
+        return;
+      }
+      
       // Arama sorgusunu Geocode API ile yap
       const response = await Location.geocodeAsync(query);
       
       if (response && response.length > 0) {
         // En fazla 5 sonuç göster
-        const results = response.slice(0, 5).map((loc, index) => ({
-          name: `Konum ${index + 1}`,  // API konum adlarını döndürmüyor, sadece koordinatlar
-          coords: {
-            latitude: loc.latitude,
-            longitude: loc.longitude
-          }
-        }));
+        const results = await Promise.all(
+          response.slice(0, 5).map(async (loc, index) => {
+            // Her koordinat için adres bilgisini al
+            const locationDetails = await getLocationDetails(loc.latitude, loc.longitude);
+            return {
+              name: locationDetails,
+              coords: {
+                latitude: loc.latitude,
+                longitude: loc.longitude
+              }
+            };
+          })
+        );
         
         // Sonuçları göster
         setSearchSuggestions(results);
@@ -554,6 +593,12 @@ export default function MapScreen() {
       console.error('Öneri hatası:', error);
       setSearchSuggestions([]);
       setShowSuggestions(false);
+      
+      // Hata mesajını göster
+      Alert.alert(
+        "Search Error", 
+        "Unable to search for locations. Please check your internet connection and location permissions."
+      );
     } finally {
       setIsSearching(false);
     }
@@ -620,30 +665,65 @@ export default function MapScreen() {
     setIsSearching(true);
     
     try {
-      // Konum detaylarını al
-      const locationName = await getLocationDetails(
-        location.coords.latitude,
-        location.coords.longitude
-      );
+      // Konum izni kontrolü
+      const permissionStatus = await requestLocationPermission();
+      if (!permissionStatus) {
+        Alert.alert(
+          "Location Permission Required", 
+          "Please grant location permission to use the search feature.",
+          [
+            { 
+              text: "Settings", 
+              onPress: () => {
+                // Kullanıcıyı ayarlar sayfasına yönlendir
+                if (Platform.OS === 'ios') {
+                  Linking.openURL('app-settings:');
+                } else {
+                  Linking.openSettings();
+                }
+              } 
+            },
+            { text: "Cancel", style: "cancel" }
+          ]
+        );
+        setIsSearching(false);
+        return;
+      }
       
       // Arama çubuğunu güncelle
-      setSearchQuery(locationName);
+      setSearchQuery(location.name);
       
       // Haritayı bu konuma taşı
       const newRegion = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
       };
       
       setRegion(newRegion);
       mapRef.current?.animateToRegion(newRegion, 500);
       
-      // Önerileri kapat
+      // Arama noktasına bir işaret eklemek için geçici seçili konum ayarla
+      setSelectedLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude
+      });
+      
+      // 5 saniye sonra işareti kaldır
+      setTimeout(() => {
+        setSelectedLocation(null);
+      }, 5000);
+      
+      // Başarılı bir arama sonrası klavyeyi kapat ve önerileri gizle
+      Keyboard.dismiss();
       setShowSuggestions(false);
+      
+      // Başarılı bir arama sonrası bir geri bildirim göster
+      // Vibration.vibrate(100); // Haptik geri bildirim (isteğe bağlı)
     } catch (error) {
-      console.error('Konum seçme hatası:', error);
+      console.error('Location selection error:', error);
+      Alert.alert('Error', 'Unable to navigate to the selected location. Please check your location permissions.');
     } finally {
       setIsSearching(false);
     }
@@ -657,6 +737,31 @@ export default function MapScreen() {
     Keyboard.dismiss();
     
     try {
+      // Konum izni kontrolü
+      const permissionStatus = await requestLocationPermission();
+      if (!permissionStatus) {
+        Alert.alert(
+          "Location Permission Required", 
+          "Please grant location permission to use the search feature.",
+          [
+            { 
+              text: "Settings", 
+              onPress: () => {
+                // Kullanıcıyı ayarlar sayfasına yönlendir
+                if (Platform.OS === 'ios') {
+                  Linking.openURL('app-settings:');
+                } else {
+                  Linking.openSettings();
+                }
+              } 
+            },
+            { text: "Cancel", style: "cancel" }
+          ]
+        );
+        setIsSearching(false);
+        return;
+      }
+      
       const response = await Location.geocodeAsync(searchQuery);
       
       if (response && response.length > 0) {
@@ -665,18 +770,30 @@ export default function MapScreen() {
         const newRegion = {
           latitude,
           longitude,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
+          latitudeDelta: 0.02, // Biraz daha yakın bir görünüm
+          longitudeDelta: 0.02,
         };
         
+        // Haritayı yeni bölgeye taşı
         setRegion(newRegion);
         mapRef.current?.animateToRegion(newRegion, 500);
+        
+        // Arama noktasına bir işaret eklemek için geçici seçili konum ayarla (opsiyonel)
+        setSelectedLocation({
+          latitude,
+          longitude
+        });
+        
+        // 5 saniye sonra işareti kaldır
+        setTimeout(() => {
+          setSelectedLocation(null);
+        }, 5000);
       } else {
-        Alert.alert('Sonuç Bulunamadı', 'Aradığınız konum bulunamadı. Lütfen başka bir arama yapın.');
+        Alert.alert('No Results', 'No locations found for your search. Please try a different search term.');
       }
     } catch (error) {
-      console.error('Arama hatası:', error);
-      Alert.alert('Hata', 'Arama yapılırken bir hata oluştu. Lütfen tekrar deneyin.');
+      console.error('Search error:', error);
+      Alert.alert('Error', 'An error occurred while searching. Please check your internet connection and location permissions.');
     } finally {
       setIsSearching(false);
     }
@@ -753,15 +870,17 @@ export default function MapScreen() {
       {/* Arama Çubuğu */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color="#999" />
+          <Ionicons name="search" size={20} color="#4B9363" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search..."
+            placeholder="Search location or address..."
             placeholderTextColor="#999"
             value={searchQuery}
             onChangeText={setSearchQuery}
             onSubmitEditing={handleSearch}
             returnKeyType="search"
+            autoCapitalize="none"
+            autoCorrect={false}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
@@ -771,7 +890,7 @@ export default function MapScreen() {
           {isSearching && <ActivityIndicator size="small" color="#4B9363" style={styles.searchLoader} />}
         </View>
         <TouchableOpacity style={styles.optionsButton} onPress={handleSearch}>
-          <Ionicons name="search" size={24} color="#000" />
+          <Ionicons name="search" size={24} color="#FFF" />
         </TouchableOpacity>
       </View>
       
@@ -814,7 +933,7 @@ export default function MapScreen() {
                 longitude: userLocation.longitude,
               }}
               radius={30}
-              fillColor="rgba(40, 187, 227, 0.5)"
+              fillColor="rgba(40, 187, 227, 0.9)"
               strokeColor="#28BBE3"
               strokeWidth={1}
             />
@@ -823,14 +942,24 @@ export default function MapScreen() {
             <Marker
               coordinate={selectedLocation}
               pinColor="#28BBE3"
-              title="Seçilen Konum"
-            />
+              title="Selected Location"
+            >
+              {!showConfirmButton && (
+                <View style={styles.searchMarkerContainer}>
+                  <View style={styles.searchMarker} />
+                  <View style={styles.searchMarkerBottom} />
+                </View>
+              )}
+            </Marker>
           )}
         </MapView>
 
         {/* Arama Önerileri */}
         {showSuggestions && searchSuggestions.length > 0 && (
           <View style={styles.suggestionsContainer}>
+            <View style={styles.suggestionHeader}>
+              <Text style={styles.suggestionHeaderText}>Location Suggestions</Text>
+            </View>
             <FlatList
               data={searchSuggestions}
               keyExtractor={(item, index) => `suggestion-${index}`}
@@ -839,11 +968,20 @@ export default function MapScreen() {
                   style={styles.suggestionItem}
                   onPress={() => selectSuggestion(item)}
                 >
-                  <Ionicons name="location-outline" size={20} color="#666" />
-                  <Text style={styles.suggestionText}>{item.name}</Text>
+                  <View style={styles.suggestionIcon}>
+                    <Ionicons name="location" size={18} color="#4B9363" />
+                  </View>
+                  <View style={styles.suggestionContent}>
+                    <Text style={styles.suggestionText} numberOfLines={1}>{item.name}</Text>
+                    <Text style={styles.suggestionSubtext}>
+                      {`${item.coords.latitude.toFixed(4)}, ${item.coords.longitude.toFixed(4)}`}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color="#CCC" />
                 </TouchableOpacity>
               )}
               keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             />
           </View>
         )}
@@ -1355,28 +1493,39 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E8E8E8',
+    backgroundColor: '#F5F5F5',
     borderRadius: 24,
     paddingHorizontal: 16,
     flex: 1,
     marginRight: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1.5,
   },
   searchInput: {
     marginLeft: 8,
     flex: 1,
     fontSize: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    color: '#333',
   },
   searchLoader: {
     marginLeft: 8,
   },
   optionsButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#E8E8E8',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#4B9363',
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   mapArea: {
     flex: 1,
@@ -1505,9 +1654,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 100,
-    borderRadius: 8,
-    marginHorizontal: 16,
-    maxHeight: 200,
+    borderRadius: 12,
+    marginHorizontal: 24,
+    maxHeight: 300,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -1516,18 +1665,50 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+  },
+  suggestionHeader: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#F9F9F9',
+  },
+  suggestionHeaderText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4B9363',
   },
   suggestionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    backgroundColor: '#FFFFFF',
+  },
+  suggestionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(75, 147, 99, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  suggestionContent: {
+    flex: 1,
   },
   suggestionText: {
-    marginLeft: 8,
     fontSize: 14,
     color: '#333',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  suggestionSubtext: {
+    fontSize: 12,
+    color: '#666',
   },
   // Info Dialog styles
   infoDialogOverlay: {
@@ -2165,5 +2346,27 @@ const styles = StyleSheet.create({
   selectedCalendarDayText: {
     color: '#FFF',
     fontWeight: '500',
+  },
+  searchMarkerContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    padding: 8,
+    borderRadius: 8,
+  },
+  searchMarker: {
+    width: '100%',
+    height: 4,
+    backgroundColor: '#28BBE3',
+    borderRadius: 4,
+  },
+  searchMarkerBottom: {
+    width: '100%',
+    height: 4,
+    backgroundColor: '#28BBE3',
+    borderRadius: 4,
+    marginTop: 4,
   },
 }); 
