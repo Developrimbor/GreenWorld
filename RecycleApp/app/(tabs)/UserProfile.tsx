@@ -15,6 +15,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
 import { auth, db } from '../config/firebase';
 import { collection, query, where, orderBy, doc, getDoc, getDocs } from 'firebase/firestore';
+import * as Location from 'expo-location';
 
 export default function UserProfile() {
   // Tab tipleri için type tanımı
@@ -34,6 +35,10 @@ export default function UserProfile() {
   // Animasyon değeri
   const slideAnim = useRef(new Animated.Value(0)).current;
 
+  // Adresleri saklamak için state
+  const [reportedAddresses, setReportedAddresses] = useState<{[id: string]: string}>({});
+  const [cleanedAddresses, setCleanedAddresses] = useState<{[id: string]: string}>({});
+
   // Slider animasyonu için fonksiyon
   const animateSlider = (position: number) => {
     Animated.spring(slideAnim, {
@@ -46,6 +51,24 @@ export default function UserProfile() {
   const handleTabPress = (tab: TabType) => {
     setActiveTab(tab);
     animateSlider(tab === 'reported' ? 0 : tab === 'cleaned' ? 120 : 240);
+  };
+
+  // Adresleri çekmek için yardımcı fonksiyon
+  const fetchAddress = async (latitude: number, longitude: number) => {
+    try {
+      const res = await Location.reverseGeocodeAsync({ latitude, longitude });
+      if (res && res.length > 0) {
+        const loc = res[0];
+        let address = '';
+        if (loc.city) address += loc.city + ', ';
+        if (loc.region) address += loc.region + ', ';
+        if (loc.country) address += loc.country;
+        return address.trim().replace(/, $/, '');
+      }
+      return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+    } catch {
+      return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+    }
   };
 
   // Kullanıcı verilerini fetch etme
@@ -154,6 +177,27 @@ export default function UserProfile() {
 
     fetchUserData();
   }, [userId, router]);
+
+  // Reported ve Cleaned için adresleri yükle
+  useEffect(() => {
+    const loadAddresses = async () => {
+      const reported: {[id: string]: string} = {};
+      for (const item of reportedItems) {
+        if (item.location && item.location.latitude && item.location.longitude) {
+          reported[item.id] = await fetchAddress(item.location.latitude, item.location.longitude);
+        }
+      }
+      setReportedAddresses(reported);
+      const cleaned: {[id: string]: string} = {};
+      for (const item of cleanedItems) {
+        if (item.location && item.location.latitude && item.location.longitude) {
+          cleaned[item.id] = await fetchAddress(item.location.latitude, item.location.longitude);
+        }
+      }
+      setCleanedAddresses(cleaned);
+    };
+    loadAddresses();
+  }, [reportedItems, cleanedItems]);
 
   // Yükleme durumunda gösterilecek ekran
   if (isLoading) {
@@ -331,7 +375,7 @@ export default function UserProfile() {
                       <View style={styles.locationContainer}>
                         <Ionicons name="location-outline" size={16} color="#666" />
                         <Text style={styles.postLocation}>
-                          {item.location ? `${item.location.latitude.toFixed(4)}, ${item.location.longitude.toFixed(4)}` : 'No Location'}
+                          {reportedAddresses[item.id] || (item.location ? `${item.location.latitude.toFixed(4)}, ${item.location.longitude.toFixed(4)}` : 'No Location')}
                         </Text>
                       </View>
                       <Text style={styles.postDate}>
@@ -383,7 +427,7 @@ export default function UserProfile() {
                       <View style={styles.locationContainer}>
                         <Ionicons name="location-outline" size={16} color="#666" />
                         <Text style={styles.postLocation}>
-                          {item.location ? `${item.location.latitude.toFixed(4)}, ${item.location.longitude.toFixed(4)}` : 'No Location'}
+                          {cleanedAddresses[item.id] || (item.location ? `${item.location.latitude.toFixed(4)}, ${item.location.longitude.toFixed(4)}` : 'No Location')}
                         </Text>
                       </View>
                       <Text style={styles.postDate}>
