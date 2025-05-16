@@ -20,13 +20,14 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import BottomNavigation from '../../components/BottomNavigation';
-import MapView, { Marker, PROVIDER_GOOGLE, Circle } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE, Circle, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { storage } from '../config/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const { width, height } = Dimensions.get('window');
 const INITIAL_REGION = {
@@ -70,6 +71,8 @@ export default function MapScreen() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showInfoDialog, setShowInfoDialog] = useState(false);
   const [isReportMode, setIsReportMode] = useState(false);
+  // Region değişikliklerini takip etmek için yeni bir state ekleyelim
+  const [isRegionChanging, setIsRegionChanging] = useState(false);
   // Hata mesajı state'leri
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -109,9 +112,26 @@ export default function MapScreen() {
     }
   };
 
+  // Harita region'ı değiştiğinde
+const onRegionChange = () => {
+  if (!isRegionChanging) {
+    setIsRegionChanging(true);
+  }
+};
+
+  // Region değişimi tamamlandığında
+const onRegionChangeComplete = (newRegion: Region) => {
+  if (isRegionChanging) {
+    setRegion(newRegion);
+    setIsRegionChanging(false);
+  }
+};
+
   const getCurrentLocation = async () => {
     try {
-      const location = await Location.getCurrentPositionAsync({});
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced, // Doğruluk seviyesini düşürelim
+      });
       // Yeni region'ı hesaplarken longitude/latitude delta'yı eşit tutuyoruz
       // Bu, haritanın çarpık görünmesini önler
       const longitudeDelta = 0.005;
@@ -119,13 +139,14 @@ export default function MapScreen() {
       
       const newRegion = {
         latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        latitudeDelta: latitudeDelta,
-        longitudeDelta: longitudeDelta
+      longitude: location.coords.longitude,
+      latitudeDelta: 0.005,
+      longitudeDelta: 0.005
       };
       
       // Haritayı tam kullanıcı konumuna merkezliyoruz
-      mapRef.current?.animateToRegion(newRegion, 500);
+      // Animasyonu daha yumuşak hale getirelim
+      mapRef.current?.animateToRegion(newRegion, 1000);
       
       // Region ve kullanıcı konumunu güncelliyoruz
       setRegion(newRegion);
@@ -149,6 +170,7 @@ export default function MapScreen() {
       setIsReportMode(false);
     }
   };
+
 
   const handleReportSpot = async () => {
     // İptal et - tıklamadan önce herhangi bir report mode aktifse temizle
@@ -897,11 +919,15 @@ export default function MapScreen() {
           ref={mapRef}
           provider={PROVIDER_GOOGLE}
           style={styles.map}
-          region={region}
-          onRegionChangeComplete={setRegion}
+          initialRegion={region}  // region yerine initialRegion kullanıyoruz
+          onRegionChange={onRegionChange}
+          onRegionChangeComplete={onRegionChangeComplete}
           showsUserLocation={true}
           showsMyLocationButton={false}
           onPress={handleMapPress}
+          moveOnMarkerPress={false}  // Marker'a tıklandığında otomatik kaymayı engelle
+          rotateEnabled={false}      // Harita rotasyonunu devre dışı bırak
+          pitchEnabled={false}       // Eğim özelliğini devre dışı bırak
         >
           {visibleTrashReports.map(trash => (
             <Marker
