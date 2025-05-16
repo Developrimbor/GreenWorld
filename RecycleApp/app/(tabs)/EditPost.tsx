@@ -32,14 +32,20 @@ export default function EditPost() {
   const [author, setAuthor] = useState('');
   const [date, setDate] = useState('');
   const [loading, setLoading] = useState(true);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   
   // Düzenleme modu state'leri
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingContent, setIsEditingContent] = useState(false);
   const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [isEditingTags, setIsEditingTags] = useState(false);
   
   // Başarı modalı state'i
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Önerilen etiketler
+  const suggestedTags = ['plastic', 'waste', 'recycle', 'reuse', 'paper', 'glass', 'metal', 'organic', 'nature', 'plant', 'environment'];
 
   useEffect(() => {
     if (!id) {
@@ -59,6 +65,7 @@ export default function EditPost() {
           setLocation(postData.location || '');
           setImageUrl(postData.imageUrl || '');
           setAuthor(postData.author || 'Anonim');
+          setTags(postData.tags || []);
           setDate(postData.createdAt ? new Date(postData.createdAt.toDate()).toLocaleDateString() : new Date().toLocaleDateString());
           setLoading(false);
         }
@@ -78,6 +85,7 @@ export default function EditPost() {
         content,
         location,
         imageUrl,
+        tags,
         updatedAt: new Date(),
       });
       // Alert.alert yerine success modal gösteriyoruz
@@ -124,6 +132,30 @@ export default function EditPost() {
       Alert.alert('Error', 'Failed to update image');
       setLoading(false);
     }
+  };
+
+  // Etiket ekleme fonksiyonu
+  const addTag = (tag: string) => {
+    if (!tag || tag.trim() === '') return;
+    
+    // Etiket zaten varsa ekleme
+    if (tags.includes(tag.trim())) return;
+    
+    // Maksimum 4 etiket sınırı
+    if (tags.length >= 4) {
+      Alert.alert('Etiket Sınırı', 'En fazla 4 etiket ekleyebilirsiniz.');
+      return;
+    }
+    
+    setTags([...tags, tag.trim()]);
+    setTagInput('');
+  };
+
+  // Etiket silme fonksiyonu
+  const removeTag = (index: number) => {
+    const newTags = [...tags];
+    newTags.splice(index, 1);
+    setTags(newTags);
   };
 
   if (loading) {
@@ -228,6 +260,93 @@ export default function EditPost() {
               <Ionicons name="create-outline" size={20} color="#4B9363" style={styles.editIcon} />
             </TouchableOpacity>
           </View>
+        )}
+      </View>
+
+      {/* Etiketler Bölümü */}
+      <View style={styles.tagsSection}>
+        <View style={styles.tagsSectionHeader}>
+          <Text style={styles.tagsSectionTitle}>Etiketler</Text>
+          <TouchableOpacity 
+            onPress={() => setIsEditingTags(!isEditingTags)}
+            style={styles.editTagsButton}
+          >
+            <Ionicons 
+              name={isEditingTags ? "checkmark" : "create-outline"} 
+              size={20} 
+              color="#4B9363" 
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Etiketler */}
+        {tags.length > 0 ? (
+          <View style={styles.tagsContainer}>
+            {tags.map((tag, index) => (
+              <View key={index} style={styles.tagChip}>
+                <Text style={styles.tagText}>{tag}</Text>
+                {isEditingTags && (
+                  <TouchableOpacity 
+                    onPress={() => removeTag(index)}
+                    style={styles.removeTagButton}
+                  >
+                    <Ionicons name="close-circle" size={18} color="#4B9363" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.noTagsText}>Henüz etiket eklenmemiş</Text>
+        )}
+
+        {/* Etiket düzenleme modu */}
+        {isEditingTags && tags.length < 4 && (
+          <>
+            <View style={styles.tagInputContainer}>
+              <TextInput
+                style={styles.tagInput}
+                placeholder="Etiket ekle..."
+                value={tagInput}
+                onChangeText={setTagInput}
+                onSubmitEditing={() => addTag(tagInput)}
+                returnKeyType="done"
+                placeholderTextColor="#95A5A6"
+              />
+              <TouchableOpacity 
+                style={styles.addTagButton}
+                onPress={() => addTag(tagInput)}
+              >
+                <Ionicons name="add-circle" size={24} color="#4B9363" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Önerilen etiketler */}
+            <Text style={styles.suggestedTagsTitle}>Önerilen Etiketler</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={styles.suggestedTagsContainer}
+            >
+              {suggestedTags.map((tag, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.suggestedTagChip}
+                  onPress={() => addTag(tag)}
+                  disabled={tags.includes(tag) || tags.length >= 4}
+                >
+                  <Text 
+                    style={[
+                      styles.suggestedTagText,
+                      (tags.includes(tag) || tags.length >= 4) && styles.disabledTagText
+                    ]}
+                  >
+                    {tag}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </>
         )}
       </View>
 
@@ -452,6 +571,95 @@ const styles = StyleSheet.create({
     borderColor: '#E8E8E8',
     borderRadius: 8,
     padding: 8,
+  },
+  // Etiket bölümü stilleri
+  tagsSection: {
+    width: '100%',
+    backgroundColor: '#fff',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E8E8',
+  },
+  tagsSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  tagsSectionTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  editTagsButton: {
+    padding: 4,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  tagChip: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tagText: {
+    color: '#4B9363',
+    fontSize: 14,
+  },
+  removeTagButton: {
+    marginLeft: 4,
+  },
+  noTagsText: {
+    fontSize: 14,
+    color: '#95A5A6',
+    fontStyle: 'italic',
+    marginVertical: 8,
+  },
+  tagInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginVertical: 12,
+  },
+  tagInput: {
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: 8,
+  },
+  addTagButton: {
+    marginLeft: 8,
+  },
+  suggestedTagsTitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  suggestedTagsContainer: {
+    marginBottom: 8,
+  },
+  suggestedTagChip: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
+  },
+  suggestedTagText: {
+    color: '#4B9363',
+    fontSize: 14,
+  },
+  disabledTagText: {
+    color: '#A5D6A7',
   },
   // İçerik bölümü stilleri
   contentScrollView: {
