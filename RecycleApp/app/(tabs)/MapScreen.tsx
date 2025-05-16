@@ -225,21 +225,18 @@ export default function MapScreen() {
         longitudeDelta: 0.01
       };
       
-      setRegion(newRegion);
+      // Sadece userLocation'ı güncelle
       setUserLocation({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       });
       
+      // Region state'ini güncellemek yerine sadece animasyon kullan
       mapRef.current?.animateToRegion(newRegion, 500);
     } catch (error) {
       console.error('Konuma gitme hatası:', error);
-      
-      // Özelleştirilmiş hata mesajı göster
       setShowErrorModal(true);
       setErrorMessage('Your location could not be retrieved. Please try again.');
-      
-      // Hata durumunda report modu kapat
       setIsReportMode(false);
     }
   };
