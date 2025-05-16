@@ -153,21 +153,21 @@ export default function CreatePost() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="chevron-back" size={24} color="#2C3E50" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>YENİ POST</Text>
+        <Text style={styles.headerTitle}>Yeni Gönderi</Text>
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
           <Text style={styles.submitText}>Paylaş</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <TouchableOpacity style={styles.imagePickerButton} onPress={pickImage}>
           {image ? (
-            <Image source={{ uri: image }} style={styles.previewImage} />
+            <Image source={{ uri: image }} style={styles.previewImage} resizeMode="cover" />
           ) : (
             <View style={styles.imagePlaceholder}>
-              <Ionicons name="camera" size={40} color="#666" />
+              <Ionicons name="camera-outline" size={48} color="#4B9363" />
               <Text style={styles.imagePlaceholderText}>Fotoğraf Ekle</Text>
             </View>
           )}
@@ -176,31 +176,30 @@ export default function CreatePost() {
         <View style={styles.formSection}>
           <TextInput
             style={styles.titleInput}
-            placeholder="Başlık"
+            placeholder="Başlık ekleyin..."
             value={title}
             onChangeText={setTitle}
-            placeholderTextColor="#666"
+            placeholderTextColor="#95A5A6"
           />
 
           <View style={styles.locationInput}>
-            <Ionicons name="location-outline" size={20} color="#666" />
+            <Ionicons name="location-outline" size={24} color="#4B9363" />
             <TextInput
               style={styles.locationTextInput}
-              placeholder="Konum"
+              placeholder="Konum ekleyin..."
               value={location}
               onChangeText={setLocation}
-              placeholderTextColor="#666"
+              placeholderTextColor="#95A5A6"
             />
           </View>
 
           <TextInput
             style={styles.contentInput}
-            placeholder="İçerik"
+            placeholder="Gönderiniz hakkında bir şeyler yazın..."
             value={content}
             onChangeText={setContent}
             multiline
-            textAlignVertical="top"
-            placeholderTextColor="#666"
+            placeholderTextColor="#95A5A6"
           />
         </View>
       </ScrollView>
