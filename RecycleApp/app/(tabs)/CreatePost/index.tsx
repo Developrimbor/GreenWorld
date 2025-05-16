@@ -9,8 +9,10 @@ import {
   ScrollView,
   SafeAreaView,
   Alert,
+  FlatList,
+  Modal,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -23,6 +25,16 @@ export default function CreatePost() {
   const [location, setLocation] = useState('');
   const [content, setContent] = useState('');
   const [image, setImage] = useState<string | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+  
+  // Error Modal State
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorTitle, setErrorTitle] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Önerilen etiketler
+  const suggestedTags = ['plastic', 'waste', 'recycle', 'reuse', 'paper', 'glass', 'metal', 'organic', 'nature', 'plant', 'environment'];
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -37,42 +49,91 @@ export default function CreatePost() {
     }
   };
 
+  const addTag = (tag: string) => {
+    if (!tag || tag.trim() === '') return;
+    
+    // Etiket zaten varsa ekleme
+    if (tags.includes(tag.trim())) return;
+    
+    // Maksimum 4 etiket sınırı
+    if (tags.length >= 4) {
+      showError('Etiket Sınırı', 'En fazla 4 etiket ekleyebilirsiniz.');
+      return;
+    }
+    
+    setTags([...tags, tag.trim()]);
+    setTagInput('');
+  };
+
+  const removeTag = (index: number) => {
+    const newTags = [...tags];
+    newTags.splice(index, 1);
+    setTags(newTags);
+  };
+  
+  // Özelleştirilmiş hata gösterme fonksiyonu
+  const showError = (title: string, message: string) => {
+    setErrorTitle(title);
+    setErrorMessage(message);
+    setErrorModalVisible(true);
+  };
+
   const handleSubmit = async () => {
     try {
       console.log('handleSubmit başladı');
       const currentUser = auth.currentUser;
-      console.log('Current user UID:', currentUser ? currentUser.uid : 'Giriş yapılmamış');
+      console.log('Current user UID:', currentUser ? currentUser.uid : 'Not logged in');
 
       if (!currentUser) {
-        Alert.alert('Hata', 'Lütfen önce giriş yapın.');
-        console.log('Kullanıcı giriş yapmamış.');
+        showError('Oturum Hatası', 'Lütfen önce giriş yapın.');
+        console.log('User is not logged in.');
         return;
       }
 
-      if (!title || !location || !content || !image) {
-        Alert.alert('Hata', 'Lütfen tüm alanları doldurun ve bir fotoğraf seçin.');
-        console.log('Eksik alanlar veya resim yok:', { title: !!title, location: !!location, content: !!content, image: !!image });
+      // Tüm gerekli alanları kontrol et, etiketleri de içerecek şekilde
+      if (!title) {
+        showError('Eksik Bilgi', 'Lütfen bir başlık girin.');
+        return;
+      }
+      
+      if (!location) {
+        showError('Eksik Bilgi', 'Lütfen bir konum girin.');
+        return;
+      }
+      
+      if (!content) {
+        showError('Eksik Bilgi', 'Lütfen içerik ekleyin.');
+        return;
+      }
+      
+      if (!image) {
+        showError('Eksik Bilgi', 'Lütfen bir fotoğraf ekleyin.');
+        return;
+      }
+      
+      if (tags.length === 0) {
+        showError('Eksik Bilgi', 'Lütfen en az bir etiket ekleyin.');
         return;
       }
 
-      console.log('Seçilen resim URI:', image);
+      console.log('Selected image URI:', image);
 
       // 1. Dosya bilgilerini al
       const fileInfo = await FileSystem.getInfoAsync(image);
-      console.log('1. Dosya bilgisi alındı:', fileInfo);
+      console.log('1. File information retrieved:', fileInfo);
       if (!fileInfo.exists) {
-        Alert.alert('Hata', 'Seçilen resim dosyası bulunamadı.');
-        console.log('HATA: Dosya bulunamadı:', image);
+        showError('Dosya Hatası', 'Seçilen resim dosyası bulunamadı.');
+        console.log('File not found:', image);
         return;
       }
 
       // 2. Dosyayı fetch ile al
       const response = await fetch(fileInfo.uri);
-      console.log('2. Fetch yanıt durumu:', response.status);
+      console.log('2. Fetch response status:', response.status);
       if (!response.ok) {
         const responseText = await response.text();
-        Alert.alert('Hata', `Resim dosyası sunucuya yüklenemedi (HTTP ${response.status}).`);
-        console.log('HATA: Fetch başarısız:', response.status, response.statusText, responseText);
+        showError('Yükleme Hatası', `Resim dosyası sunucuya yüklenemedi (HTTP ${response.status}).`);
+        console.log('Error: Fetch failed:', response.status, response.statusText, responseText);
         return;
       }
 
@@ -94,7 +155,7 @@ export default function CreatePost() {
           console.log('    -> Token başarıyla yenilendi. Auth time:', idTokenResult.authTime);
         } catch (tokenError: any) {
           console.error('HATA: Token yenilenemedi:', tokenError);
-          Alert.alert('Hata', `Kimlik doğrulama tokenı yenilenemedi: ${tokenError.message}`);
+          showError('Kimlik Doğrulama Hatası', `Kimlik doğrulama tokenı yenilenemedi: ${tokenError.message}`);
           return; // Token yenilenemezse devam etme
         }
       }
@@ -119,6 +180,7 @@ export default function CreatePost() {
         author: currentUser.displayName || 'Anonim',
         authorId: currentUser.uid,
         createdAt: serverTimestamp(),
+        tags: tags.length > 0 ? tags : [],  // Etiketleri ekle
       });
 
       Alert.alert('Başarılı', 'Postunuz başarıyla paylaşıldı.');
@@ -135,14 +197,16 @@ export default function CreatePost() {
       }
       console.error('Tüm Hata Nesnesi:', JSON.stringify(error, null, 2));
 
+      let errorTitle = 'Post Paylaşım Hatası';
       let userMessage = 'Post paylaşılırken bir hata oluştu.';
+      
       if (error.code === 'storage/unknown') {
           userMessage = 'Dosya yüklenirken bilinmeyen bir hata oluştu. Lütfen tekrar deneyin veya internet bağlantınızı kontrol edin.';
       } else if (error.code) {
           userMessage += ` (Kod: ${error.code})`;
       }
 
-      Alert.alert('Hata', userMessage);
+      showError(errorTitle, userMessage);
     }
   };
 
@@ -153,11 +217,11 @@ export default function CreatePost() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="chevron-back" size={24} color="#2C3E50" />
+        <MaterialIcons name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Yeni Gönderi</Text>
+        <Text style={styles.headerTitle}>NEW POST</Text>
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitText}>Paylaş</Text>
+        <Ionicons name="share-outline" size={24} color="#4B9363" />
         </TouchableOpacity>
       </View>
 
@@ -168,7 +232,7 @@ export default function CreatePost() {
           ) : (
             <View style={styles.imagePlaceholder}>
               <Ionicons name="camera-outline" size={48} color="#4B9363" />
-              <Text style={styles.imagePlaceholderText}>Fotoğraf Ekle</Text>
+              <Text style={styles.imagePlaceholderText}>Add Photo</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -176,7 +240,7 @@ export default function CreatePost() {
         <View style={styles.formSection}>
           <TextInput
             style={styles.titleInput}
-            placeholder="Başlık ekleyin..."
+            placeholder="Add Title"
             value={title}
             onChangeText={setTitle}
             placeholderTextColor="#95A5A6"
@@ -186,16 +250,85 @@ export default function CreatePost() {
             <Ionicons name="location-outline" size={24} color="#4B9363" />
             <TextInput
               style={styles.locationTextInput}
-              placeholder="Konum ekleyin..."
+              placeholder="Add Location"
               value={location}
               onChangeText={setLocation}
               placeholderTextColor="#95A5A6"
             />
           </View>
 
+          {/* Etiket ekleme alanı */}
+          <View style={styles.tagsSection}>
+            <Text style={styles.tagsSectionTitle}>Etiketler (Maks. 4) *</Text>
+            
+            {/* Eklenen etiketler */}
+            {tags.length > 0 && (
+              <View style={styles.tagsContainer}>
+                {tags.map((tag, index) => (
+                  <View key={index} style={styles.tagChip}>
+                    <Text style={styles.tagText}>{tag}</Text>
+                    <TouchableOpacity 
+                      onPress={() => removeTag(index)}
+                      style={styles.removeTagButton}
+                    >
+                      <Ionicons name="close-circle" size={18} color="#4B9363" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+            
+            {/* Etiket ekleme input */}
+            {tags.length < 4 && (
+              <View style={styles.tagInputContainer}>
+                <TextInput
+                  style={styles.tagInput}
+                  placeholder="Etiket ekle..."
+                  value={tagInput}
+                  onChangeText={setTagInput}
+                  onSubmitEditing={() => addTag(tagInput)}
+                  returnKeyType="done"
+                  placeholderTextColor="#95A5A6"
+                />
+                <TouchableOpacity 
+                  style={styles.addTagButton}
+                  onPress={() => addTag(tagInput)}
+                >
+                  <Ionicons name="add-circle" size={24} color="#4B9363" />
+                </TouchableOpacity>
+              </View>
+            )}
+            
+            {/* Önerilen etiketler */}
+            <Text style={styles.suggestedTagsTitle}>Önerilen Etiketler</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={styles.suggestedTagsContainer}
+            >
+              {suggestedTags.map((tag, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.suggestedTagChip}
+                  onPress={() => addTag(tag)}
+                  disabled={tags.includes(tag) || tags.length >= 4}
+                >
+                  <Text 
+                    style={[
+                      styles.suggestedTagText,
+                      (tags.includes(tag) || tags.length >= 4) && styles.disabledTagText
+                    ]}
+                  >
+                    {tag}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
           <TextInput
             style={styles.contentInput}
-            placeholder="Gönderiniz hakkında bir şeyler yazın..."
+            placeholder="Write About Your Post"
             value={content}
             onChangeText={setContent}
             multiline
@@ -203,6 +336,32 @@ export default function CreatePost() {
           />
         </View>
       </ScrollView>
+      
+      {/* Özelleştirilmiş hata modalı */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={errorModalVisible}
+        onRequestClose={() => setErrorModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.errorModalContainer}>
+            <View style={styles.errorIconContainer}>
+              <Ionicons name="alert-circle" size={40} color="#fff" />
+            </View>
+            
+            <Text style={styles.errorTitle}>{errorTitle}</Text>
+            <Text style={styles.errorMessage}>{errorMessage}</Text>
+            
+            <TouchableOpacity 
+              style={styles.errorButton}
+              onPress={() => setErrorModalVisible(false)}
+            >
+              <Text style={styles.errorButtonText}>Tamam</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -216,16 +375,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E8E8E8',
-  },
-  backButton: {
-    padding: 8,
+    backgroundColor: '#fff',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  backButton: {
+    padding: 8,
   },
   submitButton: {
     padding: 8,
@@ -258,31 +420,161 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   formSection: {
-    padding: 16,
+    paddingTop: 8,
+    paddingHorizontal: 24,
   },
   titleInput: {
     fontSize: 20,
     fontWeight: '500',
-    marginBottom: 16,
+    marginBottom: 4,
     padding: 8,
   },
   locationInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    padding: 8,
+    marginBottom: 4,
+    paddingBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: '#E8E8E8',
   },
   locationTextInput: {
     flex: 1,
-    marginLeft: 8,
+    marginLeft: 4,
     fontSize: 16,
   },
   contentInput: {
     fontSize: 16,
-    minHeight: 200,
-    padding: 8,
+    paddingTop: 12,
     lineHeight: 24,
+  },
+  // Etiket stili
+  tagsSection: {
+    marginVertical: 16,
+  },
+  tagsSectionTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
+    color: '#333',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+  },
+  tagChip: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tagText: {
+    color: '#4B9363',
+    fontSize: 14,
+    marginRight: 4,
+  },
+  removeTagButton: {
+    marginLeft: 2,
+  },
+  tagInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+  },
+  tagInput: {
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: 8,
+  },
+  addTagButton: {
+    marginLeft: 8,
+  },
+  suggestedTagsTitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  suggestedTagsContainer: {
+    marginBottom: 16,
+  },
+  suggestedTagChip: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
+  },
+  suggestedTagText: {
+    color: '#4B9363',
+    fontSize: 14,
+  },
+  disabledTagText: {
+    color: '#A5D6A7',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  errorModalContainer: {
+    backgroundColor: '#fff',
+    padding: 24,
+    borderRadius: 16,
+    width: '80%',
+    maxHeight: '80%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  errorIconContainer: {
+    backgroundColor: '#4B9363',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: '#333',
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  errorButton: {
+    backgroundColor: '#4B9363',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    width: '100%',
+    alignItems: 'center',
+  },
+  errorButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
