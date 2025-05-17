@@ -108,8 +108,9 @@ export default function LoginScreen() {
           resizeMode="contain"
         />
         <Text style={styles.slogan}>
-          Would you like to volunteer for a{'\n'}
+          Are you already volunteering for a{'\n'}
           <Text style={styles.greenText}>Green World?</Text>
+          <Text style={styles.slogan}> That's great.</Text>
         </Text>
       </View>
 
@@ -185,7 +186,7 @@ export default function LoginScreen() {
       </View>
 
       <View style={styles.signupContainer}>
-        <Text style={styles.noAccountText}>Don't have an account?</Text>
+        <Text style={styles.noAccountText}>Don't have an account yet?</Text>
         <TouchableOpacity 
           style={styles.signupButton}
           onPress={() => router.push('/(auth)/signup')}
@@ -255,7 +256,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 10,
   },
   checkboxContainer: {
     flexDirection: 'row',
@@ -308,7 +309,7 @@ const styles = StyleSheet.create({
   noAccountText: {
     fontFamily: 'Poppins-Regular',
     fontSize: 14,
-    marginBottom: 10,
+    marginBottom: 6,
   },
   signupButton: {
     padding: 10,
