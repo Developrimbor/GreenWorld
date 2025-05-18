@@ -71,6 +71,7 @@ type PostType = {
   authorId: string;
   authorImage?: string;
   likeCount: number; // Beğeni sayısı için eklendi
+  tags?: string[]; // Etiketler için eklendi
 };
 
 export default function PostDetail() {
@@ -136,6 +137,7 @@ export default function PostDetail() {
             authorId: postData.authorId || '',
             authorImage: authorPhotoURL || '', // Yazarın profil fotoğrafı URL'si
             likeCount: Math.max(0, currentLikeCount), // Negatif değer olmasın
+            tags: postData.tags || [], // Etiketleri ekleyelim
           });
 
           // Kontrol et kullanıcı bu postu beğenmiş mi
@@ -324,6 +326,16 @@ export default function PostDetail() {
 
       <View style={styles.titleSection}>
         <Text style={styles.title}>{post.title}</Text>
+        
+        {post.tags && post.tags.length > 0 && (
+          <View style={styles.tagsContainer}>
+            {post.tags.map((tag, index) => (
+              <View key={index} style={styles.tagChip}>
+                <Text style={styles.tagText} numberOfLines={1} ellipsizeMode="tail">{tag}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
 
       <ScrollView style={styles.contentScrollView}>
@@ -338,10 +350,10 @@ export default function PostDetail() {
           onPress={handleProfileNavigation}
         >
           {post.authorImage ? (
-            <Image
+          <Image
               source={{ uri: post.authorImage }}
-              style={styles.authorImage}
-            />
+            style={styles.authorImage}
+          />
           ) : (
             <View style={[styles.authorImage, styles.defaultAuthorImage]}>
               <Ionicons name="person" size={26} color="#4B9363" />
@@ -352,16 +364,16 @@ export default function PostDetail() {
         <View style={styles.actionButtons}>
           <View style={styles.likeContainer}>
             <Text style={styles.likeCount}>{Math.max(0, likeCount)}</Text>
-            <TouchableOpacity 
+          <TouchableOpacity 
               onPress={handleLikeToggle}
-              style={styles.actionButton}
-            >
-              <Ionicons 
-                name={isLiked ? "heart" : "heart-outline"} 
-                size={24} 
-                color={isLiked ? "#FF0000" : "#000"} 
-              />
-            </TouchableOpacity>
+            style={styles.actionButton}
+          >
+            <Ionicons 
+              name={isLiked ? "heart" : "heart-outline"} 
+              size={24} 
+              color={isLiked ? "#FF0000" : "#000"} 
+            />
+          </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -497,9 +509,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     zIndex: 1,
     marginTop: 16,
-    marginBottom: 16,
     paddingHorizontal: 24,
-    // paddingBottom: 8,
+    paddingBottom: 8,
   },
   title: {
     fontSize: 16,
@@ -530,6 +541,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#D9D9D9',
   },
   authorInfo: {
     flexDirection: 'row',
@@ -647,5 +660,24 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     fontSize: 14,
     color: 'white',
+  },
+  tagsContainer: {
+    marginTop: 4,
+    // marginBottom: 4,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  tagChip: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  tagText: {
+    fontSize: 12,
+    fontFamily: 'Poppins-Regular',
+    color: '#4B9363',
   },
 });
