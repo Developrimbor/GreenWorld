@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
 import { LinearGradient } from 'expo-linear-gradient';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, getDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 type PostType = {
@@ -30,6 +30,8 @@ type PostType = {
   createdAt: any;
   content?: string;
   tags?: string[];
+  authorId?: string;
+  authorImage?: string;
 };
 
 type FilterType = {
@@ -61,15 +63,32 @@ export default function HomePage() {
       const q = query(postsRef, orderBy('createdAt', 'desc'));
       const querySnapshot = await getDocs(q);
       
-      const fetchedPosts = querySnapshot.docs.map(doc => {
-        const data = doc.data();
+      const fetchedPosts = await Promise.all(querySnapshot.docs.map(async (docSnap) => {
+        const data = docSnap.data();
+        
+        // Yazarın profil fotoğrafını al - PostDetail sayfasındaki yaklaşımı uygulayalım
+        let authorImage = '';
+        if (data.authorId) {
+          try {
+            const userDoc = await getDoc(doc(db, 'users', data.authorId));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              // Profil fotoğrafı için photoURL veya profilePicture alanını kontrol et
+              authorImage = userData.photoURL || userData.profilePicture || '';
+            }
+          } catch (error) {
+            // Hata durumunu sessizce ele al
+          }
+        }
+        
         return {
-          id: doc.id,
+          id: docSnap.id,
           ...data,
           date: new Date(data.createdAt?.toDate()).toLocaleDateString(),
           createdAt: data.createdAt?.toDate() || new Date(),
+          authorImage: authorImage,
         };
-      }) as PostType[];
+      })) as PostType[];
 
       // Mevcut tüm konumları topla
       const locations = [...new Set(fetchedPosts.map(post => post.location))];
@@ -338,10 +357,23 @@ export default function HomePage() {
                 })}
               >
                 <View style={styles.horizontalCard}>
-                  <Image 
-                    source={{ uri: post.imageUrl }}
-                    style={styles.cardImage} 
-                  />
+                  <View style={styles.imageContainer}>
+                    <Image 
+                      source={{ uri: post.imageUrl }}
+                      style={styles.cardImage} 
+                    />
+                    <LinearGradient
+                      colors={['rgba(0,0,0,1)', 'transparent']}
+                      style={styles.imageGradient}
+                      start={{ x: 0, y: 1 }}
+                      end={{ x: 0, y: 0.1 }}
+                    >
+                      <View style={styles.imageDateContainer}>
+                        <Ionicons name="calendar-outline" size={14} color="#EDEDED" />
+                        <Text style={styles.imageDateText}>{post.date}</Text>
+                      </View>
+                    </LinearGradient>
+                  </View>
                   <View style={styles.cardContent}>
                     <Text style={styles.cardTitle} numberOfLines={2} ellipsizeMode="tail">{post.title}</Text>
                     {post.content && (
@@ -349,25 +381,19 @@ export default function HomePage() {
                         {post.content}
                       </Text>
                     )}
-                    <View style={styles.cardMetaContainer}>
-                      <View style={styles.cardMeta}>
-                        <Ionicons name="calendar-outline" size={14} color="#4B9363" />
-                        <Text style={styles.cardMetaText}>{post.date}</Text>
-                      </View>
-                      <View style={styles.cardMeta}>
-                        <Ionicons name="location" size={14} color="#4B9363" />
-                        <Text style={styles.cardMetaText}>{post.location}</Text>
-                      </View>
+                    <View style={styles.authorContainer}>
+                      {post.authorImage ? (
+                        <Image 
+                          source={{ uri: post.authorImage }} 
+                          style={styles.authorImage} 
+                        />
+                      ) : (
+                        <View style={[styles.authorImage, styles.defaultAuthorImage]}>
+                          <Ionicons name="person" size={16} color="#4B9363" />
+                        </View>
+                      )}
+                      <Text style={styles.authorName}>{post.author}</Text>
                     </View>
-                    {post.tags && post.tags.length > 0 && (
-                      <View style={styles.tagsContainer}>
-                        {post.tags.map((tag, index) => (
-                          <View key={index} style={styles.tagChip}>
-                            <Text style={styles.tagText}>{tag}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    )}
                   </View>
                 </View>
               </TouchableOpacity>
@@ -414,17 +440,18 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     flexDirection: 'row',
-    padding: 8,
+    paddingTop: 16,
+    paddingBottom: 16,
     paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'transparent',
+    // backgroundColor: 'transparent',
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#E8E8E8',
-    borderRadius: 24,
+    borderRadius: 12,
     paddingHorizontal: 16,
     flex: 1,
     marginRight: 12,
@@ -432,8 +459,9 @@ const styles = StyleSheet.create({
   searchInput: {
     marginLeft: 8,
     flex: 1,
-    fontSize: 16,
-    paddingVertical: 8,
+    fontSize: 14,
+    // paddingVertical: 8,
+    fontFamily: 'Poppins-Regular',
   },
   optionsButton: {
     width: 40,
@@ -445,13 +473,15 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingVertical: 4,
+    // paddingVertical: 4,
     paddingHorizontal: 24,
   },
   postCard: {
     marginBottom: 8,
     borderRadius: 12,
     backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -468,29 +498,109 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: '100%',
   },
+  imageContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 6,
+    // marginVertical: 12,
+    position: 'relative',
+    overflow: 'hidden',
+  },
   cardImage: {
     width: 100,
     height: 100,
-    borderRadius: 8,
+    borderRadius: 6,
+  },
+  imageGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '50%',
+    justifyContent: 'flex-end',
+    padding: 8,
+  },
+  imageDateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  imageDateText: {
+    color: '#EDEDED',
+    fontSize: 10,
+    marginLeft: 6,
+    fontFamily: 'Poppins-Regular',
   },
   cardContent: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: 12,
     justifyContent: 'space-between',
+    height: '100%',
+    paddingVertical: 10,
   },
   cardTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
+    // fontWeight: 'bold',
+    fontFamily: 'Poppins-Medium',
     color: '#000',
+    // marginBottom: 2,
+    includeFontPadding: false,
+    lineHeight: 16,
   },
   cardDescription: {
     fontSize: 12,
     color: '#696969',
-    marginTop: 6,
+    marginBottom: 4,
+    fontFamily: 'Poppins-Regular',
+    lineHeight: 16,
+  },
+  authorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    // marginBottom: 2,
+  },
+  authorImage: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    marginRight: 8,
+  },
+  defaultAuthorImage: {
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+  },
+  authorName: {
+    fontSize: 12,
+    color: '#333',
+    fontWeight: '500',
+    fontFamily: 'Poppins-Medium',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    overflow: 'hidden',
+    maxWidth: '100%',
+  },
+  tagChip: {
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 4,
+    marginRight: 4,
+    maxHeight: 20,
+    maxWidth: 100,
+  },
+  tagText: {
+    fontSize: 12,
+    color: '#4B9363',
+    fontFamily: 'Poppins-Regular',
   },
   cardMetaContainer: {
     flexDirection: 'row',
-    marginTop: 8,
     justifyContent: 'flex-start',
     flexWrap: 'wrap',
   },
@@ -498,44 +608,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 8,
-    marginTop: 2,
   },
   cardMetaText: {
     fontSize: 11,
     color: '#696969',
     marginLeft: 4,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 8,
-  },
-  tagChip: {
-    backgroundColor: '#E8F5E9',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 6,
-    marginBottom: 4,
-  },
-  tagText: {
-    fontSize: 8,
-    color: '#4B9363',
+    fontFamily: 'Poppins-Regular',
   },
   fabButton: {
     position: 'absolute',
     right: 24,
-    bottom: 94, // Positioned above BottomNavigation
-    width: 56,
-    height: 56,
+    bottom: 96, // Positioned above BottomNavigation
+    width: 52,
+    height: 52,
     borderRadius: 8,
     backgroundColor: '#4B9363',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: {
-      width: 0,
+      width: 10,
       height: 2,
     },
     shadowOpacity: 0.25,
@@ -657,11 +750,13 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 16,
     fontWeight: '500',
+    fontFamily: 'Poppins-Medium',
   },
   noResultsSubtext: {
     fontSize: 14,
     color: '#999',
     marginTop: 8,
+    fontFamily: 'Poppins-Regular',
   },
   loadingContainer: {
     flex: 1,
@@ -672,5 +767,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginTop: 16,
+    fontFamily: 'Poppins-Regular',
   },
 });
