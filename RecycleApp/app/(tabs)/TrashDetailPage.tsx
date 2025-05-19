@@ -329,17 +329,17 @@ export default function TrashDetailPage() {
       } else {
         // Kullanıcı atığa yeterince yakın değil, uyarı göster
         Alert.alert(
-          'Çok Uzaktasınız',
-          `Bu atığı temizlemek için atık noktasına en fazla ${MAX_DISTANCE} metre mesafede olmalısınız. Şu anda atık noktasına olan mesafeniz yaklaşık ${Math.round(distance)} metredir.`,
-          [{ text: 'Tamam' }]
+          'You are far from the waste spot!',
+          `You need to be at the waste spot within ${MAX_DISTANCE} meters. The distance to the waste spot is approximately ${Math.round(distance)} meters.`,
+          [{ text: 'OK' }]
         );
       }
     } catch (error) {
       console.error('Konum kontrolü hatası:', error);
       Alert.alert(
-        'Konum Hatası',
-        'Konumunuz alınırken bir hata oluştu. Lütfen konum servislerinizin açık olduğundan emin olun.',
-        [{ text: 'Tamam' }]
+        'Location Error',
+        'There was an error receiving your location. Please make sure your location services are turned on.',
+        [{ text: 'OK' }]
       );
     } finally {
       setCheckingLocation(false);
@@ -359,7 +359,7 @@ export default function TrashDetailPage() {
 
   if (!trash) {
     return (
-      <View style={styles.centered}><Text>Atık bulunamadı.</Text></View>
+      <View style={styles.centered}><Text>Waste not found.</Text></View>
     );
   }
 
@@ -615,8 +615,8 @@ export default function TrashDetailPage() {
           <View style={styles.infoModalOverlay}>
             <TouchableWithoutFeedback> 
               <View style={styles.infoModalContainer}>
-                <Text style={styles.infoModalTitle}>Atık Temizleme Bilgileri</Text>
-                <Text style={styles.infoModalSubtitle}>Temizleme işlemi nasıl çalışır?</Text>
+                <Text style={styles.infoModalTitle}>Trash Cleaning Information</Text>
+                <Text style={styles.infoModalSubtitle}>How does the cleaning process work?</Text>
                 
                 <ScrollView style={styles.infoModalList}>
                   <View style={styles.cleaningInfoItem}>
@@ -624,7 +624,7 @@ export default function TrashDetailPage() {
                       <Text style={styles.cleaningInfoNumberText}>1</Text>
                     </View>
                     <Text style={styles.cleaningInfoText}>
-                      "I Cleaned" butonuna tıkladığınızda, konumunuz kontrol edilir.
+                      When you click the "I Cleaned" button, your location is checked.
                     </Text>
                   </View>
                   
@@ -633,7 +633,7 @@ export default function TrashDetailPage() {
                       <Text style={styles.cleaningInfoNumberText}>2</Text>
                     </View>
                     <Text style={styles.cleaningInfoText}>
-                      Atık noktasına en fazla 100 metre mesafede olmanız gerekir.
+                      You need to be within 100 meters of the waste spot.
                     </Text>
                   </View>
                   
@@ -642,7 +642,7 @@ export default function TrashDetailPage() {
                       <Text style={styles.cleaningInfoNumberText}>3</Text>
                     </View>
                     <Text style={styles.cleaningInfoText}>
-                      Temizlik öncesi ve sonrası fotoğraf çekmeniz gerekir.
+                      You need to take photos before and after cleaning.
                     </Text>
                   </View>
                   
@@ -651,7 +651,7 @@ export default function TrashDetailPage() {
                       <Text style={styles.cleaningInfoNumberText}>4</Text>
                     </View>
                     <Text style={styles.cleaningInfoText}>
-                      Temizlik işlemi tamamlandığında, hala atık noktasına yakın olduğunuz kontrol edilir.
+                      After the cleaning process, your location is checked again.
                     </Text>
                   </View>
                   
@@ -660,12 +660,12 @@ export default function TrashDetailPage() {
                       <Text style={styles.cleaningInfoNumberText}>5</Text>
                     </View>
                     <Text style={styles.cleaningInfoText}>
-                      Konumunuz doğrulandığında, temizlik raporu kaydedilir.
+                      When your location is verified, the cleaning report is saved.
                     </Text>
                   </View>
                   
                   <Text style={styles.cleaningInfoNote}>
-                    Not: Bu işlem, sahte temizleme raporlarını önlemek için konum doğrulaması yapar. Lütfen temizleme işlemini gerçekten atık noktasında yapın.
+                    Note: This process verifies your location to prevent fake cleaning reports. Please clean the waste spot in real.
                   </Text>
                 </ScrollView>
                 
@@ -673,7 +673,7 @@ export default function TrashDetailPage() {
                   style={styles.cleaningInfoCloseButton}
                   onPress={() => setShowCleaningInfoModal(false)}
                 >
-                  <Text style={styles.cleaningInfoCloseButtonText}>Anladım</Text>
+                  <Text style={styles.cleaningInfoCloseButtonText}>I understand</Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
