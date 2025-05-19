@@ -707,57 +707,56 @@ export default function ProfilePage() {
         visible={pointsInfoVisible}
         animationType="fade"
         onRequestClose={() => setPointsInfoVisible(false)}
+        statusBarTranslucent={true}
       >
         <TouchableWithoutFeedback onPress={() => setPointsInfoVisible(false)}>
           <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.pointsInfoModal}>
-                <View style={styles.pointsInfoHeader}>
-                  <Text style={styles.pointsInfoTitle}>Point System</Text>
-                  <TouchableOpacity onPress={() => setPointsInfoVisible(false)}>
-                    <Ionicons name="close" size={24} color="#000" />
-                  </TouchableOpacity>
-                </View>
-                
-                <View style={styles.pointsInfoContent}>
-                  <Text style={styles.pointsInfoText}>
-                    GreenWorld points are a value that shows your environmental awareness and contributions. 
-                    You can increase your points in the following ways:
-                  </Text>
-                  
-                  <View style={styles.pointsInfoItem}>
-                    <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
-                    <Text style={styles.pointsInfoItemText}>Report trash: +10 points</Text>
-                  </View>
-                  
-                  <View style={styles.pointsInfoItem}>
-                    <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
-                    <Text style={styles.pointsInfoItemText}>Clean trash: +20 points</Text>
-                  </View>
-                  
-                  <View style={styles.pointsInfoItem}>
-                    <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
-                    <Text style={styles.pointsInfoItemText}>Share post: +5 points</Text>
-                  </View>
-                  
-                  <View style={styles.pointsInfoItem}>
-                    <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
-                    <Text style={styles.pointsInfoItemText}>Use the app actively: +1 point/day</Text>
-                  </View>
-                  
-                  <Text style={styles.pointsInfoText}>
-                    By earning higher points, you can earn various rewards and gain more recognition in the community.
-                  </Text>
-                </View>
-                
-                <TouchableOpacity 
-                  style={styles.pointsInfoButton}
-                  onPress={() => setPointsInfoVisible(false)}
-                >
-                  <Text style={styles.pointsInfoButtonText}>Ok</Text>
-                </TouchableOpacity>
+            <View style={styles.pointsInfoModal}>
+              <View style={styles.pointsInfoHeader}>
+                <Text style={styles.pointsInfoTitle}>Point System</Text>
+                {/* <TouchableOpacity onPress={() => setPointsInfoVisible(false)}>
+                  <Ionicons name="close" size={24} color="#000" />
+                </TouchableOpacity> */}
               </View>
-            </TouchableWithoutFeedback>
+              
+              <ScrollView style={styles.pointsInfoContent}>
+                <Text style={styles.pointsInfoText}>
+                  GreenWorld points are a value that shows your environmental awareness and contributions. 
+                  You can increase your points in the following ways:
+                </Text>
+                
+                <View style={styles.pointsInfoItem}>
+                  <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
+                  <Text style={styles.pointsInfoItemText}>Report trash: +10 points</Text>
+                </View>
+                
+                <View style={styles.pointsInfoItem}>
+                  <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
+                  <Text style={styles.pointsInfoItemText}>Clean trash: +20 points</Text>
+                </View>
+                
+                <View style={styles.pointsInfoItem}>
+                  <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
+                  <Text style={styles.pointsInfoItemText}>Share post: +5 points</Text>
+                </View>
+                
+                <View style={styles.pointsInfoItem}>
+                  <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
+                  <Text style={styles.pointsInfoItemText}>Use the app actively: +1 point/day</Text>
+                </View>
+                
+                <Text style={styles.pointsInfoText}>
+                  By earning higher points, you can earn various rewards and gain more recognition in the community.
+                </Text>
+              </ScrollView>
+              
+              <TouchableOpacity 
+                style={styles.pointsInfoButton}
+                onPress={() => setPointsInfoVisible(false)}
+              >
+                <Text style={styles.pointsInfoButtonText}>OK</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
@@ -1007,7 +1006,9 @@ const styles = StyleSheet.create({
   // Menu styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   menuContainer: {
     position: 'absolute',
@@ -1047,12 +1048,18 @@ const styles = StyleSheet.create({
     width: '85%',
     maxHeight: '80%',
     padding: 24,
-    alignSelf: 'center',
     elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [
+      { translateX: -150 }, // Modal genişliğinin yarısı
+      { translateY: -200 }  // Modal yüksekliğinin yaklaşık yarısı
+    ],
   },
   pointsInfoHeader: {
     flexDirection: 'row',
@@ -1066,13 +1073,15 @@ const styles = StyleSheet.create({
     color: '#4B9363',
   },
   pointsInfoContent: {
-    marginBottom: 16,
+    flex: 1,
+    marginBottom: 4,
   },
   pointsInfoText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#333',
     lineHeight: 20,
     marginBottom: 12,
+    fontFamily: 'Poppins-Regular',
   },
   pointsInfoItem: {
     flexDirection: 'row',
@@ -1081,21 +1090,22 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
   },
   pointsInfoItemText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#333',
     marginLeft: 8,
+    fontFamily: 'Poppins-Regular',
   },
   pointsInfoButton: {
     backgroundColor: '#4B9363',
     borderRadius: 8,
-    paddingVertical: 10,
+    paddingVertical: 12,
     alignItems: 'center',
     // marginTop: 8,
   },
   pointsInfoButtonText: {
     color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontFamily: 'Poppins-Medium',
   },
   defaultProfileImage: {
     backgroundColor: '#F5F5F5',
