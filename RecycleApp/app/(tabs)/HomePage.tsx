@@ -174,13 +174,14 @@ export default function HomePage() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>GREEN WORLD</Text>
       </View>
 
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color="#999" />
+          <Ionicons name="search" size={20} color="#4B9363" />
           <TextInput
             style={styles.searchInput}
             placeholder="Search..."
@@ -198,7 +199,7 @@ export default function HomePage() {
           style={styles.optionsButton}
           onPress={() => setIsFilterModalVisible(true)}
         >
-          <Ionicons name="filter" size={24} color="#000" />
+          <Ionicons name="filter" size={24} color="#FFF" />
         </TouchableOpacity>
       </View>
 
@@ -429,47 +430,62 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E8E8E8',
+    backgroundColor: '#fff',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
+    flex: 1,
   },
   searchContainer: {
     flexDirection: 'row',
-    paddingTop: 16,
+    paddingTop: 12,
     paddingBottom: 16,
     paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'space-between',
-    // backgroundColor: 'transparent',
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E8E8E8',
-    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 24,
     paddingHorizontal: 16,
     flex: 1,
     marginRight: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1.5,
   },
   searchInput: {
     marginLeft: 8,
     flex: 1,
-    fontSize: 14,
-    // paddingVertical: 8,
-    fontFamily: 'Poppins-Regular',
+    fontSize: 16,
+    paddingVertical: 10,
+    color: '#333',
   },
   optionsButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#E8E8E8',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#4B9363',
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   content: {
     flex: 1,
@@ -490,7 +506,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     height: 120,
   },
   horizontalCard: {
@@ -518,7 +534,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     height: '50%',
     justifyContent: 'flex-end',
-    padding: 8,
+    padding: 6,
   },
   imageDateContainer: {
     flexDirection: 'row',
@@ -532,7 +548,7 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 10,
     justifyContent: 'space-between',
     height: '100%',
     paddingVertical: 10,
@@ -547,11 +563,11 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   cardDescription: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#696969',
     marginBottom: 4,
     fontFamily: 'Poppins-Regular',
-    lineHeight: 16,
+    lineHeight: 14,
   },
   authorContainer: {
     flexDirection: 'row',
