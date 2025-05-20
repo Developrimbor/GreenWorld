@@ -3,12 +3,12 @@ import {
   StyleSheet,
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   Image,
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import { signUp, createUserProfile } from './services/authService';
@@ -24,7 +24,8 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { ScrollView } from 'react-native';  // ScrollView'ı import edelim
+import FloatingLabelInput from '../../components/FloatingLabelInput';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function SignUpScreen() {
   const [name, setName] = useState('');
@@ -32,6 +33,8 @@ export default function SignUpScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validateUsername = (username: string) => {
     const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
@@ -111,59 +114,66 @@ export default function SignUpScreen() {
         </View>
 
         <View style={styles.formContainer}>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Name"
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-            />
-          </View>
+          <FloatingLabelInput
+            label="Name"
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="words"
+          />
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Username"
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-            />
-          </View>
+          <FloatingLabelInput
+            label="Username"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+          />
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-            />
-          </View>
+          <FloatingLabelInput
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+          />
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-          </View>
+          <FloatingLabelInput
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            isPassword={!showPassword}
+            rightIcon={
+              <TouchableOpacity 
+                onPress={() => setShowPassword(!showPassword)}
+                activeOpacity={0.7}
+              >
+                <Ionicons 
+                  name={showPassword ? 'eye-off' : 'eye'} 
+                  size={24} 
+                  color="#4B9363" 
+                />
+              </TouchableOpacity>
+            }
+          />
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm Password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-          </View>
+          <FloatingLabelInput
+            label="Confirm Password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            isPassword={!showConfirmPassword}
+            rightIcon={
+              <TouchableOpacity 
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                activeOpacity={0.7}
+              >
+                <Ionicons 
+                  name={showConfirmPassword ? 'eye-off' : 'eye'} 
+                  size={24} 
+                  color="#4B9363" 
+                />
+              </TouchableOpacity>
+            }
+          />
 
           <TouchableOpacity 
             style={styles.signupButton} 
@@ -205,14 +215,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     fontSize: 14,
     textAlign: 'center',
-    marginTop: 10,
+    // marginTop: 4,
   },
   greenText: {
     color: '#4B9363',
     fontFamily: 'Poppins-Medium',
   },
   formContainer: {
-    marginTop: 15,
+    marginTop: 14,
   },
   inputContainer: {
     marginBottom: 8,
@@ -220,6 +230,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: '#E8E8E8',
+    backgroundColor: '#fff',
     borderRadius: 8,
     padding: 12,
     fontFamily: 'Poppins-Regular',
@@ -229,8 +240,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
-    marginTop: 5,
-    marginBottom: 15,
+    marginTop: 2,
+    marginBottom: 12,
   },
   buttonText: {
     color: '#fff',
@@ -244,7 +255,7 @@ const styles = StyleSheet.create({
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      marginTop: 10,
+      marginTop: 6,
     },
     loginText: {
       fontFamily: 'Poppins-Regular',
