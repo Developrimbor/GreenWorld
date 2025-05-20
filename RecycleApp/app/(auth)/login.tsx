@@ -3,7 +3,6 @@ import {
   StyleSheet,
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   Image,
   KeyboardAvoidingView,
@@ -15,6 +14,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import FloatingLabelInput from '../../components/FloatingLabelInput';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -84,10 +84,6 @@ export default function LoginScreen() {
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
   const toggleRememberMe = () => {
     setRememberMe(!rememberMe);
   };
@@ -115,29 +111,22 @@ export default function LoginScreen() {
       </View>
 
       <View style={styles.formContainer}>
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
+        <FloatingLabelInput
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
 
-        <View style={styles.inputContainer}>
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-            />
+        <FloatingLabelInput
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          isPassword={!showPassword}
+          rightIcon={
             <TouchableOpacity 
-              style={styles.eyeIcon} 
-              onPress={togglePasswordVisibility}
+              onPress={() => setShowPassword(!showPassword)}
               activeOpacity={0.7}
             >
               <Ionicons 
@@ -146,8 +135,8 @@ export default function LoginScreen() {
                 color="#4B9363" 
               />
             </TouchableOpacity>
-          </View>
-        </View>
+          }
+        />
 
         <View style={styles.optionsContainer}>
           <TouchableOpacity 
@@ -178,7 +167,6 @@ export default function LoginScreen() {
 
         <TouchableOpacity 
           style={styles.googleButton} 
-          // onPress={handleGoogleLogin}
           activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>LOG IN WITH GOOGLE</Text>
@@ -218,7 +206,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     fontSize: 14,
     textAlign: 'center',
-    marginTop: 10,
+    // marginTop: 4,
   },
   greenText: {
     color: '#4B9363',
@@ -226,31 +214,6 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     marginTop: 20,
-  },
-  inputContainer: {
-    marginBottom: 10,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    borderRadius: 8,
-    padding: 12,
-    fontFamily: 'Poppins-Regular',
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  passwordInput: {
-    flex: 1,
-    padding: 12,
-    fontFamily: 'Poppins-Regular',
-  },
-  eyeIcon: {
-    padding: 10,
   },
   optionsContainer: {
     flexDirection: 'row',
@@ -290,6 +253,7 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     marginBottom: 10,
+    marginTop: 4,
   },
   googleButton: {
     backgroundColor: '#4B9363',
