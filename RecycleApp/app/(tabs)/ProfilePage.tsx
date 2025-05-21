@@ -52,7 +52,7 @@ export default function ProfilePage() {
 
   const handleTabPress = (tab: TabType) => {
     setActiveTab(tab);
-    animateSlider(tab === 'reported' ? 0 : tab === 'cleaned' ? 120 : 240);
+    animateSlider(tab === 'reported' ? 0 : tab === 'cleaned' ? 104 : 208);
   };
 
   const [userData, setUserData] = useState<any>(null);
@@ -434,7 +434,7 @@ export default function ProfilePage() {
                     style={styles.profileImage}
                   />
                   <View style={styles.editIconContainer}>
-                    <MaterialIcons name="photo-camera" size={20} color="#fff" />
+                    <MaterialIcons name="photo-camera" size={16} color="#fff" />
                   </View>
                 </View>
               ) : userData?.profilePicture ? (
@@ -652,14 +652,14 @@ export default function ProfilePage() {
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={styles.photoUploadModal}>
-                <Text style={styles.photoUploadTitle}>Profil Fotoğrafı Ekle</Text>
+                <Text style={styles.photoUploadTitle}>Add Profile Photo</Text>
                 
                 <TouchableOpacity 
                   style={styles.photoUploadOption}
                   onPress={takePicture}
                 >
                   <Ionicons name="camera" size={24} color="#4B9363" />
-                  <Text style={styles.photoUploadOptionText}>Kamera ile Çek</Text>
+                  <Text style={styles.photoUploadOptionText}>Take a photo</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity 
@@ -667,14 +667,14 @@ export default function ProfilePage() {
                   onPress={pickImage}
                 >
                   <Ionicons name="image" size={24} color="#4B9363" />
-                  <Text style={styles.photoUploadOptionText}>Galeriden Seç</Text>
+                  <Text style={styles.photoUploadOptionText}>Select from Gallery</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity 
                   style={styles.photoUploadCancel}
                   onPress={() => setPhotoUploadModal(false)}
                 >
-                  <Text style={styles.photoUploadCancelText}>İptal</Text>
+                  <Text style={styles.photoUploadCancelText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
@@ -686,7 +686,7 @@ export default function ProfilePage() {
       {isUploading && (
         <View style={styles.uploadProgressContainer}>
           <View style={styles.uploadProgressBox}>
-            <Text style={styles.uploadProgressTitle}>Fotoğraf Yükleniyor</Text>
+            <Text style={styles.uploadProgressTitle}>Photo Uploading</Text>
             <ActivityIndicator size="large" color="#4B9363" />
             <View style={styles.progressBarContainer}>
               <View 
@@ -787,7 +787,7 @@ const styles = StyleSheet.create({
   profileContent: {
     alignItems: 'center',
     paddingTop: 16,
-    paddingBottom: 100, // Alt kısımda extra boşluk
+    paddingBottom: 40, // Alt kısımda extra boşluk
   },
   backButton: {
     padding: 8,
@@ -817,11 +817,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#4B9363',
     paddingHorizontal: 16,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
     marginTop: 2,
     elevation: 2,
     shadowColor: '#000',
@@ -834,36 +834,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
-  infoButton: {
-    position: 'absolute',
-    right: -35,
-    bottom: 20,
-    backgroundColor: '#4B9363',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    borderWidth: 2,
-    borderColor: '#D9D9D9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-  },
+  // infoButton: {
+  //   position: 'absolute',
+  //   right: -35,
+  //   bottom: 20,
+  //   backgroundColor: '#4B9363',
+  //   borderRadius: 12,
+  //   width: 24,
+  //   height: 24,
+  //   borderWidth: 2,
+  //   borderColor: '#D9D9D9',
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  //   zIndex: 1,
+  // },
   userName: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4, // İsim ile nickname arası
   },
   userNickname: {
     fontSize: 16,
-    color: '#666',
+    color: '#696969',
     marginBottom: 8, // Nickname ile member since arası
   },
-  memberSince: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 14,
-    color: '#696969',
-    marginBottom: 16, // Member since ile stats arası
-  },
+  // memberSince: {
+  //   fontFamily: 'Poppins-Medium',
+  //   fontSize: 14,
+  //   color: '#696969',
+  //   marginBottom: 16, // Member since ile stats arası
+  // },
   statsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -876,34 +876,33 @@ const styles = StyleSheet.create({
   statNumber: {
     fontFamily: 'Poppins-Medium',
     fontSize: 22,
-    marginBottom: 4, // Sayı ile label arası
+    marginBottom: 2, // Sayı ile label arası
   },
   statLabel: {
     fontFamily: 'Poppins-Regular',
     fontSize: 12,
-    color: '#666',
+    color: '#696969',
   },
   divider: {
     width: 1,
-    height: 26,
+    height: 32,
     backgroundColor: '#696969',
-    marginHorizontal: 16, // Çizgiler arası boşluk
+    marginHorizontal: 12, // Çizgiler arası boşluk
   },
   progressContainer: {
-    width: 360,
+    width: 312,
     height: 2,
     marginTop: 16,
-
   },
   baseProgress: {
     position: 'absolute',
-    width: '100%',
+    width: 312,
     height: 1,
     backgroundColor: '#D9D9D9',
   },
   activeProgress: {
     position: 'absolute',
-    width: 120,
+    width: 104,
     height: 2,
     backgroundColor: '#4B9363',
   },
@@ -937,23 +936,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   postTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontSize: 14,
+    fontFamily: 'Poppins-Medium',
+    // fontWeight: '600',
+    // marginBottom: 4,
   },
   postLocation: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+    fontSize: 12,
+    fontFamily: 'Poppins-Regular',
+    color: '#696969',
+    // marginBottom: 4,
   },
   postDate: {
     fontSize: 12,
-    color: '#999',
+    fontFamily: 'Poppins-Regular',
+    color: '#696969',
   },
   noPostsText: {
     textAlign: 'center',
     fontSize: 16,
-    color: '#666',
+    color: '#696969',
     marginTop: 20,
     fontFamily: 'Poppins-Regular',
   },
@@ -1017,7 +1019,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 8,
     paddingVertical: 8,
-    width: 180,
+    width: 140,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -1028,7 +1030,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   menuItem: {
-    paddingVertical: 12,
+    paddingVertical: 6,
     paddingHorizontal: 16,
   },
   menuItemText: {
@@ -1122,7 +1124,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#fff',
   },
   photoUploadModal: {
