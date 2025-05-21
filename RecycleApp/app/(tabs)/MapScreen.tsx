@@ -17,6 +17,7 @@ import {
   ScrollView,
   Platform,
   Linking,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import BottomNavigation from '../../components/BottomNavigation';
@@ -92,6 +93,25 @@ export default function MapScreen() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedDay, setSelectedDay] = useState(new Date().getDate());
+
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  // Klavye olaylarını dinle
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+    };
+  }, []);
 
   const requestLocationPermission = async () => {
     try {
@@ -1023,22 +1043,24 @@ const onRegionChangeComplete = (newRegion: Region) => {
           </TouchableOpacity>
         </View>
 
-        {/* Zoom Kontrol Butonları */}
-        <View style={styles.zoomControlContainer}>
-          <TouchableOpacity 
-            style={styles.zoomButton}
-            onPress={handleZoomIn}
-          >
-            <Ionicons name="add" size={24} color="#000" />
-          </TouchableOpacity>
-          <View style={styles.zoomButtonDivider} />
-          <TouchableOpacity 
-            style={styles.zoomButton}
-            onPress={handleZoomOut}
-          >
-            <Ionicons name="remove" size={24} color="#000" />
-          </TouchableOpacity>
-        </View>
+        {/* Zoom Kontrol Butonları - Klavye açıkken gizle */}
+        {!isKeyboardVisible && (
+          <View style={styles.zoomControlContainer}>
+            <TouchableOpacity 
+              style={styles.zoomButton}
+              onPress={handleZoomIn}
+            >
+              <Ionicons name="add" size={24} color="#000" />
+            </TouchableOpacity>
+            <View style={styles.zoomButtonDivider} />
+            <TouchableOpacity 
+              style={styles.zoomButton}
+              onPress={handleZoomOut}
+            >
+              <Ionicons name="remove" size={24} color="#000" />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Onay Butonu */}
         {showConfirmButton && (
@@ -1061,34 +1083,36 @@ const onRegionChangeComplete = (newRegion: Region) => {
         )}
       </View>
       
-      {/* Alt Butonlar - Report Spot ve View Spots Near */}
-      <View style={styles.bottomButtons}>
-        <TouchableOpacity 
-          style={[styles.reportButton, isReportMode && styles.reportActiveButton]} 
-          onPress={handleReportSpot}
-        >
-          <MaterialCommunityIcons 
-            name="trash-can" 
-            size={20} 
-            color={isReportMode ? "#FFFFFF" : "#4B9363"} 
-          />
-          <Text style={[
-            styles.buttonText, 
-            isReportMode && styles.reportActiveButtonText
-          ]}>Report Spot</Text>
-        </TouchableOpacity>
+      {/* Alt Butonlar - Report Spot ve View Spots Near - Klavye açıkken gizle */}
+      {!isKeyboardVisible && (
+        <View style={styles.bottomButtons}>
+          <TouchableOpacity 
+            style={[styles.reportButton, isReportMode && styles.reportActiveButton]} 
+            onPress={handleReportSpot}
+          >
+            <MaterialCommunityIcons 
+              name="trash-can" 
+              size={20} 
+              color={isReportMode ? "#FFFFFF" : "#4B9363"} 
+            />
+            <Text style={[
+              styles.buttonText, 
+              isReportMode && styles.reportActiveButtonText
+            ]}>Report Spot</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.viewButton} 
-          onPress={showSpotsInVisibleArea}
-        >
-          <Ionicons name="eye-outline" size={20} color="#4B9363" />
-          <Text style={styles.viewButtonText}>View Spots Near</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity 
+            style={styles.viewButton} 
+            onPress={showSpotsInVisibleArea}
+          >
+            <Ionicons name="eye-outline" size={20} color="#4B9363" />
+            <Text style={styles.viewButtonText}>View Spots Near</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-      {/* Bottom Navigation */}
-      <BottomNavigation />
+      {/* Bottom Navigation - Klavye açıkken gizle */}
+      {!isKeyboardVisible && <BottomNavigation />}
 
       {/* Konum Doğrulama Bilgi Modal */}
       <Modal
