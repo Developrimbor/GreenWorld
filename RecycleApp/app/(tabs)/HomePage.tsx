@@ -12,6 +12,8 @@ import {
   TouchableWithoutFeedback,
   FlatList,
   ActivityIndicator,
+  Keyboard,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -50,6 +52,7 @@ export default function HomePage() {
   });
   const [availableLocations, setAvailableLocations] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
   // Fetch posts from Firebase
   useEffect(() => {
@@ -171,6 +174,23 @@ export default function HomePage() {
     });
     setIsFilterModalVisible(false);
   };
+
+  // Klavye olaylarını dinle
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+    };
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -409,17 +429,21 @@ export default function HomePage() {
         </ScrollView>
       )}
 
-      <TouchableOpacity 
-        style={styles.fabButton}
-        onPress={() => router.push({
-          pathname: '/CreatePost',
-          params: { modal: 'true' }
-        })}
-      >
-        <Ionicons name="add" size={30} color="#fff" />
-      </TouchableOpacity>
+      {/* FAB Button - Klavye açıkken gizle */}
+      {!isKeyboardVisible && (
+        <TouchableOpacity 
+          style={styles.fabButton}
+          onPress={() => router.push({
+            pathname: '/CreatePost',
+            params: { modal: 'true' }
+          })}
+        >
+          <Ionicons name="add" size={30} color="#fff" />
+        </TouchableOpacity>
+      )}
 
-      <BottomNavigation />
+      {/* Bottom Navigation - Klavye açıkken gizle */}
+      {!isKeyboardVisible && <BottomNavigation />}
     </SafeAreaView>
   );
 }
