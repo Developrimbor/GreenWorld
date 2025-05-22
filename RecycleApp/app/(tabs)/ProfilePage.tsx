@@ -531,11 +531,40 @@ export default function ProfilePage() {
                       style={styles.postImage}
                     />
                     <View style={styles.postInfo}>
-                      <Text style={styles.postTitle}>{post.title || 'No Title'}</Text>
-                      <Text style={styles.postLocation}>{post.location || 'No Location'}</Text>
-                      <Text style={styles.postDate}>
-                        {post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleDateString() : 'No Date'}
-                      </Text>
+                      <Text style={styles.postTitle} numberOfLines={2} ellipsizeMode="tail">{post.title || 'No Title'}</Text>
+                      
+                      {/* Etiketler */}
+                      {post.tags && post.tags.length > 0 && (
+                        <View style={styles.tagsContainer}>
+                          <ScrollView 
+                            horizontal 
+                            showsHorizontalScrollIndicator={false}
+                            style={styles.tagScrollView}
+                          >
+                            {post.tags.map((tag: string, index: number) => (
+                              <View key={index} style={styles.tagItem}>
+                                <Text style={styles.tagText}>{tag}</Text>
+                              </View>
+                            ))}
+                          </ScrollView>
+                        </View>
+                      )}
+
+                      {/* Konum ve Tarih Bilgileri */}
+                      <View style={styles.locationDateContainer}>
+                        <View style={styles.dateContainer}>
+                          <Ionicons name="calendar-outline" size={14} color="#4B9363" />
+                          <Text style={styles.dateText}>
+                            {post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleDateString() : 'No Date'}
+                          </Text>
+                        </View>
+                        <View style={styles.locationContainer}>
+                          <Ionicons name="location-outline" size={14} color="#4B9363" />
+                          <Text style={styles.locationText} numberOfLines={1}>
+                            {post.location || 'No Location'}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
                   </TouchableOpacity>
                 ))
@@ -926,20 +955,21 @@ const styles = StyleSheet.create({
     minHeight: 100, // Minimum yükseklik ekle
   },
   postImage: {
-    width: 80,
-    height: 80,
+    width: 84,
+    height: 84,
     borderRadius: 8,
+    alignSelf: 'center',
   },
   postInfo: {
     flex: 1,
     marginLeft: 12,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
   },
   postTitle: {
     fontSize: 14,
-    fontFamily: 'Poppins-Medium',
-    // fontWeight: '600',
-    // marginBottom: 4,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
   },
   postLocation: {
     fontSize: 12,
@@ -989,21 +1019,25 @@ const styles = StyleSheet.create({
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 4,
+    flex: 1,
+    // marginRight: 8,
   },
   dateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
   },
   locationText: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 11,
+    fontFamily: 'Poppins-Regular',
+    color: '#696969',
+    marginLeft: 4,
+    flex: 1,
   },
   dateText: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: 11,
+    fontFamily: 'Poppins-Regular',
+    color: '#696969',
+    marginLeft: 4,
   },
   // Menu styles
   modalOverlay: {
@@ -1235,5 +1269,31 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 4,
     marginLeft: 8,
+  },
+  tagsContainer: {
+    marginVertical: 2,
+  },
+  tagScrollView: {
+    flexGrow: 0,
+  },
+  tagItem: {
+    backgroundColor: '#E8F3EB',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 1,
+    marginRight: 6,
+  },
+  tagText: {
+    fontSize: 12,
+    color: '#4B9363',
+    fontFamily: 'Poppins-Regular',
+  },
+  locationDateContainer: {
+    gap: 12,
+    marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    // marginTop: 'auto',
   },
 });
