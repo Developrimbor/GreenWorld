@@ -507,9 +507,9 @@ const styles = StyleSheet.create({
   },
   suggestedTagChip: {
     backgroundColor: '#E8F5E9',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     marginRight: 8,
   },
   suggestedTagText: {
