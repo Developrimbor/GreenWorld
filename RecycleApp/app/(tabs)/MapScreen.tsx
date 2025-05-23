@@ -95,6 +95,7 @@ export default function MapScreen() {
   const [selectedDay, setSelectedDay] = useState(new Date().getDate());
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Klavye olaylarını dinle
   useEffect(() => {
@@ -149,26 +150,37 @@ const onRegionChangeComplete = (newRegion: Region) => {
 
   const getCurrentLocation = async () => {
     try {
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced, // Doğruluk seviyesini düşürelim
+      // Yükleniyor durumunu göster
+      setIsLoading(true);
+
+      // Konum almak için Promise oluştur
+      const locationPromise = Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
       });
-      // Yeni region'ı hesaplarken longitude/latitude delta'yı eşit tutuyoruz
-      // Bu, haritanın çarpık görünmesini önler
+
+      // 10 saniye timeout ile birlikte konum almayı dene
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('TIMEOUT')), 10000);
+      });
+
+      // Promise.race ile hangisi önce tamamlanırsa onu al
+      const location = await Promise.race([locationPromise, timeoutPromise]) as Location.LocationObject;
+
+      // Yeni region'ı hesapla
       const longitudeDelta = 0.005;
       const latitudeDelta = 0.005;
       
       const newRegion = {
         latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-      latitudeDelta: 0.005,
-      longitudeDelta: 0.005
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005
       };
       
-      // Haritayı tam kullanıcı konumuna merkezliyoruz
-      // Animasyonu daha yumuşak hale getirelim
+      // Haritayı tam kullanıcı konumuna merkezle
       mapRef.current?.animateToRegion(newRegion, 1000);
       
-      // Region ve kullanıcı konumunu güncelliyoruz
+      // Region ve kullanıcı konumunu güncelle
       setRegion(newRegion);
       setUserLocation({
         latitude: location.coords.latitude,
@@ -179,15 +191,20 @@ const onRegionChangeComplete = (newRegion: Region) => {
       // Yeni konum alındığında seçili konumu ve onay butonunu sıfırla
       setSelectedLocation(null);
       setShowConfirmButton(false);
-    } catch (error) {
+      setIsLoading(false);
+
+    } catch (error: any) {
       console.error('Konum alınamadı:', error);
       
-      // Özelleştirilmiş hata mesajı göster
-      setShowErrorModal(true);
-      setErrorMessage('Your location could not be retrieved. Please try again.');
+      // Timeout hatası için özel mesaj
+      if (error.message === 'TIMEOUT') {
+        setShowErrorModal(true);
+        setErrorMessage('Your location could not be retrieved. Please check if your location services are enabled and try again.');
+      }
       
       // Hata durumunda butonları aktif hale getir
       setIsReportMode(false);
+      setIsLoading(false);
     }
   };
 
@@ -1090,15 +1107,21 @@ const onRegionChangeComplete = (newRegion: Region) => {
             style={[styles.reportButton, isReportMode && styles.reportActiveButton]} 
             onPress={handleReportSpot}
           >
-            <MaterialCommunityIcons 
-              name="trash-can" 
-              size={20} 
-              color={isReportMode ? "#FFFFFF" : "#4B9363"} 
-            />
-            <Text style={[
-              styles.buttonText, 
-              isReportMode && styles.reportActiveButtonText
-            ]}>Report Spot</Text>
+            {isLoading ? (
+              <ActivityIndicator size="small" color={isReportMode ? "#FFFFFF" : "#4B9363"} />
+            ) : (
+              <>
+                <MaterialCommunityIcons 
+                  name="trash-can" 
+                  size={20} 
+                  color={isReportMode ? "#FFFFFF" : "#4B9363"} 
+                />
+                <Text style={[
+                  styles.buttonText, 
+                  isReportMode && styles.reportActiveButtonText
+                ]}>Report Spot</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity 
