@@ -397,21 +397,30 @@ export default function ProfilePage() {
                     style={styles.menuItem}
                     onPress={() => handleMenuOption('liked')}
                   >
-                    <Text style={styles.menuItemText}>Liked Posts</Text>
+                    <View style={styles.menuItemContent}>
+                      <Ionicons name="heart-outline" size={20} color="#333" />
+                      <Text style={styles.menuItemText}>Liked Posts</Text>
+                    </View>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
                     style={styles.menuItem}
                     onPress={() => handleMenuOption('settings')}
                   >
-                    <Text style={styles.menuItemText}>Settings</Text>
+                    <View style={styles.menuItemContent}>
+                      <Ionicons name="settings-outline" size={20} color="#333" />
+                      <Text style={styles.menuItemText}>Settings</Text>
+                    </View>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
                     style={styles.menuItem}
                     onPress={() => handleMenuOption('logout')}
                   >
-                    <Text style={styles.menuItemTextRed}>Log Out</Text>
+                    <View style={styles.menuItemContent}>
+                      <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
+                      <Text style={styles.menuItemTextRed}>Log Out</Text>
+                    </View>
                   </TouchableOpacity>
                 </View>
               </TouchableWithoutFeedback>
@@ -1049,11 +1058,11 @@ const styles = StyleSheet.create({
   menuContainer: {
     position: 'absolute',
     right: 24,
-    top: 64, // Header'ın altından başlasın
+    top: 64,
     backgroundColor: 'white',
     borderRadius: 8,
     paddingVertical: 8,
-    width: 140,
+    width: 160,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -1064,18 +1073,24 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   menuItem: {
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 16,
+  },
+  menuItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   menuItemText: {
     fontSize: 16,
-    color: '#000',
+    color: '#333',
     fontWeight: '400',
+    marginLeft: 12,
   },
   menuItemTextRed: {
     fontSize: 16,
-    color: 'red',
+    color: '#FF3B30',
     fontWeight: '400',
+    marginLeft: 12,
   },
   // Puan bilgisi modal stilleri
   pointsInfoModal: {
