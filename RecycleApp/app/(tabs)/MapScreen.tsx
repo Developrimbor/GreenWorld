@@ -1119,7 +1119,7 @@ const onRegionChangeComplete = (newRegion: Region) => {
                 <Text style={[
                   styles.buttonText, 
                   isReportMode && styles.reportActiveButtonText
-                ]}>Report Spot</Text>
+                ]}>Report Trash</Text>
               </>
             )}
           </TouchableOpacity>
@@ -1128,8 +1128,8 @@ const onRegionChangeComplete = (newRegion: Region) => {
             style={styles.viewButton} 
             onPress={showSpotsInVisibleArea}
           >
-            <Ionicons name="eye-outline" size={20} color="#4B9363" />
-            <Text style={styles.viewButtonText}>View Spots Near</Text>
+            <Ionicons name="eye" size={20} color="#4B9363" />
+            <Text style={styles.viewButtonText}>View Trash</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -1647,6 +1647,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
+    width: 142,
     alignItems: 'center',
     // justifyContent: 'center',
     elevation: 2,
@@ -1670,6 +1671,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
+    width: 142,
     alignItems: 'center',
     // justifyContent: 'center',
     elevation: 2,
