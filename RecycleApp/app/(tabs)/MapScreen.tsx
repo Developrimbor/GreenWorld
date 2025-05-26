@@ -1052,11 +1052,11 @@ const onRegionChangeComplete = (newRegion: Region) => {
             style={styles.topButton} 
             onPress={() => setShowFilterPanel(true)}
           >
-            <Ionicons name="filter" size={20} color="#fff" />
+            <Ionicons name="menu" size={24} color="#fff" />
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.topButton} onPress={navigateToUserLocation}>
-            <Ionicons name="navigate" size={20} color="#fff" />
+            <Ionicons name="navigate" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
 
@@ -1111,8 +1111,8 @@ const onRegionChangeComplete = (newRegion: Region) => {
               <ActivityIndicator size="small" color={isReportMode ? "#FFFFFF" : "#4B9363"} />
             ) : (
               <>
-                <Ionicons 
-                  name="locate" 
+                <MaterialCommunityIcons 
+                  name="trash-can" 
                   size={20} 
                   color={isReportMode ? "#FFFFFF" : "#4B9363"} 
                 />
@@ -1417,7 +1417,7 @@ const onRegionChangeComplete = (newRegion: Region) => {
       <Modal
         visible={showDatePicker}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setShowDatePicker(false)}
       >
         <TouchableWithoutFeedback onPress={() => setShowDatePicker(false)}>
@@ -1645,11 +1645,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: 'rgba(255, 255, 255, 1)', // Yarı şeffaf beyaz
     borderRadius: 8,
-    // paddingHorizontal: 16,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     width: 142,
     alignItems: 'center',
-    justifyContent: 'center',
+    // justifyContent: 'center',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: {
@@ -1669,11 +1669,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: 'rgba(255, 255, 255, 1)', // Yarı şeffaf beyaz
     borderRadius: 8,
-    // paddingHorizontal: 16,  
+    paddingHorizontal: 16,
     paddingVertical: 12,
     width: 142,
     alignItems: 'center',
-    justifyContent: 'center',
+    // justifyContent: 'center',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: {
@@ -1686,8 +1686,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#000',
     fontFamily: 'Poppins-Medium',
-    lineHeight: 20,
-    // textAlign: 'center',
+    textAlign: 'center',
     fontSize: 14,
     marginLeft: 8,
   },
@@ -1695,7 +1694,6 @@ const styles = StyleSheet.create({
     color: '#000',
     fontFamily: 'Poppins-Medium',
     fontSize: 14,
-    lineHeight: 20,
     marginLeft: 8,
   },
   confirmButton: {
@@ -1969,7 +1967,7 @@ const styles = StyleSheet.create({
     width: '85%',
     backgroundColor: 'white',
     borderRadius: 10,
-    padding: 24,
+    padding: 20,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
@@ -1982,33 +1980,29 @@ const styles = StyleSheet.create({
   },
   noSpotsModalTitle: {
     fontSize: 16,
-    // fontWeight: '500',
+    fontWeight: '500',
     textAlign: 'center',
     color: '#333',
-    fontFamily: 'Poppins-Medium',
-    marginBottom: 16,
-    // lineHeight: 22,
+    marginBottom: 20,
+    lineHeight: 22,
   },
   noSpotsModalButton: {
     backgroundColor: '#4B9363',
-    paddingHorizontal: 36,
-    paddingVertical: 8,
+    paddingHorizontal: 40,
+    paddingVertical: 10,
     borderRadius: 8,
   },
   noSpotsModalButtonText: {
     color: '#fff',
     fontSize: 16,
-    lineHeight: 24,
-    fontFamily: 'Poppins-Medium',
+    fontWeight: '500',
   },
   zoomControlContainer: {
     position: 'absolute',
     right: 24,
     bottom: 120, // BottomNavigation'ın üzerinde
     backgroundColor: 'rgba(255, 255, 255, 1)',
-    borderRadius: 4,
-    // borderWidth: 0.5,
-    // borderColor: '#d9d9d9',
+    borderRadius: 8,
     overflow: 'hidden',
     elevation: 3,
     shadowColor: '#000',
@@ -2027,8 +2021,7 @@ const styles = StyleSheet.create({
   },
   zoomButtonDivider: {
     height: 1,
-    borderWidth: 0.5,
-    borderColor: '#D9D9D9',
+    // backgroundColor: '#E8E8E8',
   },
   // Filtreleme Paneli Stilleri
   filterModalOverlay: {
