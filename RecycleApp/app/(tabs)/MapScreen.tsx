@@ -18,6 +18,8 @@ import {
   Platform,
   Linking,
   KeyboardAvoidingView,
+  Animated,
+  Easing,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import BottomNavigation from '../../components/BottomNavigation';
@@ -28,6 +30,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { storage } from '../config/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Svg, { Defs, RadialGradient, Stop, Circle as SvgCircle } from 'react-native-svg';
 
 
 const { width, height } = Dimensions.get('window');
@@ -55,6 +58,68 @@ interface Trash {
   authorId: string;
   createdAt: any;
   status: string; // 'reported' veya 'cleaned' olabilir
+}
+
+// Cluster tipi
+interface TrashCluster {
+  latitude: number;
+  longitude: number;
+  items: Trash[];
+  statusCounts: Record<'reported' | 'cleaned', number>;
+}
+
+// Kümelenmiş markerları hesaplayan fonksiyon
+function clusterTrashReports(trashReports: Trash[], region: Region): TrashCluster[] {
+  // Cluster yarıçapı harita zoom'una göre değişir
+  // (daha büyük alan = daha büyük cluster radius)
+  // Bu değerler ayarlanabilir
+  const baseRadius = 0.03; // yaklaşık 3km
+  const zoomFactor = Math.max(region.latitudeDelta, region.longitudeDelta);
+  const clusterRadius = baseRadius * zoomFactor * 2; // dinamik radius
+
+  const clusters = [];
+  const visited = new Set();
+
+  for (let i = 0; i < trashReports.length; i++) {
+    if (visited.has(i)) continue;
+    const cluster = {
+      latitude: trashReports[i].location.latitude,
+      longitude: trashReports[i].location.longitude,
+      items: [trashReports[i]],
+      statusCounts: { reported: 0, cleaned: 0 },
+    };
+    if (isValidStatus(trashReports[i].status)) {
+      const status = trashReports[i].status as 'reported' | 'cleaned';
+      cluster.statusCounts[status]++;
+    }
+    visited.add(i);
+    for (let j = i + 1; j < trashReports.length; j++) {
+      if (visited.has(j)) continue;
+      const dx = trashReports[j].location.latitude - cluster.latitude;
+      const dy = trashReports[j].location.longitude - cluster.longitude;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < clusterRadius) {
+        cluster.items.push(trashReports[j]);
+        if (isValidStatus(trashReports[j].status)) {
+          const status = trashReports[j].status as 'reported' | 'cleaned';
+          cluster.statusCounts[status]++;
+        }
+        visited.add(j);
+      }
+    }
+    // Cluster merkezini güncelle (ortalama)
+    if (cluster.items.length > 1) {
+      cluster.latitude = cluster.items.reduce((sum, t) => sum + t.location.latitude, 0) / cluster.items.length;
+      cluster.longitude = cluster.items.reduce((sum, t) => sum + t.location.longitude, 0) / cluster.items.length;
+    }
+    clusters.push(cluster);
+  }
+  return clusters;
+}
+
+// Status type guard
+function isValidStatus(status: any): status is 'reported' | 'cleaned' {
+  return status === 'reported' || status === 'cleaned';
 }
 
 export default function MapScreen() {
@@ -97,6 +162,13 @@ export default function MapScreen() {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Filter modal için animasyon state'leri
+  const filterOverlayOpacity = useRef(new Animated.Value(0)).current;
+  const filterContainerTranslateY = useRef(new Animated.Value(500)).current;
+
+  // Modal görünürlüğünü kontrol eden state
+  const [isFilterPanelVisible, setIsFilterPanelVisible] = useState(false);
+
   // Klavye olaylarını dinle
   useEffect(() => {
     const keyboardWillShowListener = Keyboard.addListener(
@@ -113,6 +185,43 @@ export default function MapScreen() {
       keyboardWillHideListener.remove();
     };
   }, []);
+
+  // Modal açılış/kapanış animasyonları ve görünürlük kontrolü
+  useEffect(() => {
+    if (showFilterPanel) {
+      setIsFilterPanelVisible(true);
+      Animated.parallel([
+        Animated.timing(filterOverlayOpacity, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(filterContainerTranslateY, {
+          toValue: 0,
+          duration: 350,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        })
+      ]).start();
+    } else if (isFilterPanelVisible) {
+      // Kapatırken önce animasyon, sonra modal'ı gizle
+      Animated.parallel([
+        Animated.timing(filterOverlayOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(filterContainerTranslateY, {
+          toValue: 500,
+          duration: 250,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        setIsFilterPanelVisible(false);
+      });
+    }
+  }, [showFilterPanel]);
 
   const requestLocationPermission = async () => {
     try {
@@ -594,31 +703,6 @@ const onRegionChangeComplete = (newRegion: Region) => {
     setIsSearching(true);
     
     try {
-      // Konum izni kontrolü
-      const permissionStatus = await requestLocationPermission();
-      if (!permissionStatus) {
-        Alert.alert(
-          "Location Permission Required", 
-          "Please grant location permission to use the search feature.",
-          [
-            { 
-              text: "Settings", 
-              onPress: () => {
-                // Kullanıcıyı ayarlar sayfasına yönlendir
-                if (Platform.OS === 'ios') {
-                  Linking.openURL('app-settings:');
-                } else {
-                  Linking.openSettings();
-                }
-              } 
-            },
-            { text: "Cancel", style: "cancel" }
-          ]
-        );
-        setIsSearching(false);
-        return;
-      }
-      
       // Arama sorgusunu Geocode API ile yap
       const response = await Location.geocodeAsync(query);
       
@@ -721,31 +805,6 @@ const onRegionChangeComplete = (newRegion: Region) => {
     setIsSearching(true);
     
     try {
-      // Konum izni kontrolü
-      const permissionStatus = await requestLocationPermission();
-      if (!permissionStatus) {
-        Alert.alert(
-          "Location Permission Required", 
-          "Please grant location permission to use the search feature.",
-          [
-            { 
-              text: "Settings", 
-              onPress: () => {
-                // Kullanıcıyı ayarlar sayfasına yönlendir
-                if (Platform.OS === 'ios') {
-                  Linking.openURL('app-settings:');
-                } else {
-                  Linking.openSettings();
-                }
-              } 
-            },
-            { text: "Cancel", style: "cancel" }
-          ]
-        );
-        setIsSearching(false);
-        return;
-      }
-      
       // Arama çubuğunu güncelle
       setSearchQuery(location.name);
       
@@ -793,31 +852,6 @@ const onRegionChangeComplete = (newRegion: Region) => {
     Keyboard.dismiss();
     
     try {
-      // Konum izni kontrolü
-      const permissionStatus = await requestLocationPermission();
-      if (!permissionStatus) {
-        Alert.alert(
-          "Location Permission Required", 
-          "Please grant location permission to use the search feature.",
-          [
-            { 
-              text: "Settings", 
-              onPress: () => {
-                // Kullanıcıyı ayarlar sayfasına yönlendir
-                if (Platform.OS === 'ios') {
-                  Linking.openURL('app-settings:');
-                } else {
-                  Linking.openSettings();
-                }
-              } 
-            },
-            { text: "Cancel", style: "cancel" }
-          ]
-        );
-        setIsSearching(false);
-        return;
-      }
-      
       const response = await Location.geocodeAsync(searchQuery);
       
       if (response && response.length > 0) {
@@ -904,6 +938,21 @@ const onRegionChangeComplete = (newRegion: Region) => {
     setShowConfirmButton(false);
   };
 
+  // Modal'ı kapatmak için kullanılacak fonksiyon
+  const closeFilterPanel = () => {
+    if (showFilterPanel) {
+      setShowFilterPanel(false);
+    }
+  };
+
+  // Cluster state'i
+  const [clusters, setClusters] = useState<TrashCluster[]>([]);
+
+  // Cluster hesaplama effect'i
+  useEffect(() => {
+    setClusters(clusterTrashReports(visibleTrashReports, region));
+  }, [visibleTrashReports, region]);
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header - Başlık */}
@@ -966,26 +1015,72 @@ const onRegionChangeComplete = (newRegion: Region) => {
           rotateEnabled={false}      // Harita rotasyonunu devre dışı bırak
           pitchEnabled={false}       // Eğim özelliğini devre dışı bırak
         >
-          {visibleTrashReports.map(trash => (
-            <Marker
-              key={trash.id}
-              coordinate={trash.location}
-              pinColor={trash.status === 'cleaned' ? "#4B9363" : "#E74C3C"}
-              onPress={() => {
-                if (trash.status === 'cleaned') {
-                  router.push({ 
-                    pathname: '/(tabs)/CleanedTrashPage', 
-                    params: { id: trash.id } 
-                  });
-                } else {
-                  router.push({ 
-                    pathname: '/(tabs)/TrashDetailPage', 
-                    params: { id: trash.id } 
-                  });
-                }
-              }}
-            />
-          ))}
+          {clusters.map((cluster, idx) => {
+            if (cluster.items.length === 1) {
+              return (
+                <Marker
+                  key={cluster.items[0].id}
+                  coordinate={{ latitude: cluster.latitude, longitude: cluster.longitude }}
+                  pinColor={cluster.items[0].status === 'cleaned' ? "#4B9363" : "#E74C3C"}
+                  onPress={() => {
+                    if (cluster.items[0].status === 'cleaned') {
+                      router.push({ 
+                        pathname: '/(tabs)/CleanedTrashPage', 
+                        params: { id: cluster.items[0].id } 
+                      });
+                    } else {
+                      router.push({ 
+                        pathname: '/(tabs)/TrashDetailPage', 
+                        params: { id: cluster.items[0].id } 
+                      });
+                    }
+                  }}
+                />
+              );
+            } else {
+              // Daire yarıçapını harita zoom'una göre ayarla (ör: 300-800 metre arası)
+              const radius = 100 + Math.min(cluster.items.length * 60, 500);
+              return (
+                <React.Fragment key={`cluster-${idx}`}>
+                  <Circle
+                    center={{ latitude: cluster.latitude, longitude: cluster.longitude }}
+                    radius={radius}
+                    fillColor="rgba(75, 147, 19, 0.6)"
+                    strokeColor="#fff"
+                    strokeWidth={2}
+                  />
+                  <Marker
+                    coordinate={{ latitude: cluster.latitude, longitude: cluster.longitude }}
+                    onPress={() => {
+                      if (mapRef.current && cluster.items.length > 1) {
+                        const coordinates = cluster.items.map(item => item.location);
+                        mapRef.current.fitToCoordinates(coordinates, {
+                          edgePadding: { top: 120, right: 120, bottom: 120, left: 120 }, // Zoom'u azaltmak için padding artırıldı
+                          animated: true,
+                        });
+                      }
+                    }}
+                  >
+                    <View style={{
+                      backgroundColor: '#4B9363',
+                      zIndex:-100,
+                      borderRadius: 20,
+                      paddingHorizontal: 10,
+                      paddingVertical: 4,
+                      // marginTop: 15,
+                      minWidth: 28,
+                      // alignItems: 'center',
+                      // justifyContent: 'center',
+                      borderWidth: 2,
+                      borderColor: '#fff',
+                    }}>
+                      <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{cluster.items.length}</Text>
+                    </View>
+                  </Marker>
+                </React.Fragment>
+              );
+            }
+          })}
           {showCircle && userLocation && (
             <Circle
               center={{
@@ -993,7 +1088,7 @@ const onRegionChangeComplete = (newRegion: Region) => {
                 longitude: userLocation.longitude,
               }}
               radius={30}
-              fillColor="rgba(40, 187, 227, 0.9)"
+              fillColor="rgba(70, 203, 240, 0.5)"
               strokeColor="#28BBE3"
               strokeWidth={1}
             />
