@@ -1255,162 +1255,166 @@ const onRegionChangeComplete = (newRegion: Region) => {
 
       {/* Filtreleme Paneli */}
       <Modal
-        visible={showFilterPanel}
+        visible={isFilterPanelVisible}
         transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowFilterPanel(false)}
+        animationType="none"
+        onRequestClose={closeFilterPanel}
       >
-        <View style={styles.filterModalOverlay}>
-          <View style={styles.filterModalContainer}>
-            <View style={styles.filterHeader}>
-              <Text style={styles.filterTitle}>Filters</Text>
-              <TouchableOpacity onPress={() => setShowFilterPanel(false)}>
-                <Ionicons name="close" size={24} color="#000" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.filterScrollView}>
-              {/* Atık Durumu Filtresi */}
-              <View style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}>Trash Status</Text>
-                
-                <View style={styles.filterOption}>
-                  <View style={styles.filterOptionLeft}>
-                    <View style={[styles.statusIndicator, { backgroundColor: '#E74C3C' }]} />
-                    <Text style={styles.filterOptionText}>Reported Trash</Text>
-                  </View>
-                  <Switch
-                    trackColor={{ false: '#dddddd', true: '#4B936380' }}
-                    thumbColor={showReportedTrash ? '#4B9363' : '#f4f3f4'}
-                    onValueChange={() => setShowReportedTrash(!showReportedTrash)}
-                    value={showReportedTrash}
-                  />
-                </View>
-                
-                <View style={styles.filterOption}>
-                  <View style={styles.filterOptionLeft}>
-                    <View style={[styles.statusIndicator, { backgroundColor: '#4B9363' }]} />
-                    <Text style={styles.filterOptionText}>Cleaned Trash</Text>
-                  </View>
-                  <Switch
-                    trackColor={{ false: '#dddddd', true: '#4B936380' }}
-                    thumbColor={showCleanedTrash ? '#4B9363' : '#f4f3f4'}
-                    onValueChange={() => setShowCleanedTrash(!showCleanedTrash)}
-                    value={showCleanedTrash}
-                  />
-                </View>
-              </View>
-
-              {/* Tarih Filtresi */}
-              <View style={styles.filterSection}>
-                <View style={styles.filterSectionTitleRow}>
-                  <Text style={styles.filterSectionTitle}>Date Filter</Text>
-                  <Switch
-                    trackColor={{ false: '#dddddd', true: '#4B936380' }}
-                    thumbColor={useDateFilter ? '#4B9363' : '#f4f3f4'}
-                    onValueChange={() => setUseDateFilter(!useDateFilter)}
-                    value={useDateFilter}
-                  />
-                </View>
-
-                <View style={styles.dateRangeContainer}>
-                  <TouchableOpacity 
-                    style={[styles.dateRangeButton, !useDateFilter && styles.disabledButton]}
-                    onPress={() => openDatePicker('start')}
-                  >
-                    <View style={styles.dateRangeButtonInner}>
-                      <View style={styles.dateRangeIconLabel}>
-                        <FontAwesome name="calendar-o" size={16} color={useDateFilter ? "#4B9363" : "#999"} />
-                        <Text style={styles.dateRangeLabel}>Start Date:</Text>
-                      </View>
-                      <Text style={[styles.dateRangeValue, !useDateFilter && styles.disabledButtonText]}>
-                        {startDate ? startDate.toLocaleDateString() : 'Not Selected'}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-
-                  <View style={styles.dateRangeSeparator}>
-                    <View style={styles.dateRangeLine} />
-                    <Text style={styles.dateRangeSeparatorText}>and</Text>
-                    <View style={styles.dateRangeLine} />
-                  </View>
-
-                  <TouchableOpacity 
-                    style={[styles.dateRangeButton, !useDateFilter && styles.disabledButton]}
-                    onPress={() => openDatePicker('end')}
-                  >
-                    <View style={styles.dateRangeButtonInner}>
-                      <View style={styles.dateRangeIconLabel}>
-                        <FontAwesome name="calendar-o" size={16} color={useDateFilter ? "#4B9363" : "#999"} />
-                        <Text style={styles.dateRangeLabel}>End Date:</Text>
-                      </View>
-                      <Text style={[styles.dateRangeValue, !useDateFilter && styles.disabledButtonText]}>
-                        {endDate ? endDate.toLocaleDateString() : 'Not Selected'}
-                      </Text>
-                    </View>
+        <TouchableWithoutFeedback onPress={closeFilterPanel}>
+          <Animated.View style={[styles.filterModalOverlay, { opacity: filterOverlayOpacity }]}> 
+            <TouchableWithoutFeedback>
+              <Animated.View style={[styles.filterModalContainer, { transform: [{ translateY: filterContainerTranslateY }] }]}> 
+                <View style={styles.filterHeader}>
+                  <Text style={styles.filterTitle}>Filters</Text>
+                  <TouchableOpacity onPress={closeFilterPanel}>
+                    <Ionicons name="close" size={24} color="#000" />
                   </TouchableOpacity>
                 </View>
 
-                {/* {useDateFilter && (
-                  <View style={styles.dateRangeHint}>
-                    <Ionicons name="information-circle-outline" size={16} color="#4B9363" />
-                    <Text style={styles.dateRangeHintText}>
-                      {startDate && endDate 
-                        ? `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()} dates will be shown.`
-                        : 'You can filter by selecting a date range.'}
-                    </Text>
+                <ScrollView style={styles.filterScrollView}>
+                  {/* Atık Durumu Filtresi */}
+                  <View style={styles.filterSection}>
+                    <Text style={styles.filterSectionTitle}>Trash Status</Text>
+                    
+                    <View style={styles.filterOption}>
+                      <View style={styles.filterOptionLeft}>
+                        <View style={[styles.statusIndicator, { backgroundColor: '#E74C3C' }]} />
+                        <Text style={styles.filterOptionText}>Reported Trash</Text>
+                      </View>
+                      <Switch
+                        trackColor={{ false: '#dddddd', true: '#4B936380' }}
+                        thumbColor={showReportedTrash ? '#4B9363' : '#f4f3f4'}
+                        onValueChange={() => setShowReportedTrash(!showReportedTrash)}
+                        value={showReportedTrash}
+                      />
+                    </View>
+                    
+                    <View style={styles.filterOption}>
+                      <View style={styles.filterOptionLeft}>
+                        <View style={[styles.statusIndicator, { backgroundColor: '#4B9363' }]} />
+                        <Text style={styles.filterOptionText}>Cleaned Trash</Text>
+                      </View>
+                      <Switch
+                        trackColor={{ false: '#dddddd', true: '#4B936380' }}
+                        thumbColor={showCleanedTrash ? '#4B9363' : '#f4f3f4'}
+                        onValueChange={() => setShowCleanedTrash(!showCleanedTrash)}
+                        value={showCleanedTrash}
+                      />
+                    </View>
                   </View>
-                )} */}
-              </View>
 
-              {/* Filtreleme Hakkında Bilgiler
-              <View style={styles.filterInfoContainer}>
-                <View style={styles.filterInfoHeader}>
-                  <Ionicons name="information-circle" size={20} color="#4B9363" />
-                  <Text style={styles.filterInfoTitle}>Map Markings</Text>
-                </View>
-                
-                <View style={styles.filterLegendContainer}>
-                  <View style={styles.filterLegendItem}>
-                    <View style={[styles.statusIndicator, { backgroundColor: '#E74C3C' }]} />
-                    <Text style={styles.filterLegendText}>Reported Trash</Text>
+                  {/* Tarih Filtresi */}
+                  <View style={styles.filterSection}>
+                    <View style={styles.filterSectionTitleRow}>
+                      <Text style={styles.filterSectionTitle}>Date Filter</Text>
+                      <Switch
+                        trackColor={{ false: '#dddddd', true: '#4B936380' }}
+                        thumbColor={useDateFilter ? '#4B9363' : '#f4f3f4'}
+                        onValueChange={() => setUseDateFilter(!useDateFilter)}
+                        value={useDateFilter}
+                      />
+                    </View>
+
+                    <View style={styles.dateRangeContainer}>
+                      <TouchableOpacity 
+                        style={[styles.dateRangeButton, !useDateFilter && styles.disabledButton]}
+                        onPress={() => openDatePicker('start')}
+                      >
+                        <View style={styles.dateRangeButtonInner}>
+                          <View style={styles.dateRangeIconLabel}>
+                            <FontAwesome name="calendar-o" size={16} color={useDateFilter ? "#4B9363" : "#999"} />
+                            <Text style={styles.dateRangeLabel}>Start Date:</Text>
+                          </View>
+                          <Text style={[styles.dateRangeValue, !useDateFilter && styles.disabledButtonText]}>
+                            {startDate ? startDate.toLocaleDateString() : 'Not Selected'}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+
+                      <View style={styles.dateRangeSeparator}>
+                        <View style={styles.dateRangeLine} />
+                        <Text style={styles.dateRangeSeparatorText}>and</Text>
+                        <View style={styles.dateRangeLine} />
+                      </View>
+
+                      <TouchableOpacity 
+                        style={[styles.dateRangeButton, !useDateFilter && styles.disabledButton]}
+                        onPress={() => openDatePicker('end')}
+                      >
+                        <View style={styles.dateRangeButtonInner}>
+                          <View style={styles.dateRangeIconLabel}>
+                            <FontAwesome name="calendar-o" size={16} color={useDateFilter ? "#4B9363" : "#999"} />
+                            <Text style={styles.dateRangeLabel}>End Date:</Text>
+                          </View>
+                          <Text style={[styles.dateRangeValue, !useDateFilter && styles.disabledButtonText]}>
+                            {endDate ? endDate.toLocaleDateString() : 'Not Selected'}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* {useDateFilter && (
+                      <View style={styles.dateRangeHint}>
+                        <Ionicons name="information-circle-outline" size={16} color="#4B9363" />
+                        <Text style={styles.dateRangeHintText}>
+                          {startDate && endDate 
+                            ? `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()} dates will be shown.`
+                            : 'You can filter by selecting a date range.'}
+                        </Text>
+                      </View>
+                    )} */}
                   </View>
-                  <View style={styles.filterLegendItem}>
-                    <View style={[styles.statusIndicator, { backgroundColor: '#4B9363' }]} />
-                    <Text style={styles.filterLegendText}>Cleaned Trash</Text>
-                  </View>
-                </View>
-                
-                <View style={styles.filterHintBox}>
-                  <Ionicons name="time-outline" size={18} color="#4B9363" />
-                  <Text style={styles.filterHintText}>
-                    When the date filter is active, the reports for the selected date range will be shown.
-                  </Text>
-                </View>
-              </View> */}
 
-            </ScrollView>
+                  {/* Filtreleme Hakkında Bilgiler
+                  <View style={styles.filterInfoContainer}>
+                    <View style={styles.filterInfoHeader}>
+                      <Ionicons name="information-circle" size={20} color="#4B9363" />
+                      <Text style={styles.filterInfoTitle}>Map Markings</Text>
+                    </View>
+                    
+                    <View style={styles.filterLegendContainer}>
+                      <View style={styles.filterLegendItem}>
+                        <View style={[styles.statusIndicator, { backgroundColor: '#E74C3C' }]} />
+                        <Text style={styles.filterLegendText}>Reported Trash</Text>
+                      </View>
+                      <View style={styles.filterLegendItem}>
+                        <View style={[styles.statusIndicator, { backgroundColor: '#4B9363' }]} />
+                        <Text style={styles.filterLegendText}>Cleaned Trash</Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.filterHintBox}>
+                      <Ionicons name="time-outline" size={18} color="#4B9363" />
+                      <Text style={styles.filterHintText}>
+                        When the date filter is active, the reports for the selected date range will be shown.
+                      </Text>
+                    </View>
+                  </View> */}
 
-            {/* Butonlar */}
-            <View style={styles.filterButtonBar}>
-              <TouchableOpacity 
-                style={styles.filterButtonReset}
-                onPress={resetFilters}
-              >
-                <Ionicons name="refresh-outline" size={18} color="#666" />
-                <Text style={styles.filterButtonResetText}>Reset</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.filterButtonApply}
-                onPress={applyFilterChanges}
-              >
-                <Ionicons name="checkmark" size={18} color="#FFF" />
-                <Text style={styles.filterButtonApplyText}>Apply</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+                </ScrollView>
+
+                {/* Butonlar */}
+                <View style={styles.filterButtonBar}>
+                  <TouchableOpacity 
+                    style={styles.filterButtonReset}
+                    onPress={resetFilters}
+                  >
+                    <Ionicons name="refresh-outline" size={18} color="#666" />
+                    <Text style={styles.filterButtonResetText}>Reset</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.filterButtonApply}
+                    onPress={applyFilterChanges}
+                  >
+                    <Ionicons name="checkmark" size={18} color="#FFF" />
+                    <Text style={styles.filterButtonApplyText}>Apply</Text>
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          </Animated.View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       {/* DatePicker Modal */}
