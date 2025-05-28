@@ -415,8 +415,8 @@ const onRegionChangeComplete = (newRegion: Region) => {
       // Mevcut region'ı al ve yakınlaştırılmış yeni region hesapla
       const newRegion = {
         ...region,
-        latitudeDelta: region.latitudeDelta / 2,
-        longitudeDelta: region.longitudeDelta / 2,
+        latitudeDelta: Math.max(0.002, region.latitudeDelta / 2),
+        longitudeDelta: Math.max(0.002, region.longitudeDelta / 2),
       };
       // Haritayı yeni region'a animasyonlu olarak taşı
       mapRef.current.animateToRegion(newRegion, 300);
@@ -429,8 +429,8 @@ const onRegionChangeComplete = (newRegion: Region) => {
       // Mevcut region'ı al ve uzaklaştırılmış yeni region hesapla
       const newRegion = {
         ...region,
-        latitudeDelta: region.latitudeDelta * 2,
-        longitudeDelta: region.longitudeDelta * 2,
+        latitudeDelta: Math.min(1.5, region.latitudeDelta * 2),
+        longitudeDelta: Math.min(1.5, region.longitudeDelta * 2),
       };
       // Haritayı yeni region'a animasyonlu olarak taşı
       mapRef.current.animateToRegion(newRegion, 300);
@@ -467,9 +467,9 @@ const onRegionChangeComplete = (newRegion: Region) => {
         setShowConfirmButton(true);
       } else {
         Alert.alert(
-          'Uyarı',
-          'Lütfen mavi yuvarlak içindeki bir konum seçin.',
-          [{ text: 'Tamam' }]
+          'Warning',
+          'Please select a location within the blue circle.',
+          [{ text: 'OK' }]
         );
       }
     }
@@ -1005,10 +1005,10 @@ const onRegionChangeComplete = (newRegion: Region) => {
           ref={mapRef}
           provider={PROVIDER_GOOGLE}
           style={styles.map}
-          initialRegion={region}  // region yerine initialRegion kullanıyoruz
+          region={region}
           onRegionChange={onRegionChange}
           onRegionChangeComplete={onRegionChangeComplete}
-          showsUserLocation={true}
+          showsUserLocation={!!userLocation}
           showsMyLocationButton={false}
           onPress={handleMapPress}
           moveOnMarkerPress={false}  // Marker'a tıklandığında otomatik kaymayı engelle
@@ -1022,7 +1022,7 @@ const onRegionChangeComplete = (newRegion: Region) => {
                   key={cluster.items[0].id}
                   coordinate={{ latitude: cluster.latitude, longitude: cluster.longitude }}
                   pinColor={cluster.items[0].status === 'cleaned' ? "#4B9363" : "#E74C3C"}
-                  onPress={() => {
+                  onPress={isReportMode ? undefined : () => {
                     if (cluster.items[0].status === 'cleaned') {
                       router.push({ 
                         pathname: '/(tabs)/CleanedTrashPage', 
@@ -1072,7 +1072,7 @@ const onRegionChangeComplete = (newRegion: Region) => {
                   />
                   <Marker
                     coordinate={{ latitude: cluster.latitude, longitude: cluster.longitude }}
-                    onPress={() => {
+                    onPress={isReportMode ? undefined : () => {
                       if (mapRef.current && cluster.items.length > 1) {
                         const coordinates = cluster.items.map(item => item.location);
                         mapRef.current.fitToCoordinates(coordinates, {
