@@ -224,15 +224,15 @@ const styles = StyleSheet.create({
   userInfo: {
     flex: 1,
   },
-  userName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  userUsername: {
-    fontSize: 13,
-    color: '#666',
-  },
+  // userName: {
+  //   fontSize: 16,
+  //   fontWeight: 'bold',
+  //   color: '#333',
+  // },
+  // userUsername: {
+  //   fontSize: 13,
+  //   color: '#666',
+  // },
   pointsBadge: {
     backgroundColor: '#4B9363',
     borderRadius: 10,
@@ -259,7 +259,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F5F5F5',
     borderRadius: 12,
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 24,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: '#E8E8E8',
@@ -305,17 +306,18 @@ const styles = StyleSheet.create({
   },
   pointsBadgeSmall: {
     backgroundColor: '#4B9363',
-    borderRadius: 8,
+    borderRadius: 6,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 4,
     marginLeft: 8,
   },
   pointsBadgeTextSmall: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 12,
+    marginLeft: 2,
   },
   infoModalOverlay: {
     position: 'absolute',
