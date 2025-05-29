@@ -53,6 +53,7 @@ export default function HomePage() {
   const [availableLocations, setAvailableLocations] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   // Fetch posts from Firebase
   useEffect(() => {
@@ -221,6 +222,21 @@ export default function HomePage() {
         >
           <Ionicons name="filter" size={24} color="#FFF" />
         </TouchableOpacity>
+      </View>
+
+      {/* Collapse Info Box */}
+      <View style={styles.collapseContainer}>
+        <TouchableOpacity style={styles.collapseHeader} onPress={() => setRulesOpen(!rulesOpen)} activeOpacity={0.8}>
+          <Text style={styles.collapseTitle}>Please read before sharing!</Text>
+          <Ionicons name={rulesOpen ? 'chevron-up' : 'chevron-down'} size={22} color="#4B9363" />
+        </TouchableOpacity>
+        {rulesOpen && (
+          <View style={styles.collapseContent}>
+            <Text style={styles.collapseText}>
+              Please share content that is real, current and contributes to the environment. Photos should be clear and descriptions should be informative.
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Filtreleme Modal */}
@@ -472,7 +488,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     paddingTop: 12,
-    paddingBottom: 16,
+    paddingBottom: 12,
     paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -808,5 +824,38 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 16,
     fontFamily: 'Poppins-Regular',
+  },
+  collapseContainer: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 12,
+    marginHorizontal: 24,
+    marginBottom: 10,
+    marginTop: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#4B9363',
+    elevation: 2,
+  },
+  collapseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  collapseTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4B9363',
+    letterSpacing: 0.2,
+  },
+  collapseContent: {
+    marginTop: 8,
+    paddingBottom: 4,
+  },
+  collapseText: {
+    fontSize: 12,
+    color: '#333',
+    lineHeight: 18,
   },
 });
