@@ -15,6 +15,7 @@ export default function BottomNavigation() {
   const isProfilePage = currentPath === '/(tabs)/ProfilePage' || currentPath.includes('ProfilePage');
   const isMapScreen = currentPath === '/(tabs)/MapScreen' || currentPath.includes('MapScreen');
   const isNotificationsPage = currentPath === '/(tabs)/NotificationsPage' || currentPath.includes('NotificationsPage');
+  const isRankingPage = currentPath === '/(tabs)/RankingPage' || currentPath.includes('RankingPage');
 
   // Bildirim sayısını almak için optimize edilmiş fonksiyon
   const fetchUnreadCount = useCallback(async () => {
@@ -50,14 +51,14 @@ export default function BottomNavigation() {
       <TouchableOpacity 
         style={[
           styles.navItem,
-          menuActive && styles.activeNavItem
+          isRankingPage && styles.activeNavItem
         ]}
-        onPress={toggleMenu}
+        onPress={() => router.push('/(tabs)/RankingPage')}
       >
         <Ionicons 
-          name="menu-outline" 
+          name={isRankingPage ? "trophy" : "trophy-outline"} 
           size={28} 
-          color={menuActive ? "#fff" : "#000"} 
+          color={isRankingPage ? "#fff" : "#000"} 
         />
       </TouchableOpacity>
       <TouchableOpacity 
