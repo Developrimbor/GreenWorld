@@ -19,6 +19,7 @@ import BottomNavigation from '../../components/BottomNavigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import * as Location from 'expo-location';
+import { auth } from '../config/firebase';
 
 const { width, height } = Dimensions.get('window');
 
@@ -71,6 +72,7 @@ export default function TrashDetailPage() {
   const [locationName, setLocationName] = useState<string>('');
   const [checkingLocation, setCheckingLocation] = useState(false);
   const [authorUsername, setAuthorUsername] = useState<string>('');
+  const [authorId, setAuthorId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTrash = async () => {
@@ -92,9 +94,10 @@ export default function TrashDetailPage() {
         
         // Kullanıcı bilgisini getir
         if (trashData.authorId) {
+          setAuthorId(trashData.authorId);
           fetchUserDetails(trashData.authorId);
         } else if (trashData.user?.id) {
-          // Geriye dönük uyumluluk için eski yapıyı da kontrol et
+          setAuthorId(trashData.user.id);
           fetchUserDetails(trashData.user.id);
         }
         
@@ -382,9 +385,19 @@ export default function TrashDetailPage() {
               </View>
               <View style={styles.infoItem}>
                 <MaterialIcons name="person" size={16} color="#4B9363" />
-              <Text style={styles.infoText}>: {authorUsername || (trash.user?.name || 'Bilinmiyor')}</Text>
+                <TouchableOpacity onPress={() => {
+                  if (authorId) {
+                    if (auth.currentUser && authorId === auth.currentUser.uid) {
+                      router.push('/(tabs)/ProfilePage');
+                    } else {
+                      router.push({ pathname: '/(tabs)/UserProfile', params: { userId: authorId } });
+                    }
+                  }
+                }}>
+                  <Text style={[styles.infoText, { color: '#4B9363' }]}>: {authorUsername || (trash.user?.name || 'Bilinmiyor')}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
 
           <View style={styles.divider} />
 
@@ -733,7 +746,8 @@ const styles = StyleSheet.create({
   },
   combinedSection: {
     flexDirection: 'row',
-    padding: 24,
+    paddingHorizontal: 24,
+    marginTop: 24,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#D9D9D9',
