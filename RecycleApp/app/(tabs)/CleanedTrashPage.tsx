@@ -18,6 +18,7 @@ import BottomNavigation from '../../components/BottomNavigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import * as Location from 'expo-location';
+import { auth } from '../config/firebase';
 
 const { width } = Dimensions.get('window');
 
@@ -30,6 +31,8 @@ export default function CleanedTrashPage() {
   const [locationName, setLocationName] = useState<string>('');
   const [authorUsername, setAuthorUsername] = useState<string>('');
   const [cleanedByUsername, setCleanedByUsername] = useState<string>('');
+  const [authorId, setAuthorId] = useState<string | null>(null);
+  const [cleanedById, setCleanedById] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTrash = async () => {
@@ -52,11 +55,13 @@ export default function CleanedTrashPage() {
         
         // Atığı bildiren kişinin bilgilerini getir
         if (trashData.authorId) {
+          setAuthorId(trashData.authorId);
           fetchUserDetails(trashData.authorId, 'author');
         }
         
         // Atığı temizleyen kişinin bilgilerini getir
         if (trashData.cleanedBy) {
+          setCleanedById(trashData.cleanedBy);
           fetchUserDetails(trashData.cleanedBy, 'cleaner');
         }
         
@@ -277,7 +282,7 @@ export default function CleanedTrashPage() {
         {/* Cleaned Section */}
         <View style={styles.cleanedSection}>
           <Text style={[styles.cleanedText, { textAlign: 'center' }]}>CLEANED</Text>
-          <Text style={styles.cleanedAuthorText}>by {cleanedByUsername}</Text>
+          <Text style={[styles.cleanedAuthorText, { color: '#4B9363' }]}>by {cleanedByUsername}</Text>
         </View>
 
         {/* Info Section */}
@@ -289,7 +294,17 @@ export default function CleanedTrashPage() {
             </View>
             <View style={styles.infoItem}>
               <MaterialIcons name="person" size={16} color="#4B9363" />
-              <Text style={styles.infoText}>{authorUsername}</Text>
+              <TouchableOpacity onPress={() => {
+                if (authorId) {
+                  if (auth.currentUser && authorId === auth.currentUser.uid) {
+                    router.push('/(tabs)/ProfilePage');
+                  } else {
+                    router.push({ pathname: '/(tabs)/UserProfile', params: { userId: authorId } });
+                  }
+                }
+              }}>
+                <Text style={[styles.infoText, { color: '#4B9363' }]}>{authorUsername}</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
