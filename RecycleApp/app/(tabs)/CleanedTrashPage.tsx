@@ -17,6 +17,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import * as Location from 'expo-location';
 
 const { width } = Dimensions.get('window');
 
@@ -59,10 +60,37 @@ export default function CleanedTrashPage() {
           fetchUserDetails(trashData.cleanedBy, 'cleaner');
         }
         
-        // Konum adını ayarlayalım
+        // Konum adını reverse geocode ile bul
         if (trashData.location && trashData.location.latitude && trashData.location.longitude) {
-          const { latitude, longitude } = trashData.location;
-          setLocationName(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+          try {
+            // Konum izni iste
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+              setLocationName('Konum izni verilmedi');
+              setLoading(false);
+              return;
+            }
+            const { latitude, longitude } = trashData.location;
+            const locationInfo = await Location.reverseGeocodeAsync({ latitude, longitude });
+            if (locationInfo && locationInfo.length > 0) {
+              const { city, region, country } = locationInfo[0];
+              let cityName = city || region || '';
+              let countryName = country || '';
+              if (cityName && countryName) {
+                setLocationName(`${cityName}, ${countryName}`);
+              } else if (cityName) {
+                setLocationName(cityName);
+              } else if (countryName) {
+                setLocationName(countryName);
+              } else {
+                setLocationName('Konum bilgisi yok');
+              }
+            } else {
+              setLocationName('Konum bilgisi yok');
+            }
+          } catch (error) {
+            setLocationName('Konum bilgisi yok');
+          }
         } else {
           setLocationName('Konum bilgisi yok');
         }
@@ -115,7 +143,8 @@ export default function CleanedTrashPage() {
   };
 
   const nextImage = () => {
-    if (trash?.images && currentImageIndex < trash.images.length - 1) {
+    const displayImages = getDisplayImages();
+    if (currentImageIndex < displayImages.length - 1) {
       setCurrentImageIndex(currentImageIndex + 1);
     }
   };
@@ -175,7 +204,7 @@ export default function CleanedTrashPage() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>CLEANED TRASH</Text>
         <TouchableOpacity style={styles.infoButton}>
-          <MaterialIcons name="info-outline" size={24} color="#000" />
+          <MaterialIcons name="info-outline" size={24} color="#4B9363" />
         </TouchableOpacity>
       </View>
 
@@ -192,7 +221,7 @@ export default function CleanedTrashPage() {
                 />
               </TouchableOpacity>
           
-              {displayImages.length > 1 && (
+              {/* {displayImages.length > 1 && (
                 <View style={styles.thumbnailsContainer}>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     {displayImages.map((img: any, index: number) => (
@@ -209,7 +238,7 @@ export default function CleanedTrashPage() {
                     ))}
                   </ScrollView>
                 </View>
-              )}
+              )} */}
             </>
           ) : (
             <View style={[styles.mainImage, styles.noImageContainer]}>
@@ -220,11 +249,21 @@ export default function CleanedTrashPage() {
           
           {displayImages.length > 1 && (
             <>
-              <TouchableOpacity style={styles.previousButton} onPress={previousImage}>
-                <MaterialIcons name="chevron-left" size={24} color="#fff" />
+              <TouchableOpacity 
+                style={styles.previousButton} 
+                onPress={previousImage}
+                disabled={currentImageIndex === 0}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <MaterialIcons name="chevron-left" size={24} color={currentImageIndex === 0 ? "#bbb" : "#fff"} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.nextButton} onPress={nextImage}>
-                <MaterialIcons name="chevron-right" size={24} color="#fff" />
+              <TouchableOpacity 
+                style={styles.nextButton} 
+                onPress={nextImage}
+                disabled={currentImageIndex === displayImages.length - 1}
+                hitSlop={{ top: 10, bottom: 0, left: 10, right: 10 }}
+              >
+                <MaterialIcons name="chevron-right" size={24} color={currentImageIndex === displayImages.length - 1 ? "#bbb" : "#fff"} />
               </TouchableOpacity>
               <View style={styles.paginationContainer}>
                 <Text style={styles.paginationText}>
@@ -237,7 +276,8 @@ export default function CleanedTrashPage() {
 
         {/* Cleaned Section */}
         <View style={styles.cleanedSection}>
-          <Text style={[styles.cleanedText, { textAlign: 'center' }]}>CLEANED!</Text>
+          <Text style={[styles.cleanedText, { textAlign: 'center' }]}>CLEANED</Text>
+          <Text style={styles.cleanedAuthorText}>by {cleanedByUsername}</Text>
         </View>
 
         {/* Info Section */}
@@ -245,11 +285,11 @@ export default function CleanedTrashPage() {
           <View style={styles.sectionColumn}>
             <View style={styles.infoItem}>
               <MaterialIcons name="tag" size={16} color="#4B9363" />
-              <Text style={styles.infoText}>ID: {formatId(id)}</Text>
+              <Text style={styles.infoText}>{formatId(id)}</Text>
             </View>
             <View style={styles.infoItem}>
               <MaterialIcons name="person" size={16} color="#4B9363" />
-              <Text style={styles.infoText}>Bildiren: {authorUsername}</Text>
+              <Text style={styles.infoText}>{authorUsername}</Text>
             </View>
           </View>
 
@@ -258,11 +298,11 @@ export default function CleanedTrashPage() {
           <View style={styles.sectionColumn}>
             <View style={styles.infoItem}>
               <MaterialIcons name="calendar-today" size={16} color="#4B9363" />
-              <Text style={styles.infoText}>Rapor: {formatDate(trash.createdAt)}</Text>
+              <Text style={styles.infoText}>{formatDate(trash.createdAt)}</Text>
             </View>
             <View style={styles.infoItem}>
               <MaterialIcons name="location-on" size={16} color="#4B9363" />
-              <Text style={styles.infoText}>Konum: {locationName}</Text>
+              <Text style={styles.infoText}>{locationName}</Text>
             </View>
           </View>
         </View>
@@ -400,21 +440,29 @@ const styles = StyleSheet.create({
   },
   previousButton: {
     position: 'absolute',
-    left: 16,
+    left: 24,
     top: '50%',
     transform: [{ translateY: -20 }],
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 20,
-    padding: 8,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 24,
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 0,
   },
   nextButton: {
     position: 'absolute',
-    right: 16,
+    right: 24,
     top: '50%',
     transform: [{ translateY: -20 }],
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 20,
-    padding: 8,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 24,
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 0,
   },
   paginationContainer: {
     position: 'absolute',
@@ -439,8 +487,8 @@ const styles = StyleSheet.create({
   },
   cleanedText: {
     fontFamily: 'Poppins-Medium',
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: 6,
+    // marginBottom: 8,
     fontSize: 16,
     color: '#4B9363',
   },
@@ -469,6 +517,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 8,
+  },
+  cleanedAuthorText: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 12,
+    color: '#696969',
+    marginBottom: 4,
   },
   infoText: {
     fontFamily: 'Poppins-Medium',
