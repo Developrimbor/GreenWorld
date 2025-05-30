@@ -99,84 +99,24 @@ export default function TrashDetailPage() {
         }
         
         // Log data to see the structure
-        console.log("Trash report data:", JSON.stringify(trashData, null, 2));
+        // console.log("Trash report data:", JSON.stringify(trashData, null, 2));
         
-        // Konum bilgisini çözümle
-        if (trashData.location) {
+        // Konum adını reverse geocode ile bul
+        if (trashData.location && trashData.location.latitude && trashData.location.longitude) {
           try {
+            // Konum izni iste
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+              setLocationName('Konum izni verilmedi');
+              setLoading(false);
+              return;
+            }
             const { latitude, longitude } = trashData.location;
-            
-            // İlk olarak Expo Location API'si ile deneyelim
-            const locationInfo = await Location.reverseGeocodeAsync({
-              latitude,
-              longitude
-            });
-            
+            const locationInfo = await Location.reverseGeocodeAsync({ latitude, longitude });
             if (locationInfo && locationInfo.length > 0) {
-              const { city, region, country, name, street, district, subregion } = locationInfo[0];
-              
-              // Şehir bilgisi için öncelik sırası: city -> region
+              const { city, region, country } = locationInfo[0];
               let cityName = city || region || '';
-              const countryName = country || '';
-              
-              // Expo'dan city boş gelirse ikinci bir yöntem deneyelim - manuel tanımlanmış şehir bulma
-              if (!cityName) {
-                // Türkiye için büyük şehirlerin yaklaşık koordinatları
-                const majorCities = [
-                  { name: "İstanbul", lat: 41.0082, lon: 28.9784, radius: 50 },
-                  { name: "Ankara", lat: 39.9334, lon: 32.8597, radius: 50 },
-                  { name: "İzmir", lat: 38.4237, lon: 27.1428, radius: 40 },
-                  { name: "Bursa", lat: 40.1885, lon: 29.0610, radius: 30 },
-                  { name: "Antalya", lat: 36.8969, lon: 30.7133, radius: 30 },
-                  { name: "Konya", lat: 37.8719, lon: 32.4844, radius: 40 },
-                  { name: "Adana", lat: 37.0000, lon: 35.3213, radius: 30 },
-                  { name: "Gaziantep", lat: 37.0662, lon: 37.3833, radius: 30 },
-                  { name: "Şanlıurfa", lat: 37.1591, lon: 38.7969, radius: 30 },
-                  { name: "Kocaeli", lat: 40.7654, lon: 29.9408, radius: 30 },
-                  { name: "Mersin", lat: 36.8121, lon: 34.6415, radius: 30 },
-                  { name: "Diyarbakır", lat: 37.9144, lon: 40.2306, radius: 30 },
-                  { name: "Hatay", lat: 36.2025, lon: 36.1606, radius: 30 },
-                  { name: "Manisa", lat: 38.6191, lon: 27.4289, radius: 30 },
-                  { name: "Kayseri", lat: 38.7205, lon: 35.4894, radius: 30 },
-                  { name: "Samsun", lat: 41.2867, lon: 36.3300, radius: 30 },
-                  { name: "Balıkesir", lat: 39.6484, lon: 27.8826, radius: 30 },
-                  { name: "Kahramanmaraş", lat: 37.5753, lon: 36.9228, radius: 30 },
-                  { name: "Van", lat: 38.4946, lon: 43.3831, radius: 30 },
-                  { name: "Aydın", lat: 37.8560, lon: 27.8416, radius: 30 }
-                ];
-                
-                // Mesafeyi hesaplayan fonksiyon
-                const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-                  const R = 6371; // Dünya yarıçapı (km)
-                  const dLat = (lat2 - lat1) * Math.PI / 180;
-                  const dLon = (lon2 - lon1) * Math.PI / 180;
-                  const a = 
-                    Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-                    Math.sin(dLon/2) * Math.sin(dLon/2); 
-                  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-                  const distance = R * c * 1000; // metre cinsinden mesafe
-                  return distance;
-                };
-                
-                // En yakın şehri bul
-                let closestCity = null;
-                let minDistance = Number.MAX_VALUE;
-                
-                for (const city of majorCities) {
-                  const distance = calculateDistance(latitude, longitude, city.lat, city.lon);
-                  if (distance < minDistance && distance < city.radius) {
-                    minDistance = distance;
-                    closestCity = city.name;
-                  }
-                }
-                
-                if (closestCity) {
-                  cityName = closestCity;
-                }
-              }
-              
-              // Konum bilgisi oluştur
+              let countryName = country || '';
               if (cityName && countryName) {
                 setLocationName(`${cityName}, ${countryName}`);
               } else if (cityName) {
@@ -184,22 +124,13 @@ export default function TrashDetailPage() {
               } else if (countryName) {
                 setLocationName(countryName);
               } else {
-                // Şehir ve ülke yoksa, koordinatları gösterip, "Bilinmiyor, Bilinmiyor" yazsın
-                setLocationName(`Bilinmiyor, Bilinmiyor (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
+                setLocationName('Konum bilgisi yok');
               }
-            } else {
-              // API yanıt vermiyorsa koordinatları göster
-              setLocationName(`Bilinmiyor, Bilinmiyor (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
-            }
-          } catch (error) {
-            console.error('Konum bilgisi alınamadı:', error);
-            // Hata durumunda koordinatları göster
-            if (trashData.location?.latitude && trashData.location?.longitude) {
-              const { latitude, longitude } = trashData.location;
-              setLocationName(`Bilinmiyor, Bilinmiyor (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
             } else {
               setLocationName('Konum bilgisi yok');
             }
+          } catch (error) {
+            setLocationName('Konum bilgisi yok');
           }
         } else {
           setLocationName('Konum bilgisi yok');
@@ -372,7 +303,7 @@ export default function TrashDetailPage() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>TRASH INFO</Text>
         <TouchableOpacity style={styles.infoButton} onPress={showCleaningInfo}>
-          <MaterialIcons name="error" size={24} color="#000" />
+          <MaterialIcons name="info-outline" size={24} color="#4B9363" />
         </TouchableOpacity>
       </View>
 
