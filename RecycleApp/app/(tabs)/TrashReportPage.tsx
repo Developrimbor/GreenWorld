@@ -227,7 +227,7 @@ export default function TrashReportPage() {
         onPress={() => handleDeleteImage(item.id)}
         activeOpacity={0.7}
       >
-        <MaterialIcons name="close" size={22} color="#fff" />
+        <MaterialIcons name="close" size={18} color="#fff" />
       </TouchableOpacity>
     </View>
   );
@@ -240,11 +240,11 @@ export default function TrashReportPage() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="chevron-back" size={24} color="#4B9363" />
+          <MaterialIcons name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>TRASH REPORT</Text>
         <TouchableOpacity style={styles.infoButton}>
-          <Ionicons name="information-circle-outline" size={24} color="#4B9363" />
+          <MaterialIcons name="info-outline" size={24} color="#4B9363" />
         </TouchableOpacity>
       </View>
 
@@ -441,18 +441,19 @@ export default function TrashReportPage() {
         {/* Camera Button */}
         <View style={styles.cameraButtonContainer}>
           <TouchableOpacity style={styles.cameraButton} onPress={handleTakePhoto}>
-            <Ionicons name="camera" size={36} color="#4B9363" />
+            <Ionicons name="camera" size={30} color="#4B9363" />
           </TouchableOpacity>
         </View>
 
         {/* Trash Images Section */}
         <View style={styles.sectionContainer}>
+          
           <Text style={styles.sectionTitle}>Trash Images</Text>
           <GestureHandlerRootView>
             {images.length === 0 ? (
               <TouchableOpacity style={styles.emptyImageBox} onPress={handleTakePhoto}>
                 <Ionicons name="add" size={32} color="#AAA" />
-                <Text style={styles.emptyImageText}>Fotoğraf Ekle</Text>
+                <Text style={styles.emptyImageText}>Add Photo</Text>
               </TouchableOpacity>
             ) : (
               <DraggableFlatList
@@ -745,7 +746,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   sectionContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
   },
   sectionTitle: {
     fontSize: 16,
@@ -760,16 +761,16 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     position: 'absolute',
-    top: 0,
-    right: 0,
+    top: -1,
+    right:6,
     zIndex: 1,
     backgroundColor: 'rgba(255, 0, 0, 0.8)',
-    borderRadius: 15,
-    width: 30,
-    height: 30,
+    borderRadius: 12,
+    width: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: {
@@ -786,7 +787,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   locationInfo: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E8E8E8',
@@ -878,8 +879,8 @@ const styles = StyleSheet.create({
     borderColor: '#4B9363',
   },
   image: {
-    width: 80,
-    height: 80,
+    width: 72,
+    height: 72,
     borderRadius: 8,
   },
   imageWrapper: {
@@ -887,8 +888,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   emptyImageBox: {
-    width: 80,
-    height: 80,
+    width: 72,
+    height: 72,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#DDD',
@@ -896,7 +897,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F8F8',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    // marginBottom: 8,
   },
   emptyImageText: {
     fontSize: 10,
