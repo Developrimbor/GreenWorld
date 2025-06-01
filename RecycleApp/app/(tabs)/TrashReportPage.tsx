@@ -27,6 +27,8 @@ import { addDoc, collection, updateDoc, increment, doc, serverTimestamp } from '
 import { db, auth } from '../config/firebase';
 import { storage } from '../config/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import IconifyHelpCircleIcon from '../../components/ui/IconifyHelpCircleIcon';
+import IconifyExampleIcon from '../../components/ui/IconifyExampleIcon';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -477,110 +479,31 @@ export default function TrashReportPage() {
 
         {/* Waste Type Selection */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Please select the type of waste.</Text>
-          <View style={styles.wasteTypesGrid}>
-            <TouchableOpacity
-              style={[styles.wasteTypeItem, selectedType === 1 && styles.selectedItem]}
-              onPress={() => setSelectedType(selectedType === 1 ? null : 1)}
-            >
-              <MaterialIcons
-                name="directions-car"
-                size={24}
-                color={selectedType === 1 ? '#4B9363' : '#555'}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.wasteTypeItem, selectedType === 2 && styles.selectedItem]}
-              onPress={() => setSelectedType(selectedType === 2 ? null : 2)}
-            >
-              <MaterialIcons
-                name="time-to-leave"
-                size={24}
-                color={selectedType === 2 ? '#4B9363' : '#555'}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.wasteTypeItem, selectedType === 3 && styles.selectedItem]}
-              onPress={() => setSelectedType(selectedType === 3 ? null : 3)}
-            >
-              <MaterialIcons
-                name="local-drink"
-                size={24}
-                color={selectedType === 3 ? '#4B9363' : '#555'}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.wasteTypeItem, selectedType === 4 && styles.selectedItem]}
-              onPress={() => setSelectedType(selectedType === 4 ? null : 4)}
-            >
-              <MaterialIcons
-                name="description"
-                size={24}
-                color={selectedType === 4 ? '#4B9363' : '#555'}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.wasteTypeItem, selectedType === 5 && styles.selectedItem]}
-              onPress={() => setSelectedType(selectedType === 5 ? null : 5)}
-            >
-              <MaterialIcons
-                name="masks"
-                size={24}
-                color={selectedType === 5 ? '#4B9363' : '#555'}
-              />
-            </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <IconifyHelpCircleIcon width={22} height={22} color="#4B9363" style={{ marginRight: 8 }} />
+            <Text style={styles.sectionTitle}>Please select the type of waste.</Text>
           </View>
           <View style={styles.wasteTypesGrid}>
-            <TouchableOpacity
-              style={[styles.wasteTypeItem, selectedType === 6 && styles.selectedItem]}
-              onPress={() => setSelectedType(selectedType === 6 ? null : 6)}
-            >
-              <MaterialIcons
-                name="liquor"
-                size={24}
-                color={selectedType === 6 ? '#4B9363' : '#555'}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.wasteTypeItem, selectedType === 7 && styles.selectedItem]}
-              onPress={() => setSelectedType(selectedType === 7 ? null : 7)}
-            >
-              <MaterialIcons
-                name="smoking-rooms"
-                size={24}
-                color={selectedType === 7 ? '#4B9363' : '#555'}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.wasteTypeItem, selectedType === 8 && styles.selectedItem]}
-              onPress={() => setSelectedType(selectedType === 8 ? null : 8)}
-            >
-              <MaterialIcons
-                name="pest-control"
-                size={24}
-                color={selectedType === 8 ? '#4B9363' : '#555'}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.wasteTypeItem, selectedType === 9 && styles.selectedItem]}
-              onPress={() => setSelectedType(selectedType === 9 ? null : 9)}
-            >
-              <MaterialIcons
-                name="recycling"
-                size={24}
-                color={selectedType === 9 ? '#4B9363' : '#555'}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.wasteTypeItem, selectedType === 10 && styles.selectedItem]}
-              onPress={() => setSelectedType(selectedType === 10 ? null : 10)}
-            >
-              <MaterialIcons
-                name="delete"
-                size={24}
-                color={selectedType === 10 ? '#4B9363' : '#555'}
-              />
-            </TouchableOpacity>
+            {[1,2,3,4,5].map((type) => (
+              <TouchableOpacity
+                key={type}
+                style={[styles.wasteTypeItem, selectedType === type && styles.selectedItem]}
+                onPress={() => setSelectedType(selectedType === type ? null : type)}
+              >
+                <IconifyExampleIcon width={24} height={24} color={selectedType === type ? '#4B9363' : '#555'} />
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View style={styles.wasteTypesGrid}>
+            {[6,7,8,9,10].map((type) => (
+              <TouchableOpacity
+                key={type}
+                style={[styles.wasteTypeItem, selectedType === type && styles.selectedItem]}
+                onPress={() => setSelectedType(selectedType === type ? null : type)}
+              >
+                <IconifyExampleIcon width={24} height={24} color={selectedType === type ? '#4B9363' : '#555'} />
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
@@ -839,13 +762,13 @@ const styles = StyleSheet.create({
   actionButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginHorizontal: 16,
+    marginHorizontal: 24,
     marginTop: 8,
     marginBottom: 16,
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderWidth: 1,
     borderColor: '#4B9363',
     borderRadius: 6,
