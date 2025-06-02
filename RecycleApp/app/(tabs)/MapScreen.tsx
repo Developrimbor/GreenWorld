@@ -169,6 +169,10 @@ export default function MapScreen() {
   // Modal görünürlüğünü kontrol eden state
   const [isFilterPanelVisible, setIsFilterPanelVisible] = useState(false);
 
+  // [EKLE] Uyarı modalı için state
+  const [showCircleWarningModal, setShowCircleWarningModal] = useState(false);
+  const [circleWarningMessage, setCircleWarningMessage] = useState('');
+
   // Klavye olaylarını dinle
   useEffect(() => {
     const keyboardWillShowListener = Keyboard.addListener(
@@ -466,11 +470,8 @@ const onRegionChangeComplete = (newRegion: Region) => {
         setSelectedLocation(coordinate);
         setShowConfirmButton(true);
       } else {
-        Alert.alert(
-          'Warning',
-          'Please select a location within the blue circle.',
-          [{ text: 'OK' }]
-        );
+        setCircleWarningMessage('Please select a location within the blue circle.');
+        setShowCircleWarningModal(true);
       }
     }
   };
@@ -1654,6 +1655,27 @@ const onRegionChangeComplete = (newRegion: Region) => {
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Mavi Daire Uyarı Modalı */}
+      <Modal
+        visible={showCircleWarningModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCircleWarningModal(false)}
+      >
+        <View style={styles.errorModalOverlay}>
+          <View style={styles.errorModalContainer}>
+            <Text style={styles.errorModalTitle}>Warning</Text>
+            <Text style={styles.errorModalMessage}>{circleWarningMessage}</Text>
+            <TouchableOpacity 
+              style={styles.errorModalButton}
+              onPress={() => setShowCircleWarningModal(false)}
+            >
+              <Text style={styles.errorModalButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
