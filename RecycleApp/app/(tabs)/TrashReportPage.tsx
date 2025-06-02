@@ -29,6 +29,27 @@ import { storage } from '../config/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import IconifyHelpCircleIcon from '../../components/ui/IconifyHelpCircleIcon';
 import IconifyExampleIcon from '../../components/ui/IconifyExampleIcon';
+import IconifyGarbageIcon from '../../components/ui/IconifyGarbage';
+import IconifyPlasticIcon from '../../components/ui/IconifyPlastic';
+import IconifyPaperIcon from '../../components/ui/IconifyPaper';
+import IconifyGlassIcon from '../../components/ui/IconifyGlass';
+import IconifyFoodIcon from '../../components/ui/IconifyFood';
+import IconifyCigaretteIcon from '../../components/ui/IconifyCigarette';
+import IconifyMaskIcon from '../../components/ui/IconifyMask';
+import IconifyPackageIcon from '../../components/ui/IconifyPackage';
+import IconifyEWasteIcon from '../../components/ui/IconifyEWaste';
+import IconifyClothesIcon from '../../components/ui/IconifyClothes';
+import IconifyFishingNetsIcon from '../../components/ui/IconifyFishingNets';
+import IconifyConstructionIcon from '../../components/ui/IconifyConstruction';
+import IconifyBatteryIcon from '../../components/ui/IconifyBattery';
+import IconifyBiomedicalIcon from '../../components/ui/IconifyBiomedical';
+import IconifyDeadAnimalsIcon from '../../components/ui/IconifyDeadAnimals';
+import IconifyFurnitureIcon from '../../components/ui/IconifyFurniture';
+import IconifyGardenIcon from '../../components/ui/IconifyGarden';
+import IconifyHomeAppliancesIcon from '../../components/ui/IconifyHomeAppliances';
+import IconifyMetalIcon from '../../components/ui/IconifyMetal';
+import IconifyTireIcon from '../../components/ui/IconifyTire';
+import IconifyToxicIcon from '../../components/ui/IconifyToxic';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -70,6 +91,7 @@ export default function TrashReportPage() {
   const [images, setImages] = useState<ImageItem[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showAllWasteTypes, setShowAllWasteTypes] = useState(false);
 
   useEffect(() => {
     if (params.latitude && params.longitude) {
@@ -233,6 +255,29 @@ export default function TrashReportPage() {
       </TouchableOpacity>
     </View>
   );
+
+  const wasteTypeIcons = [
+    { key: 1, Icon: IconifyPlasticIcon, label: 'Plastik' },
+    { key: 2, Icon: IconifyPaperIcon, label: 'Kağıt' },
+    { key: 3, Icon: IconifyGlassIcon, label: 'Cam' },
+    { key: 4, Icon: IconifyFoodIcon, label: 'Organik' },
+    { key: 5, Icon: IconifyCigaretteIcon, label: 'Sigara' },
+    { key: 6, Icon: IconifyMaskIcon, label: 'Maske' },
+    { key: 7, Icon: IconifyPackageIcon, label: 'Ambalaj' },
+    { key: 8, Icon: IconifyEWasteIcon, label: 'Elektronik' },
+    { key: 9, Icon: IconifyClothesIcon, label: 'Tekstil' },
+    { key: 10, Icon: IconifyFishingNetsIcon, label: 'Ağ' },
+    { key: 11, Icon: IconifyConstructionIcon, label: 'İnşaat' },
+    { key: 12, Icon: IconifyBatteryIcon, label: 'Pil' },
+    { key: 13, Icon: IconifyBiomedicalIcon, label: 'Biyomedikal' },
+    { key: 14, Icon: IconifyDeadAnimalsIcon, label: 'Hayvan' },
+    { key: 15, Icon: IconifyFurnitureIcon, label: 'Mobilya' },
+    { key: 16, Icon: IconifyGardenIcon, label: 'Bahçe' },
+    { key: 17, Icon: IconifyHomeAppliancesIcon, label: 'Beyaz Eşya' },
+    { key: 18, Icon: IconifyMetalIcon, label: 'Metal' },
+    { key: 19, Icon: IconifyTireIcon, label: 'Lastik' },
+    { key: 20, Icon: IconifyToxicIcon, label: 'Toksik' },
+  ];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -479,32 +524,105 @@ export default function TrashReportPage() {
 
         {/* Waste Type Selection */}
         <View style={styles.sectionContainer}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-            <IconifyHelpCircleIcon width={22} height={22} color="#4B9363" style={{ marginRight: 8 }} />
+          <View style={{ flexDirection: 'row', alignItems: 'center',  marginBottom: 8 }}>
+            <Ionicons name="help-circle" size={24} color="#4B9363" style={{ marginRight: 6 }} />
             <Text style={styles.sectionTitle}>Please select the type of waste.</Text>
           </View>
-          <View style={styles.wasteTypesGrid}>
-            {[1,2,3,4,5].map((type) => (
-              <TouchableOpacity
-                key={type}
-                style={[styles.wasteTypeItem, selectedType === type && styles.selectedItem]}
-                onPress={() => setSelectedType(selectedType === type ? null : type)}
-              >
-                <IconifyExampleIcon width={24} height={24} color={selectedType === type ? '#4B9363' : '#555'} />
+          {/* Kısa görünüm: 9 ikon + + butonu */}
+          {!showAllWasteTypes && (
+            <>
+              <View style={styles.wasteTypesGrid}>
+                {wasteTypeIcons.slice(0, 5).map(({ key, Icon }) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.wasteTypeItem, selectedType === key && styles.selectedItem]}
+                    onPress={() => setSelectedType(selectedType === key ? null : key)}
+                  >
+                    <Icon width={28} height={28} color={selectedType === key ? '#4B9363' : '#555'} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={styles.wasteTypesGrid}>
+                {wasteTypeIcons.slice(5, 9).map(({ key, Icon }) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.wasteTypeItem, selectedType === key && styles.selectedItem]}
+                    onPress={() => setSelectedType(selectedType === key ? null : key)}
+                  >
+                    <Icon width={28} height={28} color={selectedType === key ? '#4B9363' : '#555'} />
+                  </TouchableOpacity>
+                ))}
+                {/* + butonu */}
+                <TouchableOpacity
+                  style={[styles.wasteTypeItem, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#ECECEC',  }]}
+                  onPress={() => setShowAllWasteTypes(true)}
+                >
+                  <Ionicons name="add" size={28} color="#4B9363" />
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+          {/* Uzun görünüm: 10-20. ikonlar, + yerine FishingNets gelir, en altta Show less */}
+          {showAllWasteTypes && (
+            <>
+              <View style={styles.wasteTypesGrid}>
+                {wasteTypeIcons.slice(0, 5).map(({ key, Icon }) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.wasteTypeItem, selectedType === key && styles.selectedItem]}
+                    onPress={() => setSelectedType(selectedType === key ? null : key)}
+                  >
+                    <Icon width={28} height={28} color={selectedType === key ? '#4B9363' : '#555'} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={styles.wasteTypesGrid}>
+                {wasteTypeIcons.slice(5, 9).map(({ key, Icon }) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.wasteTypeItem, selectedType === key && styles.selectedItem]}
+                    onPress={() => setSelectedType(selectedType === key ? null : key)}
+                  >
+                    <Icon width={28} height={28} color={selectedType === key ? '#4B9363' : '#555'} />
+                  </TouchableOpacity>
+                ))}
+                {/* + yerine FishingNets */}
+                <TouchableOpacity
+                  style={[styles.wasteTypeItem, selectedType === 10 && styles.selectedItem]}
+                  onPress={() => setSelectedType(selectedType === 10 ? null : 10)}
+                >
+                  <IconifyFishingNetsIcon width={28} height={28} color={selectedType === 10 ? '#4B9363' : '#555'} />
+                </TouchableOpacity>
+              </View>
+              {/* 11-15 */}
+              <View style={styles.wasteTypesGrid}>
+                {wasteTypeIcons.slice(10, 15).map(({ key, Icon }) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.wasteTypeItem, selectedType === key && styles.selectedItem]}
+                    onPress={() => setSelectedType(selectedType === key ? null : key)}
+                  >
+                    <Icon width={28} height={28} color={selectedType === key ? '#4B9363' : '#555'} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {/* 16-20 */}
+              <View style={styles.wasteTypesGrid}>
+                {wasteTypeIcons.slice(15, 20).map(({ key, Icon }) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.wasteTypeItem, selectedType === key && styles.selectedItem]}
+                    onPress={() => setSelectedType(selectedType === key ? null : key)}
+                  >
+                    <Icon width={28} height={28} color={selectedType === key ? '#4B9363' : '#555'} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TouchableOpacity onPress={() => setShowAllWasteTypes(false)} style={{ alignSelf: 'center', marginTop: 8 }}>
+                <Text style={{ color: '#4B9363', fontWeight: 'bold', fontSize: 15 }}>Show less</Text>
               </TouchableOpacity>
-            ))}
-          </View>
-          <View style={styles.wasteTypesGrid}>
-            {[6,7,8,9,10].map((type) => (
-              <TouchableOpacity
-                key={type}
-                style={[styles.wasteTypeItem, selectedType === type && styles.selectedItem]}
-                onPress={() => setSelectedType(selectedType === type ? null : type)}
-              >
-                <IconifyExampleIcon width={24} height={24} color={selectedType === type ? '#4B9363' : '#555'} />
-              </TouchableOpacity>
-            ))}
-          </View>
+            </>
+          )}
         </View>
 
         {/* Waste Quantity Selection */}
@@ -515,51 +633,7 @@ export default function TrashReportPage() {
               style={[styles.wasteQuantityItem, selectedQuantity === 1 && styles.selectedItem]}
               onPress={() => setSelectedQuantity(selectedQuantity === 1 ? null : 1)}
             >
-              <MaterialIcons
-                name="delete"
-                size={24}
-                color={selectedQuantity === 1 ? '#4B9363' : '#555'}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.wasteQuantityItem, selectedQuantity === 2 && styles.selectedItem]}
-              onPress={() => setSelectedQuantity(selectedQuantity === 2 ? null : 2)}
-            >
-              <MaterialIcons
-                name="delete"
-                size={24}
-                color={selectedQuantity === 2 ? '#4B9363' : '#555'}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.wasteQuantityItem, selectedQuantity === 3 && styles.selectedItem]}
-              onPress={() => setSelectedQuantity(selectedQuantity === 3 ? null : 3)}
-            >
-              <MaterialIcons
-                name="delete"
-                size={24}
-                color={selectedQuantity === 3 ? '#4B9363' : '#555'}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.wasteQuantityItem, selectedQuantity === 4 && styles.selectedItem]}
-              onPress={() => setSelectedQuantity(selectedQuantity === 4 ? null : 4)}
-            >
-              <MaterialIcons
-                name="delete"
-                size={24}
-                color={selectedQuantity === 4 ? '#4B9363' : '#555'}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.wasteQuantityItem, selectedQuantity === 5 && styles.selectedItem]}
-              onPress={() => setSelectedQuantity(selectedQuantity === 5 ? null : 5)}
-            >
-              <MaterialIcons
-                name="delete"
-                size={24}
-                color={selectedQuantity === 5 ? '#4B9363' : '#555'}
-              />
+              <IconifyGarbageIcon width={28} height={28} color={selectedQuantity === 1 ? '#4B9363' : '#555'} />
             </TouchableOpacity>
           </View>
         </View>
@@ -723,11 +797,11 @@ const styles = StyleSheet.create({
   wasteTypesGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   wasteTypeItem: {
-    width: (SCREEN_WIDTH - 60) / 5,
-    height: (SCREEN_WIDTH - 60) / 5,
+    width: (SCREEN_WIDTH - 60) / 6,
+    height: (SCREEN_WIDTH - 60) / 6,
     backgroundColor: '#ECECEC',
     borderRadius: 8,
     justifyContent: 'center',
@@ -738,8 +812,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   wasteQuantityItem: {
-    width: (SCREEN_WIDTH - 60) / 5,
-    height: (SCREEN_WIDTH - 60) / 5,
+    width: (SCREEN_WIDTH - 60) / 6,
+    height: (SCREEN_WIDTH - 60) / 6,
     backgroundColor: '#ECECEC',
     borderRadius: 8,
     justifyContent: 'center',
