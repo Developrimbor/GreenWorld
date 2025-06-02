@@ -14,6 +14,8 @@ import {
   PermissionsAndroid,
   Modal,
   ActivityIndicator,
+  Animated,
+  Easing,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -92,6 +94,7 @@ export default function TrashReportPage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showAllWasteTypes, setShowAllWasteTypes] = useState(false);
+  const [wasteTypesAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
     if (params.latitude && params.longitude) {
@@ -278,6 +281,24 @@ export default function TrashReportPage() {
     { key: 19, Icon: IconifyTireIcon, label: 'Lastik' },
     { key: 20, Icon: IconifyToxicIcon, label: 'Toksik' },
   ];
+
+  const openWasteTypes = () => {
+    setShowAllWasteTypes(true);
+    Animated.timing(wasteTypesAnim, {
+      toValue: 1,
+      duration: 320,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  };
+  const closeWasteTypes = () => {
+    Animated.timing(wasteTypesAnim, {
+      toValue: 0,
+      duration: 260,
+      easing: Easing.in(Easing.cubic),
+      useNativeDriver: false,
+    }).start(() => setShowAllWasteTypes(false));
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -493,7 +514,7 @@ export default function TrashReportPage() {
         </View>
 
         {/* Trash Images Section */}
-        <View style={styles.sectionContainer}>
+        <View style={styles.sectionAddImage}>
           
           <Text style={styles.sectionTitle}>Trash Images</Text>
           <GestureHandlerRootView>
@@ -555,16 +576,25 @@ export default function TrashReportPage() {
                 {/* + butonu */}
                 <TouchableOpacity
                   style={[styles.wasteTypeItem, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#ECECEC',  }]}
-                  onPress={() => setShowAllWasteTypes(true)}
+                  onPress={openWasteTypes}
                 >
-                  <Ionicons name="add" size={28} color="#4B9363" />
+                  <Ionicons name="add" size={26} color="#4B9363" />
+                  <Text style={{ color: '#4B9363', fontWeight:'500', fontSize: 12 }}>More</Text>
                 </TouchableOpacity>
               </View>
             </>
           )}
           {/* Uzun görünüm: 10-20. ikonlar, + yerine FishingNets gelir, en altta Show less */}
           {showAllWasteTypes && (
-            <>
+            <Animated.View style={{
+              overflow: 'hidden',
+              opacity: wasteTypesAnim,
+              maxHeight: wasteTypesAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 600], // grid yüksekliği
+              }),
+              transform: [{ scale: wasteTypesAnim.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] }) }],
+            }}>
               <View style={styles.wasteTypesGrid}>
                 {wasteTypeIcons.slice(0, 5).map(({ key, Icon }) => (
                   <TouchableOpacity
@@ -618,10 +648,10 @@ export default function TrashReportPage() {
                   </TouchableOpacity>
                 ))}
               </View>
-              <TouchableOpacity onPress={() => setShowAllWasteTypes(false)} style={{ alignSelf: 'center', marginTop: 8 }}>
+              <TouchableOpacity onPress={closeWasteTypes} style={{ alignSelf: 'center', marginTop: 8 }}>
                 <Text style={{ color: '#4B9363', fontWeight: 'bold', fontSize: 15 }}>Show less</Text>
               </TouchableOpacity>
-            </>
+            </Animated.View>
           )}
         </View>
 
@@ -639,14 +669,14 @@ export default function TrashReportPage() {
         </View>
 
         {/* Additional Information */}
-        <View style={styles.sectionContainer}>
+        <View style={styles.commentContainer}>
           <Text style={styles.sectionTitle}>If you want to give information about waste:</Text>
           <TextInput
             style={styles.textInput}
             multiline
             numberOfLines={4}
             textAlignVertical="top"
-            placeholder="Add additional information here..."
+            placeholder="Add additional information here... Don't forget to wear gloves when collecting waste, as it may be sharp."
             placeholderTextColor="#AAA"
             value={additionalInfo}
             onChangeText={setAdditionalInfo}
@@ -744,9 +774,18 @@ const styles = StyleSheet.create({
   },
   sectionContainer: {
     paddingHorizontal: 24,
+    paddingTop: 6,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E8E8',
+  },
+  commentContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 6,
+    // paddingBottom: 12,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
     color: '#333',
     marginBottom: 12,
@@ -829,7 +868,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     height: 100,
-    fontSize: 16,
+    fontSize: 14,
     color: '#333',
     marginBottom: 16,
   },
@@ -894,6 +933,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F8F8',
     justifyContent: 'center',
     alignItems: 'center',
+    // marginBottom:12,
     // marginBottom: 8,
   },
   emptyImageText: {
@@ -901,4 +941,7 @@ const styles = StyleSheet.create({
     color: '#AAA',
     marginTop: 4,
   },
+  sectionAddImage: {
+    paddingHorizontal: 24,
+  }
 });
