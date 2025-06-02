@@ -1299,7 +1299,8 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   tagText: {
-    fontSize: 12,
+    fontSize: 11,
+    // lineHeight: 16,
     color: '#4B9363',
     fontFamily: 'Poppins-Regular',
   },
