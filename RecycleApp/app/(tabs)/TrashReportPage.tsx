@@ -96,6 +96,7 @@ export default function TrashReportPage() {
   const [showAllWasteTypes, setShowAllWasteTypes] = useState(false);
   const [wasteTypesAnim] = useState(new Animated.Value(0));
   const [infoModalVisible, setInfoModalVisible] = useState(false);
+  const [wasteGuideVisible, setWasteGuideVisible] = useState(false);
 
   useEffect(() => {
     if (params.latitude && params.longitude) {
@@ -261,44 +262,45 @@ export default function TrashReportPage() {
   );
 
   const wasteTypeIcons = [
-    { key: 1, Icon: IconifyPlasticIcon, label: 'Plastik' },
-    { key: 2, Icon: IconifyPaperIcon, label: 'Kağıt' },
-    { key: 3, Icon: IconifyGlassIcon, label: 'Cam' },
-    { key: 4, Icon: IconifyFoodIcon, label: 'Organik' },
-    { key: 5, Icon: IconifyCigaretteIcon, label: 'Sigara' },
-    { key: 6, Icon: IconifyMaskIcon, label: 'Maske' },
-    { key: 7, Icon: IconifyPackageIcon, label: 'Ambalaj' },
-    { key: 8, Icon: IconifyEWasteIcon, label: 'Elektronik' },
-    { key: 9, Icon: IconifyClothesIcon, label: 'Tekstil' },
-    { key: 10, Icon: IconifyFishingNetsIcon, label: 'Ağ' },
-    { key: 11, Icon: IconifyConstructionIcon, label: 'İnşaat' },
-    { key: 12, Icon: IconifyBatteryIcon, label: 'Pil' },
-    { key: 13, Icon: IconifyBiomedicalIcon, label: 'Biyomedikal' },
-    { key: 14, Icon: IconifyDeadAnimalsIcon, label: 'Hayvan' },
-    { key: 15, Icon: IconifyFurnitureIcon, label: 'Mobilya' },
-    { key: 16, Icon: IconifyGardenIcon, label: 'Bahçe' },
-    { key: 17, Icon: IconifyHomeAppliancesIcon, label: 'Beyaz Eşya' },
+    { key: 1, Icon: IconifyPlasticIcon, label: 'Plastic' },
+    { key: 2, Icon: IconifyPaperIcon, label: 'Paper' },
+    { key: 3, Icon: IconifyGlassIcon, label: 'Glass' },
+    { key: 4, Icon: IconifyFoodIcon, label: 'Organic' },
+    { key: 5, Icon: IconifyCigaretteIcon, label: 'Cigarette' },
+    { key: 6, Icon: IconifyMaskIcon, label: 'Mask' },
+    { key: 7, Icon: IconifyPackageIcon, label: 'Cardboard' },
+    { key: 8, Icon: IconifyEWasteIcon, label: 'E-Waste' },
+    { key: 9, Icon: IconifyClothesIcon, label: 'Textile' },
+    { key: 10, Icon: IconifyFishingNetsIcon, label: 'Fishing Nets' },
+    { key: 11, Icon: IconifyConstructionIcon, label: 'Construction' },
+    { key: 12, Icon: IconifyBatteryIcon, label: 'Battery' },
+    { key: 13, Icon: IconifyBiomedicalIcon, label: 'Biomedical' },
+    { key: 14, Icon: IconifyDeadAnimalsIcon, label: 'Dead Animals' },
+    { key: 15, Icon: IconifyFurnitureIcon, label: 'Furniture' },
+    { key: 16, Icon: IconifyGardenIcon, label: 'Garden' },
+    { key: 17, Icon: IconifyHomeAppliancesIcon, label: 'Home Appliances' },
     { key: 18, Icon: IconifyMetalIcon, label: 'Metal' },
-    { key: 19, Icon: IconifyTireIcon, label: 'Lastik' },
-    { key: 20, Icon: IconifyToxicIcon, label: 'Toksik' },
+    { key: 19, Icon: IconifyTireIcon, label: 'Tire' },
+    { key: 20, Icon: IconifyToxicIcon, label: 'Toxic' },
   ];
 
   const openWasteTypes = () => {
     setShowAllWasteTypes(true);
     Animated.timing(wasteTypesAnim, {
       toValue: 1,
-      duration: 320,
-      easing: Easing.out(Easing.cubic),
+      duration: 340,
+      easing: Easing.inOut(Easing.cubic),
       useNativeDriver: false,
     }).start();
   };
   const closeWasteTypes = () => {
+    setShowAllWasteTypes(false);
     Animated.timing(wasteTypesAnim, {
       toValue: 0,
-      duration: 260,
-      easing: Easing.in(Easing.cubic),
+      duration: 340,
+      easing: Easing.inOut(Easing.cubic),
       useNativeDriver: false,
-    }).start(() => setShowAllWasteTypes(false));
+    }).start();
   };
 
   return (
@@ -546,8 +548,13 @@ export default function TrashReportPage() {
 
         {/* Waste Type Selection */}
         <View style={styles.sectionContainer}>
-          <View style={{ flexDirection: 'row', alignItems: 'center',  marginBottom: 8 }}>
-            <Ionicons name="help-circle" size={24} color="#4B9363" style={{ marginRight: 6 }} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+            <TouchableOpacity onPress={() => setWasteGuideVisible(true)}>
+              <Ionicons name="help-circle" size={24} color="#4B9363" style={{ marginRight: 1, left: -3 }} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setWasteGuideVisible(true)}>
+              <Text style={styles.sectionInfo}>Waste Guide  </Text>
+            </TouchableOpacity>
             <Text style={styles.sectionTitle}>Please select the type of waste.</Text>
           </View>
           {/* Kısa görünüm: 9 ikon + + butonu */}
@@ -592,9 +599,22 @@ export default function TrashReportPage() {
               opacity: wasteTypesAnim,
               maxHeight: wasteTypesAnim.interpolate({
                 inputRange: [0, 1],
-                outputRange: [0, 600], // grid yüksekliği
+                outputRange: [0, 600],
               }),
-              transform: [{ scale: wasteTypesAnim.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] }) }],
+              transform: [
+                {
+                  scale: wasteTypesAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.96, 1],
+                  }),
+                },
+                {
+                  translateY: wasteTypesAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [40, 0],
+                  }),
+                },
+              ],
             }}>
               <View style={styles.wasteTypesGrid}>
                 {wasteTypeIcons.slice(0, 5).map(({ key, Icon }) => (
@@ -742,6 +762,131 @@ export default function TrashReportPage() {
           </View>
         </View>
       </Modal>
+
+      {/* Waste Guide Modal */}
+      <Modal
+        visible={wasteGuideVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setWasteGuideVisible(false)}
+      >
+        <View style={styles.wasteGuideOverlay}>
+          <View style={styles.wasteGuideContainer}>
+            <Text style={styles.wasteGuideTitle}>Waste Guide</Text>
+            <Text style={styles.wasteGuideSubtitle}>Learn about waste types, examples and safety tips.</Text>
+            <ScrollView
+              contentContainerStyle={{ paddingBottom: 12 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {wasteTypeIcons.map(({ key, Icon, label }) => {
+                // İngilizce örnek ve öneri metinleri
+                let example = '';
+                let tip = '';
+                switch (label) {
+                  case 'Plastic':
+                    example = 'Bottles, bags, packaging, containers, etc.';
+                    tip = 'Always separate clean plastics for recycling.';
+                    break;
+                  case 'Paper':
+                    example = 'Newspapers, magazines, cardboard, office paper.';
+                    tip = 'Keep paper dry for better recycling.';
+                    break;
+                  case 'Glass':
+                    example = 'Glass bottles, jars, broken glass.';
+                    tip = 'Wear gloves when handling broken glass.';
+                    break;
+                  case 'Organic':
+                    example = 'Food scraps, fruit peels, garden waste.';
+                    tip = 'Compost organic waste if possible.';
+                    break;
+                  case 'Cigarette':
+                    example = 'Cigarette butts, ash.';
+                    tip = 'Never throw cigarette butts on the ground.';
+                    break;
+                  case 'Mask':
+                    example = 'Disposable masks, gloves.';
+                    tip = 'Dispose of used masks in closed bins.';
+                    break;
+                  case 'Cardboard':
+                    example = 'Snack wrappers, plastic film, boxes.';
+                    tip = 'Clean packaging before recycling.';
+                    break;
+                  case 'E-Waste':
+                    example = 'Phones, laptops, tablets, chargers.';
+                    tip = 'Take e-waste to special collection points.';
+                    break;
+                  case 'Textile':
+                    example = 'Clothes, shoes, bags, fabric.';
+                    tip = 'Donate usable clothes, recycle the rest.';
+                    break;
+                  case 'Fishing Nets':
+                    example = 'Fishing nets, ropes.';
+                    tip = 'Report abandoned nets to authorities.';
+                    break;
+                  case 'Construction':
+                    example = 'Bricks, tiles, concrete, rubble.';
+                    tip = 'Wear a mask to avoid dust inhalation.';
+                    break;
+                  case 'Battery':
+                    example = 'Batteries, power banks.';
+                    tip = 'Never throw batteries in regular trash.';
+                    break;
+                  case 'Biomedical':
+                    example = 'Syringes, medicine, medical waste.';
+                    tip = 'Do not touch biomedical waste without protection.';
+                    break;
+                  case 'Dead Animals':
+                    example = 'Dead animals, animal waste.';
+                    tip = 'Avoid direct contact, report to authorities.';
+                    break;
+                  case 'Furniture':
+                    example = 'Chairs, sofas, tables, beds.';
+                    tip = 'Arrange for bulky waste pickup if possible.';
+                    break;
+                  case 'Garden':
+                    example = 'Leaves, branches, grass clippings.';
+                    tip = 'Compost garden waste if possible.';
+                    break;
+                  case 'Home Appliances':
+                    example = 'Fridges, washing machines, ovens.';
+                    tip = 'Contact your municipality for appliance disposal.';
+                    break;
+                  case 'Metal':
+                    example = 'Cans, pipes, metal scraps.';
+                    tip = 'Rinse cans before recycling.';
+                    break;
+                  case 'Tire':
+                    example = 'Car tires, bike tires.';
+                    tip = 'Take tires to tire collection points.';
+                    break;
+                  case 'Toxic':
+                    example = 'Paint, chemicals, pesticides.';
+                    tip = 'Never pour chemicals down the drain.';
+                    break;
+                  default:
+                    example = '';
+                    tip = '';
+                }
+                return (
+                  <View key={key} style={styles.wasteGuideItem}>
+                    <View style={styles.wasteGuideIconBox}>
+                      <Icon width={24} height={24} color="#4B9363" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.wasteGuideItemTitle}>{label}</Text>
+                      <Text style={styles.wasteGuideExample}><Text style={{ fontWeight: 'bold' }}>Examples:</Text> {example}</Text>
+                      <Text style={styles.wasteGuideTip}><Text style={{ fontWeight: 'bold', color: '#4B9363' }}>Tip:</Text> {tip}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+            <TouchableOpacity style={styles.wasteGuideCloseButton} onPress={() => setWasteGuideVisible(false)}>
+              <Text style={styles.wasteGuideCloseButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -818,6 +963,11 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 12,
     marginTop: 12,
+  },
+  sectionInfo: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#4B9363',
   },
   imageContainer: {
     position: 'relative',
@@ -909,7 +1059,7 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: '#4B9363',
     borderRadius: 6,
@@ -923,7 +1073,7 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 10,
     backgroundColor: '#4B9363',
     borderRadius: 6,
     alignItems: 'center',
@@ -1023,6 +1173,79 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   infoModalButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  wasteGuideOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 12,
+  },
+  wasteGuideContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+    maxHeight: 500,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  wasteGuideTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4B9363',
+    marginBottom: 10,
+    textAlign: 'left',
+  },
+  wasteGuideSubtitle: {
+    fontSize: 12,
+    color: '#696969',
+    marginBottom: 14,
+  },
+  wasteGuideItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+    // marginTop:4 ,
+  },
+  wasteGuideIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
+    backgroundColor: '#E8E8E8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  wasteGuideItemTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  wasteGuideExample: {
+    fontSize: 12,
+    color: '#666',
+  },
+  wasteGuideTip: {
+    fontSize: 12,
+    color: '#4B9363',
+  },
+  wasteGuideCloseButton: {
+    backgroundColor: '#4B9363',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 36,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  wasteGuideCloseButtonText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 15,
