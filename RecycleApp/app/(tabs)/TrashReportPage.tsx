@@ -95,6 +95,7 @@ export default function TrashReportPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showAllWasteTypes, setShowAllWasteTypes] = useState(false);
   const [wasteTypesAnim] = useState(new Animated.Value(0));
+  const [infoModalVisible, setInfoModalVisible] = useState(false);
 
   useEffect(() => {
     if (params.latitude && params.longitude) {
@@ -311,7 +312,7 @@ export default function TrashReportPage() {
           <MaterialIcons name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>TRASH REPORT</Text>
-        <TouchableOpacity style={styles.infoButton}>
+        <TouchableOpacity style={styles.infoButton} onPress={() => setInfoModalVisible(true)}>
           <MaterialIcons name="info-outline" size={24} color="#4B9363" />
         </TouchableOpacity>
       </View>
@@ -714,6 +715,33 @@ export default function TrashReportPage() {
           )}
         </View>
       </Modal>
+
+      {/* Info Modal */}
+      <Modal
+        visible={infoModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setInfoModalVisible(false)}
+      >
+        <View style={styles.infoModalOverlay}>
+          <View style={styles.infoModalContainer}>
+            <Text style={styles.infoModalTitle}>How to Report Trash?</Text>
+            <Text style={styles.infoModalSubtitle}>Please follow these steps and pay attention to the following points when reporting waste:</Text>
+            <View style={styles.infoModalList}>
+              <Text style={styles.infoModalItem}>• Select the correct waste type and quantity.</Text>
+              <Text style={styles.infoModalItem}>• Take clear photos of the waste. Make sure the waste is visible and identifiable.</Text>
+              <Text style={styles.infoModalItem}>• Choose the exact location on the map where the waste is found.</Text>
+              <Text style={styles.infoModalItem}>• Add any additional information that may help cleaning teams (e.g. access, hazards, etc.).</Text>
+              <Text style={styles.infoModalItem}>• Do not report fake or already cleaned waste. Misuse may result in restrictions.</Text>
+              <Text style={styles.infoModalItem}>• Always wear gloves and be careful of sharp or hazardous materials when collecting waste.</Text>
+              <Text style={styles.infoModalItem}>• If possible, separate recyclable and non-recyclable waste.</Text>
+            </View>
+            <TouchableOpacity style={styles.infoModalButton} onPress={() => setInfoModalVisible(false)}>
+              <Text style={styles.infoModalButtonText}>Got it</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -943,5 +971,60 @@ const styles = StyleSheet.create({
   },
   sectionAddImage: {
     paddingHorizontal: 24,
-  }
+  },
+  infoModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 12,
+  },
+  infoModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+    // alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  infoModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4B9363',
+    marginBottom: 10,
+    textAlign: 'left',
+  },
+  infoModalSubtitle: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 14,
+    // textAlign: 'center',
+  },
+  infoModalList: {
+    alignSelf: 'stretch',
+    marginBottom: 18,
+  },
+  infoModalItem: {
+    fontSize: 13,
+    color: '#444',
+    marginBottom: 6,
+    lineHeight: 18,
+  },
+  infoModalButton: {
+    backgroundColor: '#4B9363',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 36,
+    alignItems: 'center',
+  },
+  infoModalButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
 });
