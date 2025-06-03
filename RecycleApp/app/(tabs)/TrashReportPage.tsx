@@ -87,7 +87,7 @@ export default function TrashReportPage() {
     latitude: params.latitude ? parseFloat(params.latitude as string) : 40.7429,
     longitude: params.longitude ? parseFloat(params.longitude as string) : 30.3273,
   });
-  const [selectedType, setSelectedType] = useState<number | null>(null);
+  const [selectedTypes, setSelectedTypes] = useState<{ [key: number]: number }>({});
   const [selectedQuantity, setSelectedQuantity] = useState<number | null>(null);
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [images, setImages] = useState<ImageItem[]>([]);
@@ -159,7 +159,7 @@ export default function TrashReportPage() {
 
   // Form gönderimi
   const handleSubmit = async () => {
-    if (!selectedType || !selectedQuantity || images.length === 0) {
+    if (!selectedTypes || images.length === 0) {
       Alert.alert('Eksik bilgi', 'Lütfen tüm alanları doldurun ve en az bir görsel ekleyin.');
       return;
     }
@@ -187,7 +187,7 @@ export default function TrashReportPage() {
 
       const reportData = {
         location: selectedLocation,
-        type: selectedType,
+        type: selectedTypes,
         quantity: selectedQuantity,
         additionalInfo,
         imageUrls: imageUrls, // Artık Firebase Storage URL'lerini kullanıyoruz
@@ -510,11 +510,11 @@ export default function TrashReportPage() {
         </View>
 
         {/* Camera Button */}
-        <View style={styles.cameraButtonContainer}>
+        {/* <View style={styles.cameraButtonContainer}>
           <TouchableOpacity style={styles.cameraButton} onPress={handleTakePhoto}>
             <Ionicons name="camera" size={30} color="#4B9363" />
           </TouchableOpacity>
-        </View>
+        </View> */}
 
         {/* Trash Images Section */}
         <View style={styles.sectionAddImage}>
@@ -561,26 +561,104 @@ export default function TrashReportPage() {
           {!showAllWasteTypes && (
             <>
               <View style={styles.wasteTypesGrid}>
-                {wasteTypeIcons.slice(0, 5).map(({ key, Icon }) => (
-                  <TouchableOpacity
-                    key={key}
-                    style={[styles.wasteTypeItem, selectedType === key && styles.selectedItem]}
-                    onPress={() => setSelectedType(selectedType === key ? null : key)}
-                  >
-                    <Icon width={28} height={28} color={selectedType === key ? '#4B9363' : '#555'} />
-                  </TouchableOpacity>
-                ))}
+                {wasteTypeIcons.slice(0, 5).map(({ key, Icon }) => {
+                  const isSelected = selectedTypes[key] !== undefined;
+                  return (
+                    <View key={key} style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSelectedTypes(prev => {
+                            const copy = { ...prev };
+                            if (copy[key]) {
+                              delete copy[key];
+                            } else {
+                              copy[key] = 1;
+                            }
+                            return copy;
+                          });
+                        }}
+                        style={{ alignItems: 'center' }}
+                      >
+                        <Icon width={24} height={24} color={isSelected ? '#4B9363' : '#555'} />
+                      </TouchableOpacity>
+                      {isSelected && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                          <TouchableOpacity
+                            onPress={() => setSelectedTypes(prev => {
+                              const copy = { ...prev };
+                              if (copy[key] > 1) copy[key]--;
+                              return copy;
+                            })}
+                            style={{ paddingHorizontal: 4 }}
+                          >
+                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
+                          </TouchableOpacity>
+                          <Text style={{ fontSize: 14, color: '#333', minWidth: 18, textAlign: 'center' }}>{selectedTypes[key]}</Text>
+                          <TouchableOpacity
+                            onPress={() => setSelectedTypes(prev => {
+                              const copy = { ...prev };
+                              copy[key]++;
+                              return copy;
+                            })}
+                            style={{ paddingHorizontal: 4 }}
+                          >
+                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
               </View>
               <View style={styles.wasteTypesGrid}>
-                {wasteTypeIcons.slice(5, 9).map(({ key, Icon }) => (
-                  <TouchableOpacity
-                    key={key}
-                    style={[styles.wasteTypeItem, selectedType === key && styles.selectedItem]}
-                    onPress={() => setSelectedType(selectedType === key ? null : key)}
-                  >
-                    <Icon width={28} height={28} color={selectedType === key ? '#4B9363' : '#555'} />
-                  </TouchableOpacity>
-                ))}
+                {wasteTypeIcons.slice(5, 9).map(({ key, Icon }) => {
+                  const isSelected = selectedTypes[key] !== undefined;
+                  return (
+                    <View key={key} style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSelectedTypes(prev => {
+                            const copy = { ...prev };
+                            if (copy[key]) {
+                              delete copy[key];
+                            } else {
+                              copy[key] = 1;
+                            }
+                            return copy;
+                          });
+                        }}
+                        style={{ alignItems: 'center' }}
+                      >
+                        <Icon width={24} height={24} color={isSelected ? '#4B9363' : '#555'} />
+                      </TouchableOpacity>
+                      {isSelected && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                          <TouchableOpacity
+                            onPress={() => setSelectedTypes(prev => {
+                              const copy = { ...prev };
+                              if (copy[key] > 1) copy[key]--;
+                              return copy;
+                            })}
+                            style={{ paddingHorizontal: 4 }}
+                          >
+                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
+                          </TouchableOpacity>
+                          <Text style={{ fontSize: 14, color: '#333', minWidth: 18, textAlign: 'center' }}>{selectedTypes[key]}</Text>
+                          <TouchableOpacity
+                            onPress={() => setSelectedTypes(prev => {
+                              const copy = { ...prev };
+                              copy[key]++;
+                              return copy;
+                            })}
+                            style={{ paddingHorizontal: 4 }}
+                          >
+                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
                 {/* + butonu */}
                 <TouchableOpacity
                   style={[styles.wasteTypeItem, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#ECECEC',  }]}
@@ -617,57 +695,223 @@ export default function TrashReportPage() {
               ],
             }}>
               <View style={styles.wasteTypesGrid}>
-                {wasteTypeIcons.slice(0, 5).map(({ key, Icon }) => (
-                  <TouchableOpacity
-                    key={key}
-                    style={[styles.wasteTypeItem, selectedType === key && styles.selectedItem]}
-                    onPress={() => setSelectedType(selectedType === key ? null : key)}
-                  >
-                    <Icon width={28} height={28} color={selectedType === key ? '#4B9363' : '#555'} />
-                  </TouchableOpacity>
-                ))}
+                {wasteTypeIcons.slice(0, 5).map(({ key, Icon }) => {
+                  const isSelected = selectedTypes[key] !== undefined;
+                  return (
+                    <View key={key} style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSelectedTypes(prev => {
+                            const copy = { ...prev };
+                            if (copy[key]) {
+                              delete copy[key];
+                            } else {
+                              copy[key] = 1;
+                            }
+                            return copy;
+                          });
+                        }}
+                        style={{ alignItems: 'center' }}
+                      >
+                        <Icon width={24} height={24} color={isSelected ? '#4B9363' : '#555'} />
+                      </TouchableOpacity>
+                      {isSelected && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                          <TouchableOpacity
+                            onPress={() => setSelectedTypes(prev => {
+                              const copy = { ...prev };
+                              if (copy[key] > 1) copy[key]--;
+                              return copy;
+                            })}
+                            style={{ paddingHorizontal: 4 }}
+                          >
+                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
+                          </TouchableOpacity>
+                          <Text style={{ fontSize: 14, color: '#333', minWidth: 18, textAlign: 'center' }}>{selectedTypes[key]}</Text>
+                          <TouchableOpacity
+                            onPress={() => setSelectedTypes(prev => {
+                              const copy = { ...prev };
+                              copy[key]++;
+                              return copy;
+                            })}
+                            style={{ paddingHorizontal: 4 }}
+                          >
+                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
               </View>
               <View style={styles.wasteTypesGrid}>
-                {wasteTypeIcons.slice(5, 9).map(({ key, Icon }) => (
-                  <TouchableOpacity
-                    key={key}
-                    style={[styles.wasteTypeItem, selectedType === key && styles.selectedItem]}
-                    onPress={() => setSelectedType(selectedType === key ? null : key)}
-                  >
-                    <Icon width={28} height={28} color={selectedType === key ? '#4B9363' : '#555'} />
-                  </TouchableOpacity>
-                ))}
+                {wasteTypeIcons.slice(5, 9).map(({ key, Icon }) => {
+                  const isSelected = selectedTypes[key] !== undefined;
+                  return (
+                    <View key={key} style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSelectedTypes(prev => {
+                            const copy = { ...prev };
+                            if (copy[key]) {
+                              delete copy[key];
+                            } else {
+                              copy[key] = 1;
+                            }
+                            return copy;
+                          });
+                        }}
+                        style={{ alignItems: 'center' }}
+                      >
+                        <Icon width={24} height={24} color={isSelected ? '#4B9363' : '#555'} />
+                      </TouchableOpacity>
+                      {isSelected && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                          <TouchableOpacity
+                            onPress={() => setSelectedTypes(prev => {
+                              const copy = { ...prev };
+                              if (copy[key] > 1) copy[key]--;
+                              return copy;
+                            })}
+                            style={{ paddingHorizontal: 4 }}
+                          >
+                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
+                          </TouchableOpacity>
+                          <Text style={{ fontSize: 14, color: '#333', minWidth: 18, textAlign: 'center' }}>{selectedTypes[key]}</Text>
+                          <TouchableOpacity
+                            onPress={() => setSelectedTypes(prev => {
+                              const copy = { ...prev };
+                              copy[key]++;
+                              return copy;
+                            })}
+                            style={{ paddingHorizontal: 4 }}
+                          >
+                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
                 {/* + yerine FishingNets */}
                 <TouchableOpacity
-                  style={[styles.wasteTypeItem, selectedType === 10 && styles.selectedItem]}
-                  onPress={() => setSelectedType(selectedType === 10 ? null : 10)}
+                  style={[styles.wasteTypeItem, selectedTypes[10] !== undefined && styles.selectedItem]}
+                  onPress={() => {
+                    setSelectedTypes(prev => {
+                      const copy = { ...prev };
+                      if (copy[10]) {
+                        delete copy[10];
+                      } else {
+                        copy[10] = 1;
+                      }
+                      return copy;
+                    });
+                  }}
                 >
-                  <IconifyFishingNetsIcon width={28} height={28} color={selectedType === 10 ? '#4B9363' : '#555'} />
+                  <IconifyFishingNetsIcon width={28} height={28} color={selectedTypes[10] !== undefined ? '#4B9363' : '#555'} />
                 </TouchableOpacity>
               </View>
               {/* 11-15 */}
               <View style={styles.wasteTypesGrid}>
-                {wasteTypeIcons.slice(10, 15).map(({ key, Icon }) => (
-                  <TouchableOpacity
-                    key={key}
-                    style={[styles.wasteTypeItem, selectedType === key && styles.selectedItem]}
-                    onPress={() => setSelectedType(selectedType === key ? null : key)}
-                  >
-                    <Icon width={28} height={28} color={selectedType === key ? '#4B9363' : '#555'} />
-                  </TouchableOpacity>
-                ))}
+                {wasteTypeIcons.slice(10, 15).map(({ key, Icon }) => {
+                  const isSelected = selectedTypes[key] !== undefined;
+                  return (
+                    <View key={key} style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSelectedTypes(prev => {
+                            const copy = { ...prev };
+                            if (copy[key]) {
+                              delete copy[key];
+                            } else {
+                              copy[key] = 1;
+                            }
+                            return copy;
+                          });
+                        }}
+                        style={{ alignItems: 'center' }}
+                      >
+                        <Icon width={24} height={24} color={isSelected ? '#4B9363' : '#555'} />
+                      </TouchableOpacity>
+                      {isSelected && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                          <TouchableOpacity
+                            onPress={() => setSelectedTypes(prev => {
+                              const copy = { ...prev };
+                              if (copy[key] > 1) copy[key]--;
+                              return copy;
+                            })}
+                            style={{ paddingHorizontal: 4 }}
+                          >
+                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
+                          </TouchableOpacity>
+                          <Text style={{ fontSize: 14, color: '#333', minWidth: 18, textAlign: 'center' }}>{selectedTypes[key]}</Text>
+                          <TouchableOpacity
+                            onPress={() => setSelectedTypes(prev => {
+                              const copy = { ...prev };
+                              copy[key]++;
+                              return copy;
+                            })}
+                            style={{ paddingHorizontal: 4 }}
+                          >
+                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
               </View>
               {/* 16-20 */}
               <View style={styles.wasteTypesGrid}>
-                {wasteTypeIcons.slice(15, 20).map(({ key, Icon }) => (
-                  <TouchableOpacity
-                    key={key}
-                    style={[styles.wasteTypeItem, selectedType === key && styles.selectedItem]}
-                    onPress={() => setSelectedType(selectedType === key ? null : key)}
-                  >
-                    <Icon width={28} height={28} color={selectedType === key ? '#4B9363' : '#555'} />
-                  </TouchableOpacity>
-                ))}
+                {wasteTypeIcons.slice(15, 20).map(({ key, Icon }) => {
+                  const isSelected = selectedTypes[key] !== undefined;
+                  return (
+                    <View key={key} style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSelectedTypes(prev => {
+                            const copy = { ...prev };
+                            if (copy[key]) {
+                              delete copy[key];
+                            } else {
+                              copy[key] = 1;
+                            }
+                            return copy;
+                          });
+                        }}
+                        style={{ alignItems: 'center' }}
+                      >
+                        <Icon width={24} height={24} color={isSelected ? '#4B9363' : '#555'} />
+                      </TouchableOpacity>
+                      {isSelected && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                          <TouchableOpacity
+                            onPress={() => setSelectedTypes(prev => {
+                              const copy = { ...prev };
+                              if (copy[key] > 1) copy[key]--;
+                              return copy;
+                            })}
+                            style={{ paddingHorizontal: 4 }}
+                          >
+                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
+                          </TouchableOpacity>
+                          <Text style={{ fontSize: 14, color: '#333', minWidth: 18, textAlign: 'center' }}>{selectedTypes[key]}</Text>
+                          <TouchableOpacity
+                            onPress={() => setSelectedTypes(prev => {
+                              const copy = { ...prev };
+                              copy[key]++;
+                              return copy;
+                            })}
+                            style={{ paddingHorizontal: 4 }}
+                          >
+                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
               </View>
               <TouchableOpacity onPress={closeWasteTypes} style={{ alignSelf: 'center', marginTop: 8 }}>
                 <Text style={{ color: '#4B9363', fontWeight: 'bold', fontSize: 15 }}>Show less</Text>
@@ -684,7 +928,7 @@ export default function TrashReportPage() {
               style={[styles.wasteQuantityItem, selectedQuantity === 1 && styles.selectedItem]}
               onPress={() => setSelectedQuantity(selectedQuantity === 1 ? null : 1)}
             >
-              <IconifyGarbageIcon width={28} height={28} color={selectedQuantity === 1 ? '#4B9363' : '#555'} />
+              <IconifyGarbageIcon width={24} height={24} color={selectedQuantity === 1 ? '#4B9363' : '#555'} />
             </TouchableOpacity>
           </View>
         </View>
@@ -710,9 +954,9 @@ export default function TrashReportPage() {
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.confirmButton, (!selectedType || !selectedQuantity || images.length === 0) && styles.disabledButton]} 
+            style={[styles.confirmButton, (!selectedTypes || images.length === 0) && styles.disabledButton]} 
             onPress={handleSubmit}
-            disabled={!selectedType || !selectedQuantity || images.length === 0}
+            disabled={!selectedTypes || images.length === 0}
           >
             <Text style={styles.confirmButtonText}>Confirm</Text>
           </TouchableOpacity>
@@ -870,7 +1114,7 @@ export default function TrashReportPage() {
                 return (
                   <View key={key} style={styles.wasteGuideItem}>
                     <View style={styles.wasteGuideIconBox}>
-                      <Icon width={24} height={24} color="#4B9363" />
+                      <Icon width={24} height={24} color="#fff" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.wasteGuideItemTitle}>{label}</Text>
@@ -1185,11 +1429,13 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   wasteGuideContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: '#EDEDED',
     borderRadius: 16,
-    padding: 24,
-    width: '90%',
-    maxWidth: 400,
+    paddingHorizontal: 24,
+    paddingVertical: 22,
+    width: '93%',
+    // marginHorizontal: 6,
+    // maxWidth: 400,
     maxHeight: 500,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1201,25 +1447,28 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#4B9363',
-    marginBottom: 10,
+    marginBottom: 6,
     textAlign: 'left',
   },
   wasteGuideSubtitle: {
     fontSize: 12,
     color: '#696969',
-    marginBottom: 14,
+    marginBottom: 18,
   },
   wasteGuideItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 8,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#D9D9D9',
     // marginTop:4 ,
   },
   wasteGuideIconBox: {
     width: 36,
     height: 36,
     borderRadius: 6,
-    backgroundColor: '#E8E8E8',
+    backgroundColor: '#4B9363',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
