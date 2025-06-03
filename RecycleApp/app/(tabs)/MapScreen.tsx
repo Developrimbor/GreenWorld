@@ -1703,11 +1703,10 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     flexDirection: 'row',
-    padding: 8,
+    paddingVertical: 8,
     paddingHorizontal: 24,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    // backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    // alignItems: 'center',
+    // justifyContent: 'space-between',
   },
   searchBar: {
     flexDirection: 'row',
@@ -1734,6 +1733,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   optionsButton: {
+    // flexDirection: 'row',
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -1786,7 +1786,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 24,
     paddingVertical: 8,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 28,
     backgroundColor: 'transparent',
     zIndex: 10,
   },
