@@ -564,49 +564,57 @@ export default function TrashReportPage() {
                 {wasteTypeIcons.slice(0, 5).map(({ key, Icon }) => {
                   const isSelected = selectedTypes[key] !== undefined;
                   return (
-                    <View key={key} style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setSelectedTypes(prev => {
-                            const copy = { ...prev };
-                            if (copy[key]) {
-                              delete copy[key];
-                            } else {
-                              copy[key] = 1;
-                            }
-                            return copy;
-                          });
-                        }}
-                        style={{ alignItems: 'center' }}
-                      >
+                    <TouchableOpacity
+                      key={key}
+                      style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}
+                      onPress={() => {
+                        setSelectedTypes(prev => {
+                          const copy = { ...prev };
+                          if (copy[key]) {
+                            delete copy[key];
+                          } else {
+                            copy[key] = 1;
+                          }
+                          return copy;
+                        });
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <View style={{ alignItems: 'center' }}>
                         <Icon width={24} height={24} color={isSelected ? '#4B9363' : '#555'} />
-                      </TouchableOpacity>
+                      </View>
                       {isSelected && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
                           <TouchableOpacity
-                            onPress={() => setSelectedTypes(prev => {
-                              const copy = { ...prev };
-                              if (copy[key] > 1) copy[key]--;
-                              return copy;
-                            })}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedTypes(prev => {
+                                const copy = { ...prev };
+                                if (copy[key] > 1) copy[key]--;
+                                return copy;
+                              });
+                            }}
                             style={{ paddingHorizontal: 4 }}
                           >
-                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
+                            <Text style={{ fontSize: 18, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
                           </TouchableOpacity>
                           <Text style={{ fontSize: 14, color: '#333', minWidth: 18, textAlign: 'center' }}>{selectedTypes[key]}</Text>
                           <TouchableOpacity
-                            onPress={() => setSelectedTypes(prev => {
-                              const copy = { ...prev };
-                              copy[key]++;
-                              return copy;
-                            })}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedTypes(prev => {
+                                const copy = { ...prev };
+                                copy[key]++;
+                                return copy;
+                              });
+                            }}
                             style={{ paddingHorizontal: 4 }}
                           >
-                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
+                            <Text style={{ fontSize: 18, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
                           </TouchableOpacity>
                         </View>
                       )}
-                    </View>
+                    </TouchableOpacity>
                   );
                 })}
               </View>
@@ -614,49 +622,57 @@ export default function TrashReportPage() {
                 {wasteTypeIcons.slice(5, 9).map(({ key, Icon }) => {
                   const isSelected = selectedTypes[key] !== undefined;
                   return (
-                    <View key={key} style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setSelectedTypes(prev => {
-                            const copy = { ...prev };
-                            if (copy[key]) {
-                              delete copy[key];
-                            } else {
-                              copy[key] = 1;
-                            }
-                            return copy;
-                          });
-                        }}
-                        style={{ alignItems: 'center' }}
-                      >
+                    <TouchableOpacity
+                      key={key}
+                      style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}
+                      onPress={() => {
+                        setSelectedTypes(prev => {
+                          const copy = { ...prev };
+                          if (copy[key]) {
+                            delete copy[key];
+                          } else {
+                            copy[key] = 1;
+                          }
+                          return copy;
+                        });
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <View style={{ alignItems: 'center' }}>
                         <Icon width={24} height={24} color={isSelected ? '#4B9363' : '#555'} />
-                      </TouchableOpacity>
+                      </View>
                       {isSelected && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
                           <TouchableOpacity
-                            onPress={() => setSelectedTypes(prev => {
-                              const copy = { ...prev };
-                              if (copy[key] > 1) copy[key]--;
-                              return copy;
-                            })}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedTypes(prev => {
+                                const copy = { ...prev };
+                                if (copy[key] > 1) copy[key]--;
+                                return copy;
+                              });
+                            }}
                             style={{ paddingHorizontal: 4 }}
                           >
-                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
+                            <Text style={{ fontSize: 18, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
                           </TouchableOpacity>
                           <Text style={{ fontSize: 14, color: '#333', minWidth: 18, textAlign: 'center' }}>{selectedTypes[key]}</Text>
                           <TouchableOpacity
-                            onPress={() => setSelectedTypes(prev => {
-                              const copy = { ...prev };
-                              copy[key]++;
-                              return copy;
-                            })}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedTypes(prev => {
+                                const copy = { ...prev };
+                                copy[key]++;
+                                return copy;
+                              });
+                            }}
                             style={{ paddingHorizontal: 4 }}
                           >
-                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
+                            <Text style={{ fontSize: 18, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
                           </TouchableOpacity>
                         </View>
                       )}
-                    </View>
+                    </TouchableOpacity>
                   );
                 })}
                 {/* + butonu */}
@@ -698,49 +714,57 @@ export default function TrashReportPage() {
                 {wasteTypeIcons.slice(0, 5).map(({ key, Icon }) => {
                   const isSelected = selectedTypes[key] !== undefined;
                   return (
-                    <View key={key} style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setSelectedTypes(prev => {
-                            const copy = { ...prev };
-                            if (copy[key]) {
-                              delete copy[key];
-                            } else {
-                              copy[key] = 1;
-                            }
-                            return copy;
-                          });
-                        }}
-                        style={{ alignItems: 'center' }}
-                      >
+                    <TouchableOpacity
+                      key={key}
+                      style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}
+                      onPress={() => {
+                        setSelectedTypes(prev => {
+                          const copy = { ...prev };
+                          if (copy[key]) {
+                            delete copy[key];
+                          } else {
+                            copy[key] = 1;
+                          }
+                          return copy;
+                        });
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <View style={{ alignItems: 'center' }}>
                         <Icon width={24} height={24} color={isSelected ? '#4B9363' : '#555'} />
-                      </TouchableOpacity>
+                      </View>
                       {isSelected && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
                           <TouchableOpacity
-                            onPress={() => setSelectedTypes(prev => {
-                              const copy = { ...prev };
-                              if (copy[key] > 1) copy[key]--;
-                              return copy;
-                            })}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedTypes(prev => {
+                                const copy = { ...prev };
+                                if (copy[key] > 1) copy[key]--;
+                                return copy;
+                              });
+                            }}
                             style={{ paddingHorizontal: 4 }}
                           >
-                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
+                            <Text style={{ fontSize: 18, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
                           </TouchableOpacity>
                           <Text style={{ fontSize: 14, color: '#333', minWidth: 18, textAlign: 'center' }}>{selectedTypes[key]}</Text>
                           <TouchableOpacity
-                            onPress={() => setSelectedTypes(prev => {
-                              const copy = { ...prev };
-                              copy[key]++;
-                              return copy;
-                            })}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedTypes(prev => {
+                                const copy = { ...prev };
+                                copy[key]++;
+                                return copy;
+                              });
+                            }}
                             style={{ paddingHorizontal: 4 }}
                           >
-                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
+                            <Text style={{ fontSize: 18, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
                           </TouchableOpacity>
                         </View>
                       )}
-                    </View>
+                    </TouchableOpacity>
                   );
                 })}
               </View>
@@ -748,49 +772,57 @@ export default function TrashReportPage() {
                 {wasteTypeIcons.slice(5, 9).map(({ key, Icon }) => {
                   const isSelected = selectedTypes[key] !== undefined;
                   return (
-                    <View key={key} style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setSelectedTypes(prev => {
-                            const copy = { ...prev };
-                            if (copy[key]) {
-                              delete copy[key];
-                            } else {
-                              copy[key] = 1;
-                            }
-                            return copy;
-                          });
-                        }}
-                        style={{ alignItems: 'center' }}
-                      >
+                    <TouchableOpacity
+                      key={key}
+                      style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}
+                      onPress={() => {
+                        setSelectedTypes(prev => {
+                          const copy = { ...prev };
+                          if (copy[key]) {
+                            delete copy[key];
+                          } else {
+                            copy[key] = 1;
+                          }
+                          return copy;
+                        });
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <View style={{ alignItems: 'center' }}>
                         <Icon width={24} height={24} color={isSelected ? '#4B9363' : '#555'} />
-                      </TouchableOpacity>
+                      </View>
                       {isSelected && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
                           <TouchableOpacity
-                            onPress={() => setSelectedTypes(prev => {
-                              const copy = { ...prev };
-                              if (copy[key] > 1) copy[key]--;
-                              return copy;
-                            })}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedTypes(prev => {
+                                const copy = { ...prev };
+                                if (copy[key] > 1) copy[key]--;
+                                return copy;
+                              });
+                            }}
                             style={{ paddingHorizontal: 4 }}
                           >
-                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
+                            <Text style={{ fontSize: 18, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
                           </TouchableOpacity>
                           <Text style={{ fontSize: 14, color: '#333', minWidth: 18, textAlign: 'center' }}>{selectedTypes[key]}</Text>
                           <TouchableOpacity
-                            onPress={() => setSelectedTypes(prev => {
-                              const copy = { ...prev };
-                              copy[key]++;
-                              return copy;
-                            })}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedTypes(prev => {
+                                const copy = { ...prev };
+                                copy[key]++;
+                                return copy;
+                              });
+                            }}
                             style={{ paddingHorizontal: 4 }}
                           >
-                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
+                            <Text style={{ fontSize: 18, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
                           </TouchableOpacity>
                         </View>
                       )}
-                    </View>
+                    </TouchableOpacity>
                   );
                 })}
                 {/* + yerine FishingNets */}
@@ -816,49 +848,57 @@ export default function TrashReportPage() {
                 {wasteTypeIcons.slice(10, 15).map(({ key, Icon }) => {
                   const isSelected = selectedTypes[key] !== undefined;
                   return (
-                    <View key={key} style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setSelectedTypes(prev => {
-                            const copy = { ...prev };
-                            if (copy[key]) {
-                              delete copy[key];
-                            } else {
-                              copy[key] = 1;
-                            }
-                            return copy;
-                          });
-                        }}
-                        style={{ alignItems: 'center' }}
-                      >
+                    <TouchableOpacity
+                      key={key}
+                      style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}
+                      onPress={() => {
+                        setSelectedTypes(prev => {
+                          const copy = { ...prev };
+                          if (copy[key]) {
+                            delete copy[key];
+                          } else {
+                            copy[key] = 1;
+                          }
+                          return copy;
+                        });
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <View style={{ alignItems: 'center' }}>
                         <Icon width={24} height={24} color={isSelected ? '#4B9363' : '#555'} />
-                      </TouchableOpacity>
+                      </View>
                       {isSelected && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
                           <TouchableOpacity
-                            onPress={() => setSelectedTypes(prev => {
-                              const copy = { ...prev };
-                              if (copy[key] > 1) copy[key]--;
-                              return copy;
-                            })}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedTypes(prev => {
+                                const copy = { ...prev };
+                                if (copy[key] > 1) copy[key]--;
+                                return copy;
+                              });
+                            }}
                             style={{ paddingHorizontal: 4 }}
                           >
-                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
+                            <Text style={{ fontSize: 18, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
                           </TouchableOpacity>
                           <Text style={{ fontSize: 14, color: '#333', minWidth: 18, textAlign: 'center' }}>{selectedTypes[key]}</Text>
                           <TouchableOpacity
-                            onPress={() => setSelectedTypes(prev => {
-                              const copy = { ...prev };
-                              copy[key]++;
-                              return copy;
-                            })}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedTypes(prev => {
+                                const copy = { ...prev };
+                                copy[key]++;
+                                return copy;
+                              });
+                            }}
                             style={{ paddingHorizontal: 4 }}
                           >
-                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
+                            <Text style={{ fontSize: 18, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
                           </TouchableOpacity>
                         </View>
                       )}
-                    </View>
+                    </TouchableOpacity>
                   );
                 })}
               </View>
@@ -867,49 +907,57 @@ export default function TrashReportPage() {
                 {wasteTypeIcons.slice(15, 20).map(({ key, Icon }) => {
                   const isSelected = selectedTypes[key] !== undefined;
                   return (
-                    <View key={key} style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setSelectedTypes(prev => {
-                            const copy = { ...prev };
-                            if (copy[key]) {
-                              delete copy[key];
-                            } else {
-                              copy[key] = 1;
-                            }
-                            return copy;
-                          });
-                        }}
-                        style={{ alignItems: 'center' }}
-                      >
+                    <TouchableOpacity
+                      key={key}
+                      style={[styles.wasteTypeItem, isSelected && styles.selectedItem]}
+                      onPress={() => {
+                        setSelectedTypes(prev => {
+                          const copy = { ...prev };
+                          if (copy[key]) {
+                            delete copy[key];
+                          } else {
+                            copy[key] = 1;
+                          }
+                          return copy;
+                        });
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <View style={{ alignItems: 'center' }}>
                         <Icon width={24} height={24} color={isSelected ? '#4B9363' : '#555'} />
-                      </TouchableOpacity>
+                      </View>
                       {isSelected && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
                           <TouchableOpacity
-                            onPress={() => setSelectedTypes(prev => {
-                              const copy = { ...prev };
-                              if (copy[key] > 1) copy[key]--;
-                              return copy;
-                            })}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedTypes(prev => {
+                                const copy = { ...prev };
+                                if (copy[key] > 1) copy[key]--;
+                                return copy;
+                              });
+                            }}
                             style={{ paddingHorizontal: 4 }}
                           >
-                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
+                            <Text style={{ fontSize: 18, color: '#4B9363', fontWeight: 'bold' }}>-</Text>
                           </TouchableOpacity>
                           <Text style={{ fontSize: 14, color: '#333', minWidth: 18, textAlign: 'center' }}>{selectedTypes[key]}</Text>
                           <TouchableOpacity
-                            onPress={() => setSelectedTypes(prev => {
-                              const copy = { ...prev };
-                              copy[key]++;
-                              return copy;
-                            })}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedTypes(prev => {
+                                const copy = { ...prev };
+                                copy[key]++;
+                                return copy;
+                              });
+                            }}
                             style={{ paddingHorizontal: 4 }}
                           >
-                            <Text style={{ fontSize: 16, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
+                            <Text style={{ fontSize: 18, color: '#4B9363', fontWeight: 'bold' }}>+</Text>
                           </TouchableOpacity>
                         </View>
                       )}
-                    </View>
+                    </TouchableOpacity>
                   );
                 })}
               </View>
@@ -1429,7 +1477,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   wasteGuideContainer: {
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#fff',
     borderRadius: 16,
     paddingHorizontal: 24,
     paddingVertical: 22,
