@@ -379,7 +379,7 @@ export default function HomePage() {
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4B9363" />
-          <Text style={styles.loadingText}>İçerikler yükleniyor...</Text>
+          {/* <Text style={styles.loadingText}>İçerikler yükleniyor...</Text> */}
         </View>
       ) : (
         <ScrollView style={styles.content}>
