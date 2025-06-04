@@ -13,16 +13,83 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialIcons, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import * as Location from 'expo-location';
 import { auth } from '../config/firebase';
+import IconifyPlasticIcon from '../../components/ui/IconifyPlastic';
+import IconifyPaperIcon from '../../components/ui/IconifyPaper';
+import IconifyGlassIcon from '../../components/ui/IconifyGlass';
+import IconifyFoodIcon from '../../components/ui/IconifyFood';
+import IconifyCigaretteIcon from '../../components/ui/IconifyCigarette';
+import IconifyMaskIcon from '../../components/ui/IconifyMask';
+import IconifyPackageIcon from '../../components/ui/IconifyPackage';
+import IconifyEWasteIcon from '../../components/ui/IconifyEWaste';
+import IconifyClothesIcon from '../../components/ui/IconifyClothes';
+import IconifyFishingNetsIcon from '../../components/ui/IconifyFishingNets';
+import IconifyConstructionIcon from '../../components/ui/IconifyConstruction';
+import IconifyBatteryIcon from '../../components/ui/IconifyBattery';
+import IconifyBiomedicalIcon from '../../components/ui/IconifyBiomedical';
+import IconifyDeadAnimalsIcon from '../../components/ui/IconifyDeadAnimals';
+import IconifyFurnitureIcon from '../../components/ui/IconifyFurniture';
+import IconifyGardenIcon from '../../components/ui/IconifyGarden';
+import IconifyHomeAppliancesIcon from '../../components/ui/IconifyHomeAppliances';
+import IconifyMetalIcon from '../../components/ui/IconifyMetal';
+import IconifyTireIcon from '../../components/ui/IconifyTire';
+import IconifyToxicIcon from '../../components/ui/IconifyToxic';
 
 const { width, height } = Dimensions.get('window');
 
+// Kategori id'sini label'a çeviren yardımcı fonksiyon
+const wasteTypeLabels: { [key: number]: string } = {
+  1: 'Plastic',
+  2: 'Paper',
+  3: 'Glass',
+  4: 'Organic',
+  5: 'Cigarette',
+  6: 'Mask',
+  7: 'Cardboard',
+  8: 'E-Waste',
+  9: 'Textile',
+  10: 'Fishing Nets',
+  11: 'Construction',
+  12: 'Battery',
+  13: 'Biomedical',
+  14: 'Dead Animals',
+  15: 'Furniture',
+  16: 'Garden',
+  17: 'Home Appliances',
+  18: 'Metal',
+  19: 'Tire',
+  20: 'Toxic',
+};
+
+// Kategori id'sine göre ikon döndüren yardımcı fonksiyon
+const wasteTypeIcons: { [key: number]: any } = {
+  1: IconifyPlasticIcon,
+  2: IconifyPaperIcon,
+  3: IconifyGlassIcon,
+  4: IconifyFoodIcon,
+  5: IconifyCigaretteIcon,
+  6: IconifyMaskIcon,
+  7: IconifyPackageIcon,
+  8: IconifyEWasteIcon,
+  9: IconifyClothesIcon,
+  10: IconifyFishingNetsIcon,
+  11: IconifyConstructionIcon,
+  12: IconifyBatteryIcon,
+  13: IconifyBiomedicalIcon,
+  14: IconifyDeadAnimalsIcon,
+  15: IconifyFurnitureIcon,
+  16: IconifyGardenIcon,
+  17: IconifyHomeAppliancesIcon,
+  18: IconifyMetalIcon,
+  19: IconifyTireIcon,
+  20: IconifyToxicIcon,
+};
 
 interface InfoItemData {
   icon: keyof typeof MaterialIcons.glyphMap;
@@ -73,6 +140,29 @@ export default function TrashDetailPage() {
   const [checkingLocation, setCheckingLocation] = useState(false);
   const [authorUsername, setAuthorUsername] = useState<string>('');
   const [authorId, setAuthorId] = useState<string | null>(null);
+  const [wasteGuideVisible, setWasteGuideVisible] = useState(false);
+  const wasteTypeIconsArr = [
+    { key: 1, Icon: IconifyPlasticIcon, label: 'Plastic' },
+    { key: 2, Icon: IconifyPaperIcon, label: 'Paper' },
+    { key: 3, Icon: IconifyGlassIcon, label: 'Glass' },
+    { key: 4, Icon: IconifyFoodIcon, label: 'Organic' },
+    { key: 5, Icon: IconifyCigaretteIcon, label: 'Cigarette' },
+    { key: 6, Icon: IconifyMaskIcon, label: 'Mask' },
+    { key: 7, Icon: IconifyPackageIcon, label: 'Cardboard' },
+    { key: 8, Icon: IconifyEWasteIcon, label: 'E-Waste' },
+    { key: 9, Icon: IconifyClothesIcon, label: 'Textile' },
+    { key: 10, Icon: IconifyFishingNetsIcon, label: 'Fishing Nets' },
+    { key: 11, Icon: IconifyConstructionIcon, label: 'Construction' },
+    { key: 12, Icon: IconifyBatteryIcon, label: 'Battery' },
+    { key: 13, Icon: IconifyBiomedicalIcon, label: 'Biomedical' },
+    { key: 14, Icon: IconifyDeadAnimalsIcon, label: 'Dead Animals' },
+    { key: 15, Icon: IconifyFurnitureIcon, label: 'Furniture' },
+    { key: 16, Icon: IconifyGardenIcon, label: 'Garden' },
+    { key: 17, Icon: IconifyHomeAppliancesIcon, label: 'Home Appliances' },
+    { key: 18, Icon: IconifyMetalIcon, label: 'Metal' },
+    { key: 19, Icon: IconifyTireIcon, label: 'Tire' },
+    { key: 20, Icon: IconifyToxicIcon, label: 'Toxic' },
+  ];
 
   useEffect(() => {
     const fetchTrash = async () => {
@@ -417,18 +507,23 @@ export default function TrashDetailPage() {
         <View style={styles.combinedSection}>
           <View style={styles.sectionColumn}>
             <View style={styles.sectionHeader}>
-              <TouchableOpacity onPress={() => openInfoModal(trashInfoDetailsData)}>
-                <MaterialIcons name="info" size={22} color="#A91101" />
+              <TouchableOpacity onPress={() => setWasteGuideVisible(true)}>
+                <Ionicons name="information-circle-outline" size={24} color="#4B9363"/>
               </TouchableOpacity>
               <Text style={styles.sectionTitle}>Trash Info</Text>
             </View>
             <View style={styles.iconGrid}>
-              <MaterialCommunityIcons name="recycle" size={24} color="#4B9363" />
-              <MaterialCommunityIcons name="smoking" size={24} color="#4B9363" />
-              <MaterialCommunityIcons name="waves" size={24} color="#4B9363" />
-              <MaterialIcons name="description" size={24} color="#4B9363" />
-              <MaterialCommunityIcons name="face-mask" size={24} color="#4B9363" />
-              <MaterialCommunityIcons name="glass-wine" size={24} color="#4B9363" />
+              {/* Dinamik kategori ikonları */}
+              {trash.type && typeof trash.type === 'object' && !Array.isArray(trash.type)
+                ? Object.keys(trash.type).map((key) => {
+                    const Icon = wasteTypeIcons[Number(key)];
+                    return Icon ? <Icon key={key} width={24} height={24} color="#4B9363" style={{ margin: 4 }} /> : null;
+                  })
+                : (() => {
+                    const Icon = wasteTypeIcons[typeof trash.type === 'string' ? Number(trash.type) : trash.type];
+                    return Icon ? <Icon width={24} height={24} color="#4B9363" style={{ margin: 4 }} /> : null;
+                  })()
+              }
             </View>
           </View>
 
@@ -436,14 +531,26 @@ export default function TrashDetailPage() {
 
           <View style={styles.sectionColumn}>
             <View style={styles.sectionHeader}>
-              <TouchableOpacity onPress={() => openInfoModal(trashVolumeDetailsData)}>
-                <MaterialIcons name="info" size={22} color="#A91101" />
+              <TouchableOpacity onPress={() => setWasteGuideVisible(true)}>
+                <Ionicons name="information-circle-outline" size={24} color="#4B9363"/>
               </TouchableOpacity>
               <Text style={styles.sectionTitle}>Trash Volume</Text>
             </View>
             <View style={styles.iconGrid}>
-              <MaterialIcons name="delete" size={24} color="#4B9363" />
-              <MaterialIcons name="local-shipping" size={24} color="#4B9363" />
+              {/* Miktara göre ikonlar */}
+              {trash.type && typeof trash.type === 'object' && !Array.isArray(trash.type)
+                ? Object.values(trash.type).map((qty, idx) => {
+                    if (Number(qty) >= 3) {
+                      return <MaterialIcons key={idx} name="local-shipping" size={24} color="#4B9363" style={{ margin: 4 }} />;
+                    } else {
+                      return <MaterialIcons key={idx} name="delete" size={24} color="#4B9363" style={{ margin: 4 }} />;
+                    }
+                  })
+                : (trash.quantity >= 3
+                    ? <MaterialIcons name="local-shipping" size={24} color="#4B9363" style={{ margin: 4 }} />
+                    : <MaterialIcons name="delete" size={24} color="#4B9363" style={{ margin: 4 }} />
+                  )
+              }
             </View>
           </View>
         </View>
@@ -451,14 +558,24 @@ export default function TrashDetailPage() {
         {/* Other Details Section */}
         <View style={styles.otherDetailsSection}>
           <Text style={styles.sectionTitle}>Other Details</Text>
+          {/* Çoklu kategori desteği */}
+          {/* {trash.type && typeof trash.type === 'object' && !Array.isArray(trash.type) ? (
+            <View style={{ marginBottom: 8 }}>
+              <Text style={styles.detailsText}>Categories:</Text>
+              {Object.entries(trash.type).map(([key, qty]) => (
+                <Text style={styles.detailsText} key={key}>
+                  - {wasteTypeLabels[Number(key)] || 'Unknown'}: {String(qty)}
+                </Text>
+              ))}
+            </View>
+          ) : (
+            <>
+              <Text style={styles.detailsText}>Category: {wasteTypeLabels[trash.type] || trash.type}</Text>
+              <Text style={styles.detailsText}>Quantity: {trash.quantity}</Text>
+            </>
+          )} */}
           <Text style={styles.detailsText}>
-            Tür: {trash.type}
-          </Text>
-          <Text style={styles.detailsText}>
-            Miktar: {trash.quantity}
-          </Text>
-          <Text style={styles.detailsText}>
-            Ek Bilgi: {trash.additionalInfo}
+          {trash.additionalInfo}
           </Text>
           
           {/* Action Buttons */}
@@ -624,6 +741,130 @@ export default function TrashDetailPage() {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+
+      {/* Waste Guide Modal */}
+      <Modal
+        visible={wasteGuideVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setWasteGuideVisible(false)}
+      >
+        <View style={styles.wasteGuideOverlay}>
+          <View style={styles.wasteGuideContainer}>
+            <Text style={styles.wasteGuideTitle}>Waste Guide</Text>
+            <Text style={styles.wasteGuideSubtitle}>Learn about waste types, examples and safety tips.</Text>
+            <ScrollView
+              contentContainerStyle={{ paddingBottom: 12 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {wasteTypeIconsArr.map(({ key, Icon, label }) => {
+                let example = '';
+                let tip = '';
+                switch (label) {
+                  case 'Plastic':
+                    example = 'Bottles, bags, packaging, containers, etc.';
+                    tip = 'Always separate clean plastics for recycling.';
+                    break;
+                  case 'Paper':
+                    example = 'Newspapers, magazines, cardboard, office paper.';
+                    tip = 'Keep paper dry for better recycling.';
+                    break;
+                  case 'Glass':
+                    example = 'Glass bottles, jars, broken glass.';
+                    tip = 'Wear gloves when handling broken glass.';
+                    break;
+                  case 'Organic':
+                    example = 'Food scraps, fruit peels, garden waste.';
+                    tip = 'Compost organic waste if possible.';
+                    break;
+                  case 'Cigarette':
+                    example = 'Cigarette butts, ash.';
+                    tip = 'Never throw cigarette butts on the ground.';
+                    break;
+                  case 'Mask':
+                    example = 'Disposable masks, gloves.';
+                    tip = 'Dispose of used masks in closed bins.';
+                    break;
+                  case 'Cardboard':
+                    example = 'Snack wrappers, plastic film, boxes.';
+                    tip = 'Clean packaging before recycling.';
+                    break;
+                  case 'E-Waste':
+                    example = 'Phones, laptops, tablets, chargers.';
+                    tip = 'Take e-waste to special collection points.';
+                    break;
+                  case 'Textile':
+                    example = 'Clothes, shoes, bags, fabric.';
+                    tip = 'Donate usable clothes, recycle the rest.';
+                    break;
+                  case 'Fishing Nets':
+                    example = 'Fishing nets, ropes.';
+                    tip = 'Report abandoned nets to authorities.';
+                    break;
+                  case 'Construction':
+                    example = 'Bricks, tiles, concrete, rubble.';
+                    tip = 'Wear a mask to avoid dust inhalation.';
+                    break;
+                  case 'Battery':
+                    example = 'Batteries, power banks.';
+                    tip = 'Never throw batteries in regular trash.';
+                    break;
+                  case 'Biomedical':
+                    example = 'Syringes, medicine, medical waste.';
+                    tip = 'Do not touch biomedical waste without protection.';
+                    break;
+                  case 'Dead Animals':
+                    example = 'Dead animals, animal waste.';
+                    tip = 'Avoid direct contact, report to authorities.';
+                    break;
+                  case 'Furniture':
+                    example = 'Chairs, sofas, tables, beds.';
+                    tip = 'Arrange for bulky waste pickup if possible.';
+                    break;
+                  case 'Garden':
+                    example = 'Leaves, branches, grass clippings.';
+                    tip = 'Compost garden waste if possible.';
+                    break;
+                  case 'Home Appliances':
+                    example = 'Fridges, washing machines, ovens.';
+                    tip = 'Contact your municipality for appliance disposal.';
+                    break;
+                  case 'Metal':
+                    example = 'Cans, pipes, metal scraps.';
+                    tip = 'Rinse cans before recycling.';
+                    break;
+                  case 'Tire':
+                    example = 'Car tires, bike tires.';
+                    tip = 'Take tires to tire collection points.';
+                    break;
+                  case 'Toxic':
+                    example = 'Paint, chemicals, pesticides.';
+                    tip = 'Never pour chemicals down the drain.';
+                    break;
+                  default:
+                    example = '';
+                    tip = '';
+                }
+                return (
+                  <View key={key} style={styles.wasteGuideItem}>
+                    <View style={styles.wasteGuideIconBox}>
+                      <Icon width={24} height={24} color="#fff" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.wasteGuideItemTitle}>{label}</Text>
+                      <Text style={styles.wasteGuideExample}><Text style={{ fontWeight: 'bold' }}>Examples:</Text> {example}</Text>
+                      <Text style={styles.wasteGuideTip}><Text style={{ fontWeight: 'bold', color: '#4B9363' }}>Tip:</Text> {tip}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+            <TouchableOpacity style={styles.wasteGuideCloseButton} onPress={() => setWasteGuideVisible(false)}>
+              <Text style={styles.wasteGuideCloseButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -773,7 +1014,7 @@ const styles = StyleSheet.create({
   iconGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 6,
   },
   infoItem: {
     flexDirection: 'row',
@@ -978,5 +1219,80 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '500',
+  },
+  wasteGuideOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 12,
+  },
+  wasteGuideContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 22,
+    width: '93%',
+    maxHeight: 500,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  wasteGuideTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4B9363',
+    marginBottom: 6,
+    textAlign: 'left',
+  },
+  wasteGuideSubtitle: {
+    fontSize: 12,
+    color: '#696969',
+    marginBottom: 18,
+  },
+  wasteGuideItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#D9D9D9',
+  },
+  wasteGuideIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
+    backgroundColor: '#4B9363',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  wasteGuideItemTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  wasteGuideExample: {
+    fontSize: 12,
+    color: '#666',
+  },
+  wasteGuideTip: {
+    fontSize: 12,
+    color: '#4B9363',
+  },
+  wasteGuideCloseButton: {
+    backgroundColor: '#4B9363',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 36,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  wasteGuideCloseButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
   },
 });
