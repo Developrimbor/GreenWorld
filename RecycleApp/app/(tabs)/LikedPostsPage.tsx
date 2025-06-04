@@ -14,6 +14,7 @@ import { router } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
 import { auth, db } from '../config/firebase';
 import { collection, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type PostType = {
   id: string;
@@ -25,6 +26,9 @@ type PostType = {
   createdAt: any;
   content?: string;
   tags?: string[];
+  authorId?: string;
+  authorImage?: string;
+
 };
 
 export default function LikedPostsPage() {
@@ -126,10 +130,23 @@ export default function LikedPostsPage() {
                 })}
               >
                 <View style={styles.horizontalCard}>
-                  <Image 
-                    source={{ uri: post.imageUrl }}
-                    style={styles.cardImage} 
-                  />
+                  <View style={styles.imageContainer}>
+                    <Image 
+                      source={{ uri: post.imageUrl }}
+                      style={styles.cardImage} 
+                    />
+                    <LinearGradient
+                      colors={['rgba(0,0,0,1)', 'transparent']}
+                      style={styles.imageGradient}
+                      start={{ x: 0, y: 1 }}
+                      end={{ x: 0, y: 0.1 }}
+                    >
+                      <View style={styles.imageDateContainer}>
+                        <Ionicons name="calendar-outline" size={14} color="#EDEDED" />
+                        <Text style={styles.imageDateText}>{post.date}</Text>
+                      </View>
+                    </LinearGradient>
+                  </View>
                   <View style={styles.cardContent}>
                     <Text style={styles.cardTitle} numberOfLines={2} ellipsizeMode="tail">{post.title}</Text>
                     {post.content && (
@@ -137,25 +154,12 @@ export default function LikedPostsPage() {
                         {post.content}
                       </Text>
                     )}
-                    <View style={styles.cardMetaContainer}>
-                      <View style={styles.cardMeta}>
-                        <Ionicons name="calendar-outline" size={14} color="#4B9363" />
-                        <Text style={styles.cardMetaText}>{post.date}</Text>
+                    <View style={styles.authorContainer}>
+                      <View style={[styles.authorImage, styles.defaultAuthorImage]}>
+                        <Ionicons name="person" size={16} color="#4B9363" />
                       </View>
-                      <View style={styles.cardMeta}>
-                        <Ionicons name="location" size={14} color="#4B9363" />
-                        <Text style={styles.cardMetaText}>{post.location}</Text>
-                      </View>
+                      <Text style={styles.authorName}>{post.author}</Text>
                     </View>
-                    {post.tags && post.tags.length > 0 && (
-                      <View style={styles.tagsContainer}>
-                        {post.tags.map((tag, index) => (
-                          <View key={index} style={styles.tagChip}>
-                            <Text style={styles.tagText}>{tag}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    )}
                   </View>
                 </View>
               </TouchableOpacity>
@@ -214,9 +218,11 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   postCard: {
-    marginVertical: 8,
+    marginBottom: 8,
     borderRadius: 12,
     backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -225,7 +231,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     height: 120,
   },
   horizontalCard: {
@@ -233,59 +239,81 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: '100%',
   },
+  imageContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 6,
+    position: 'relative',
+    overflow: 'hidden',
+  },
   cardImage: {
     width: 100,
     height: 100,
-    borderRadius: 8,
+    borderRadius: 6,
+  },
+  imageGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '50%',
+    justifyContent: 'flex-end',
+    padding: 6,
+  },
+  imageDateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  imageDateText: {
+    color: '#EDEDED',
+    fontSize: 10,
+    marginLeft: 6,
+    fontFamily: 'Poppins-Regular',
   },
   cardContent: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: 10,
     justifyContent: 'space-between',
+    height: '100%',
+    paddingVertical: 10,
   },
   cardTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontFamily: 'Poppins-Medium',
     color: '#000',
+    includeFontPadding: false,
+    lineHeight: 16,
   },
   cardDescription: {
-    fontSize: 12,
-    color: '#696969',
-    marginTop: 6,
-  },
-  cardMetaContainer: {
-    flexDirection: 'row',
-    marginTop: 8,
-    justifyContent: 'flex-start',
-    flexWrap: 'wrap',
-  },
-  cardMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 8,
-    marginTop: 2,
-  },
-  cardMetaText: {
     fontSize: 11,
     color: '#696969',
-    marginLeft: 4,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 8,
-  },
-  tagChip: {
-    backgroundColor: '#E8F5E9',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 6,
     marginBottom: 4,
+    fontFamily: 'Poppins-Regular',
+    lineHeight: 14,
   },
-  tagText: {
-    fontSize: 8,
-    color: '#4B9363',
+  authorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  authorImage: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    marginRight: 8,
+  },
+  defaultAuthorImage: {
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+  },
+  authorName: {
+    fontSize: 12,
+    color: '#333',
+    fontWeight: '500',
+    fontFamily: 'Poppins-Medium',
   },
   noResultsContainer: {
     alignItems: 'center',
