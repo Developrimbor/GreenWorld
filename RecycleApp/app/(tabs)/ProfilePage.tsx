@@ -398,7 +398,7 @@ export default function ProfilePage() {
                     onPress={() => handleMenuOption('liked')}
                   >
                     <View style={styles.menuItemContent}>
-                      <Ionicons name="heart-outline" size={20} color="#333" />
+                      <Ionicons name="heart" size={20} color="#4B9363" />
                       <Text style={styles.menuItemText}>Liked Posts</Text>
                     </View>
                   </TouchableOpacity>
@@ -408,7 +408,7 @@ export default function ProfilePage() {
                     onPress={() => handleMenuOption('settings')}
                   >
                     <View style={styles.menuItemContent}>
-                      <Ionicons name="settings-outline" size={20} color="#333" />
+                      <Ionicons name="settings" size={20} color="#4B9363" />
                       <Text style={styles.menuItemText}>Settings</Text>
                     </View>
                   </TouchableOpacity>
@@ -418,7 +418,7 @@ export default function ProfilePage() {
                     onPress={() => handleMenuOption('logout')}
                   >
                     <View style={styles.menuItemContent}>
-                      <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
+                      <Ionicons name="log-out" size={20} color="#A91101" />
                       <Text style={styles.menuItemTextRed}>Log Out</Text>
                     </View>
                   </TouchableOpacity>
@@ -1083,13 +1083,13 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: 16,
     color: '#333',
-    fontWeight: '400',
+    fontWeight: '500',
     marginLeft: 12,
   },
   menuItemTextRed: {
     fontSize: 16,
     color: '#FF3B30',
-    fontWeight: '400',
+    fontWeight: '500',
     marginLeft: 12,
   },
   // Puan bilgisi modal stilleri
