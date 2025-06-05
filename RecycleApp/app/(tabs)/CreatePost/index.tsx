@@ -57,7 +57,7 @@ export default function CreatePost() {
     
     // Maksimum 4 etiket sınırı
     if (tags.length >= 4) {
-      showError('Etiket Sınırı', 'En fazla 4 etiket ekleyebilirsiniz.');
+      showError('Warning', 'You can add a maximum of 4 tags.');
       return;
     }
     
@@ -92,27 +92,27 @@ export default function CreatePost() {
 
       // Tüm gerekli alanları kontrol et, etiketleri de içerecek şekilde
       if (!title) {
-        showError('Eksik Bilgi', 'Lütfen bir başlık girin.');
+        showError('Missing Info', 'Please enter a title.');
         return;
       }
       
       if (!location) {
-        showError('Eksik Bilgi', 'Lütfen bir konum girin.');
+        showError('Missing Info', 'Please enter a location.');
         return;
       }
       
       if (!content) {
-        showError('Eksik Bilgi', 'Lütfen içerik ekleyin.');
+        showError('Missing Info', 'Please enter a content.');
         return;
       }
       
       if (!image) {
-        showError('Eksik Bilgi', 'Lütfen bir fotoğraf ekleyin.');
+        showError('Missing Info', 'Please enter a image.');
         return;
       }
       
       if (tags.length === 0) {
-        showError('Eksik Bilgi', 'Lütfen en az bir etiket ekleyin.');
+        showError('Missing Info', 'Please add at least one tag.');
         return;
       }
 
@@ -259,7 +259,7 @@ export default function CreatePost() {
 
           {/* Etiket ekleme alanı */}
           <View style={styles.tagsSection}>
-            <Text style={styles.tagsSectionTitle}>Etiketler (Maks. 4) *</Text>
+            <Text style={styles.tagsSectionTitle}>Tags (Maks. 4) *</Text>
             
             {/* Eklenen etiketler */}
             {tags.length > 0 && (
@@ -283,7 +283,7 @@ export default function CreatePost() {
               <View style={styles.tagInputContainer}>
                 <TextInput
                   style={styles.tagInput}
-                  placeholder="Etiket ekle..."
+                  placeholder="Add Tag..."
                   value={tagInput}
                   onChangeText={setTagInput}
                   onSubmitEditing={() => addTag(tagInput)}
@@ -300,7 +300,7 @@ export default function CreatePost() {
             )}
             
             {/* Önerilen etiketler */}
-            <Text style={styles.suggestedTagsTitle}>Önerilen Etiketler</Text>
+            <Text style={styles.suggestedTagsTitle}>Suggested Tags</Text>
             <ScrollView 
               horizontal 
               showsHorizontalScrollIndicator={false}
