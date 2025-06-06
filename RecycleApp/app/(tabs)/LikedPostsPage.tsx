@@ -73,7 +73,19 @@ export default function LikedPostsPage() {
           
           if (postDoc.exists()) {
             const postData = postDoc.data();
-            
+            let authorImage = '';
+            let authorId = postData.authorId || '';
+            if (authorId) {
+              try {
+                const userDoc = await getDoc(doc(db, 'users', authorId));
+                if (userDoc.exists()) {
+                  const userData = userDoc.data();
+                  authorImage = userData.photoURL || userData.profilePicture || '';
+                }
+              } catch (e) {
+                // Hata durumunda boş bırak
+              }
+            }
             likedPostsData.push({
               id: postDoc.id,
               imageUrl: postData.imageUrl || '',
@@ -83,7 +95,9 @@ export default function LikedPostsPage() {
               date: postData.createdAt ? new Date(postData.createdAt.toDate()).toLocaleDateString() : '',
               createdAt: postData.createdAt?.toDate() || new Date(),
               content: postData.content || '',
-              tags: postData.tags || []
+              tags: postData.tags || [],
+              authorId: authorId,
+              authorImage: authorImage,
             });
           }
         }
@@ -155,9 +169,13 @@ export default function LikedPostsPage() {
                       </Text>
                     )}
                     <View style={styles.authorContainer}>
-                      <View style={[styles.authorImage, styles.defaultAuthorImage]}>
-                        <Ionicons name="person" size={16} color="#4B9363" />
-                      </View>
+                      {post.authorImage ? (
+                        <Image source={{ uri: post.authorImage }} style={styles.authorImage} />
+                      ) : (
+                        <View style={[styles.authorImage, styles.defaultAuthorImage]}>
+                          <Ionicons name="person" size={16} color="#4B9363" />
+                        </View>
+                      )}
                       <Text style={styles.authorName}>{post.author}</Text>
                     </View>
                   </View>
