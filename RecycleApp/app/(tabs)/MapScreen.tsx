@@ -37,8 +37,8 @@ const { width, height } = Dimensions.get('window');
 const INITIAL_REGION = {
   latitude: 40.7393,
   longitude: 30.3312,
-  latitudeDelta: 0.03,
-  longitudeDelta: 0.03,
+  latitudeDelta: 0.05,
+  longitudeDelta: 0.05,
 };
 
 interface LocationCoords {
@@ -1017,53 +1017,39 @@ const onRegionChangeComplete = (newRegion: Region) => {
           pitchEnabled={false}       // Eğim özelliğini devre dışı bırak
         >
           {clusters.map((cluster, idx) => {
-            if (cluster.items.length === 1) {
-              return (
-                <Marker
-                  key={cluster.items[0].id}
-                  coordinate={{ latitude: cluster.latitude, longitude: cluster.longitude }}
-                  pinColor={cluster.items[0].status === 'cleaned' ? "#4B9363" : "#E74C3C"}
-                  onPress={isReportMode ? undefined : () => {
-                    if (cluster.items[0].status === 'cleaned') {
-                      router.push({ 
-                        pathname: '/(tabs)/CleanedTrashPage', 
-                        params: { id: cluster.items[0].id } 
-                      });
-                    } else {
-                      router.push({ 
-                        pathname: '/(tabs)/TrashDetailPage', 
-                        params: { id: cluster.items[0].id } 
-                      });
-                    }
-                  }}
-                />
-              );
+            // Her durumda (tekli veya çoklu) daire ve ortasında sayı göster
+            const radius = 100 + Math.min(cluster.items.length * 60, 500);
+            const total = cluster.items.length;
+            const cleaned = cluster.statusCounts.cleaned;
+            const reported = cluster.statusCounts.reported;
+            let clusterColor = 'rgba(75, 147, 19, 0.65)';
+            if (reported === total) {
+              clusterColor = 'rgba(169, 17, 1, 0.65)';
+            } else if (cleaned === total) {
+              clusterColor = 'rgba(75, 147, 19, 0.65)';
             } else {
-              // Daire yarıçapını harita zoom'una göre ayarla (ör: 300-800 metre arası)
-              const radius = 100 + Math.min(cluster.items.length * 60, 500);
-              // Cluster renk mantığı
-              const total = cluster.items.length;
-              const cleaned = cluster.statusCounts.cleaned;
-              const reported = cluster.statusCounts.reported;
-              let clusterColor = 'rgba(75, 147, 19, 0.65)';
-              if (reported === total) {
-                clusterColor = 'rgba(169, 17, 1, 0.65)'; // Hepsi temizlenmemiş
-              } else if (cleaned === total) {
-                clusterColor = 'rgba(75, 147, 19, 0.65)'; // Hepsi temizlenmiş
-              } else {
-                clusterColor = 'rgba(126, 120, 46, 0.65)'; // Karışık
-              }
-              // Harita zoom'una göre Circle'ın ekrandaki çapını yaklaşık hesapla
-              const metersPerDegree = 111320;
-              const circleDiameterMeters = radius * 2;
-              const latitudeDelta = region.latitudeDelta;
-              const mapHeight = height; // Ekran yüksekliği (px)
-              const metersPerScreen = latitudeDelta * metersPerDegree;
-              const pxPerMeter = mapHeight / metersPerScreen;
-              const circleDiameterPx = circleDiameterMeters * pxPerMeter;
-              const markerSize = Math.max(30, Math.min(circleDiameterPx, 14));
-              return (
-                <React.Fragment key={`cluster-${idx}`}>
+              clusterColor = 'rgba(126, 120, 46, 0.65)';
+            }
+            const metersPerDegree = 111320;
+            const circleDiameterMeters = radius * 2;
+            const latitudeDelta = region.latitudeDelta;
+            const longitudeDelta = region.longitudeDelta;
+            const mapHeight = height;
+            const metersPerScreen = latitudeDelta * metersPerDegree;
+            const pxPerMeter = mapHeight / metersPerScreen;
+            const circleDiameterPx = circleDiameterMeters * pxPerMeter;
+            const markerSize = Math.max(30, Math.min(circleDiameterPx, 14));
+            // --- CIRCLE GÖRÜNÜRLÜĞÜ ---
+            // Eğer cluster'ın kapsama alanı harita bölgesinin büyük kısmını kaplıyorsa, Circle'ı gösterme
+            // (ör: cluster'ın yarıçapı, harita bölgesinin yarısından fazlaysa)
+            const regionRadiusLat = latitudeDelta * 0.5;
+            const regionRadiusLng = longitudeDelta * 0.5;
+            const clusterRadiusLat = radius / metersPerDegree;
+            const clusterRadiusLng = radius / (metersPerDegree * Math.cos(cluster.latitude * Math.PI / 180));
+            const hideCircle = (clusterRadiusLat > regionRadiusLat * 0.8) || (clusterRadiusLng > regionRadiusLng * 0.8);
+            return (
+              <React.Fragment key={`cluster-${idx}`}>
+                {!hideCircle && (
                   <Circle
                     center={{ latitude: cluster.latitude, longitude: cluster.longitude }}
                     radius={radius}
@@ -1071,9 +1057,23 @@ const onRegionChangeComplete = (newRegion: Region) => {
                     strokeColor="#fff"
                     strokeWidth={2}
                   />
-                  <Marker
-                    coordinate={{ latitude: cluster.latitude, longitude: cluster.longitude }}
-                    onPress={isReportMode ? undefined : () => {
+                )}
+                <Marker
+                  coordinate={{ latitude: cluster.latitude, longitude: cluster.longitude }}
+                  onPress={isReportMode ? undefined : () => {
+                    if (cluster.items.length === 1) {
+                      if (cluster.items[0].status === 'cleaned') {
+                        router.push({ 
+                          pathname: '/(tabs)/CleanedTrashPage', 
+                          params: { id: cluster.items[0].id } 
+                        });
+                      } else {
+                        router.push({ 
+                          pathname: '/(tabs)/TrashDetailPage', 
+                          params: { id: cluster.items[0].id } 
+                        });
+                      }
+                    } else {
                       if (mapRef.current && cluster.items.length > 1) {
                         const coordinates = cluster.items.map(item => item.location);
                         mapRef.current.fitToCoordinates(coordinates, {
@@ -1081,34 +1081,34 @@ const onRegionChangeComplete = (newRegion: Region) => {
                           animated: true,
                         });
                       }
-                    }}
-                    anchor={{ x: 0.45, y: 0.45 }}
-                  >
-                    <View style={{
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: markerSize,
-                      height: markerSize,
-                      position: 'absolute',
-                      backgroundColor: clusterColor,
-                      borderRadius: markerSize / 2,
-                      borderWidth: 1,
-                      borderColor: '#fff',
-                    }}>
-                      <Text style={{
-                        color: '#fff',
-                        fontWeight: 'bold',
-                        fontSize: markerSize * 0.6,
-                        textAlign: 'center',
-                        textShadowColor: 'rgba(0,0,0,0.3)',
-                        textShadowOffset: { width: 1, height: 1 },
-                        textShadowRadius: 1.5,
-                      }}>{cluster.items.length}</Text>
-                    </View>
-                  </Marker>
-                </React.Fragment>
-              );
-            }
+                    }
+                  }}
+                  anchor={{ x: 0.45, y: 0.45 }}
+                >
+                  <View style={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: markerSize,
+                    height: markerSize,
+                    position: 'absolute',
+                    backgroundColor: clusterColor,
+                    borderRadius: markerSize / 2,
+                    borderWidth: 1,
+                    borderColor: '#fff',
+                  }}>
+                    <Text style={{
+                      color: '#fff',
+                      fontWeight: 'bold',
+                      fontSize: markerSize * 0.6,
+                      textAlign: 'center',
+                      textShadowColor: 'rgba(0,0,0,0.3)',
+                      textShadowOffset: { width: 1, height: 1 },
+                      textShadowRadius: 1.5,
+                    }}>{cluster.items.length}</Text>
+                  </View>
+                </Marker>
+              </React.Fragment>
+            );
           })}
           {showCircle && userLocation && (
             <Circle
