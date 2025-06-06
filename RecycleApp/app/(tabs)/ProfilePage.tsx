@@ -67,6 +67,33 @@ export default function ProfilePage() {
   const [reportedAddresses, setReportedAddresses] = useState<{[id: string]: string}>({});
   const [cleanedAddresses, setCleanedAddresses] = useState<{[id: string]: string}>({});
 
+  // Kategori label ve ikonları (TrashDetailPage'den kopya)
+  const wasteTypeLabels: { [key: number]: string } = {
+    1: 'Plastic', 2: 'Paper', 3: 'Glass', 4: 'Organic', 5: 'Cigarette', 6: 'Mask', 7: 'Cardboard', 8: 'E-Waste', 9: 'Textile', 10: 'Fishing Nets', 11: 'Construction', 12: 'Battery', 13: 'Biomedical', 14: 'Dead Animals', 15: 'Furniture', 16: 'Garden', 17: 'Home Appliances', 18: 'Metal', 19: 'Tire', 20: 'Toxic',
+  };
+  const wasteTypeIcons: { [key: number]: any } = {
+    1: require('../../components/ui/IconifyPlastic').default,
+    2: require('../../components/ui/IconifyPaper').default,
+    3: require('../../components/ui/IconifyGlass').default,
+    4: require('../../components/ui/IconifyFood').default,
+    5: require('../../components/ui/IconifyCigarette').default,
+    6: require('../../components/ui/IconifyMask').default,
+    7: require('../../components/ui/IconifyPackage').default,
+    8: require('../../components/ui/IconifyEWaste').default,
+    9: require('../../components/ui/IconifyClothes').default,
+    10: require('../../components/ui/IconifyFishingNets').default,
+    11: require('../../components/ui/IconifyConstruction').default,
+    12: require('../../components/ui/IconifyBattery').default,
+    13: require('../../components/ui/IconifyBiomedical').default,
+    14: require('../../components/ui/IconifyDeadAnimals').default,
+    15: require('../../components/ui/IconifyFurniture').default,
+    16: require('../../components/ui/IconifyGarden').default,
+    17: require('../../components/ui/IconifyHomeAppliances').default,
+    18: require('../../components/ui/IconifyMetal').default,
+    19: require('../../components/ui/IconifyTire').default,
+    20: require('../../components/ui/IconifyToxic').default,
+  };
+
   // Sayfa yüklendiğinde sayıları ve verileri hızlıca getir
   useEffect(() => {
     const fetchAllData = async () => {
@@ -585,40 +612,77 @@ export default function ProfilePage() {
           {activeTab === 'reported' && (
             <View style={styles.postsContainer}>
               {reportedItems && reportedItems.length > 0 ? (
-                reportedItems.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={styles.postCard}
-                    onPress={() => router.push({
-                      pathname: item.status === 'cleaned' ? '/(tabs)/CleanedTrashPage' : '/(tabs)/TrashDetailPage',
-                      params: { id: item.id }
-                    })}
-                  >
-                    {item.imageUrls && (
-                      <Image
-                        source={{ uri: item.imageUrls[0] }}
-                        style={styles.postImage}
-                      />
-                    )}
-                    <View style={styles.postInfo}>
-                      <View style={styles.titleContainer}>
-                        <Text style={styles.postTitle}>REPORTED</Text>
-                        {item.status === 'cleaned' && (
-                          <Text style={styles.cleanedTag}>(CLEANED)</Text>
-                        )}
+                reportedItems.map((item) => {
+                  // Çoklu kategori desteği
+                  let typeKeys: number[] = [];
+                  if (typeof item.type === 'object' && item.type !== null && !Array.isArray(item.type)) {
+                    typeKeys = Object.keys(item.type).map(Number);
+                  } else if (Array.isArray(item.type)) {
+                    typeKeys = item.type.map(Number);
+                  } else {
+                    typeKeys = [Number(item.type)];
+                  }
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.postCard}
+                      onPress={() => router.push({
+                        pathname: item.status === 'cleaned' ? '/(tabs)/CleanedTrashPage' : '/(tabs)/TrashDetailPage',
+                        params: { id: item.id }
+                      })}
+                    >
+                      {item.imageUrls && item.imageUrls.length > 0 ? (
+                        <Image
+                          source={{ uri: item.imageUrls[0] }}
+                          style={styles.postImage}
+                        />
+                      ) : (
+                        <View style={[styles.postImage, styles.defaultPostImage]}>
+                          <Ionicons name="image-outline" size={30} color="#ccc" />
+                        </View>
+                      )}
+                      <View style={styles.postInfo}>
+                        {/* 1. REPORTED başlığı */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center'}}>
+                          <Text style={styles.reportedTitle}>REPORTED</Text>
+                          {item.status === 'cleaned' && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8, position: 'absolute', right: 0}}>
+                              <Text style={styles.cleanedTag}>CLEANED</Text>
+                              <Ionicons name="checkmark-circle" size={20} color="#4B9363" style={{  }} />
+                            </View>
+                          )}
+                        </View>
+                        {/* 2. Kategori ikonları ve isimleri */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 8 }}>
+                          {typeKeys.map((typeKey) => {
+                            const Icon = wasteTypeIcons[typeKey];
+                            return Icon ? (
+                              <View key={typeKey} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Icon width={22} height={22} color="#4B9363" style={{  }} />
+                                {/* <Text style={{ fontSize: 14, color: '#4B9363', fontWeight: 'bold', marginRight: 8 }}>{wasteTypeLabels[typeKey] || 'Unknown'}</Text> */}
+                              </View>
+                            ) : null;
+                          })}
+                        </View>
+                        {/* 3. Tarih ve konum bilgisi (ikonlu) */}
+                        <View style={styles.locationDateContainer}>
+                          <View style={styles.dateContainer}>
+                            <Ionicons name="calendar-outline" size={14} color="#4B9363" />
+                            <Text style={styles.dateText}>
+                              {item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'No Date'}
+                            </Text>
+                          </View>
+                          <View style={styles.locationContainer}>
+                            <Ionicons name="location-outline" size={14} color="#4B9363" />
+                            <Text style={styles.locationText} numberOfLines={1}>
+                              {reportedAddresses[item.id] || (item.location ? `${item.location.latitude.toFixed(4)}, ${item.location.longitude.toFixed(4)}` : 'No Location')}
+                            </Text>
+                          </View>
+                        </View>
                       </View>
-                      <View style={styles.locationContainer}>
-                        <Ionicons name="location-outline" size={16} color="#666" />
-                        <Text style={styles.postLocation}>
-                          {reportedAddresses[item.id] || `${item.location.latitude.toFixed(4)}, ${item.location.longitude.toFixed(4)}`}
-                        </Text>
-                      </View>
-                      <Text style={styles.postDate}>
-                        {item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'No Date'}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))
+                    </TouchableOpacity>
+                  );
+                })
               ) : (
                 <Text style={styles.noPostsText}>No reported items found</Text>
               )}
@@ -627,50 +691,79 @@ export default function ProfilePage() {
           {activeTab === 'cleaned' && (
             <View style={styles.postsContainer}>
               {cleanedItems && cleanedItems.length > 0 ? (
-                cleanedItems.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={styles.postCard}
-                    onPress={() => router.push({
-                      pathname: '/(tabs)/CleanedTrashPage',
-                      params: { id: item.id }
-                    })}
-                  >
-                    {item.imageUrls && item.imageUrls.length > 0 ? (
-                      <Image
-                        source={{ uri: item.imageUrls[0] }}
-                        style={styles.postImage}
-                      />
-                    ) : item.afterCleaningImage ? (
-                      <Image
-                        source={{ uri: item.afterCleaningImage }}
-                        style={styles.postImage}
-                      />
-                    ) : item.beforeCleaningImage ? (
-                      <Image
-                        source={{ uri: item.beforeCleaningImage }}
-                        style={styles.postImage}
-                      />
-                    ) : (
-                      <View style={[styles.postImage, styles.defaultPostImage]}>
-                        <Ionicons name="image-outline" size={30} color="#ccc" />
+                cleanedItems.map((item) => {
+                  // Çoklu kategori desteği
+                  let typeKeys: number[] = [];
+                  if (typeof item.type === 'object' && item.type !== null && !Array.isArray(item.type)) {
+                    typeKeys = Object.keys(item.type).map(Number);
+                  } else if (Array.isArray(item.type)) {
+                    typeKeys = item.type.map(Number);
+                  } else {
+                    typeKeys = [Number(item.type)];
+                  }
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.postCard}
+                      onPress={() => router.push({
+                        pathname: '/(tabs)/CleanedTrashPage',
+                        params: { id: item.id }
+                      })}
+                    >
+                      {item.imageUrls && item.imageUrls.length > 0 ? (
+                        <Image
+                          source={{ uri: item.imageUrls[0] }}
+                          style={styles.postImage}
+                        />
+                      ) : item.afterCleaningImage ? (
+                        <Image
+                          source={{ uri: item.afterCleaningImage }}
+                          style={styles.postImage}
+                        />
+                      ) : item.beforeCleaningImage ? (
+                        <Image
+                          source={{ uri: item.beforeCleaningImage }}
+                          style={styles.postImage}
+                        />
+                      ) : (
+                        <View style={[styles.postImage, styles.defaultPostImage]}>
+                          <Ionicons name="image-outline" size={30} color="#ccc" />
+                        </View>
+                      )}
+                      <View style={styles.postInfo}>
+                        {/* 1. CLEANED başlığı */}
+                        <Text style={styles.cleanedTitle}>CLEANED</Text>
+                        {/* 2. Kategori ikonları */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 8 }}>
+                          {typeKeys.map((typeKey) => {
+                            const Icon = wasteTypeIcons[typeKey];
+                            return Icon ? (
+                              <View key={typeKey} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Icon width={22} height={22} color="#4B9363" style={{}} />
+                              </View>
+                            ) : null;
+                          })}
+                        </View>
+                        {/* 3. Tarih ve konum bilgisi (ikonlu) */}
+                        <View style={styles.locationDateContainer}>
+                          <View style={styles.dateContainer}>
+                            <Ionicons name="calendar-outline" size={14} color="#4B9363" />
+                            <Text style={styles.dateText}>
+                              {item.cleanedAt ? new Date(item.cleanedAt.seconds * 1000).toLocaleDateString() :
+                               item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'No Date'}
+                            </Text>
+                          </View>
+                          <View style={styles.locationContainer}>
+                            <Ionicons name="location-outline" size={14} color="#4B9363" />
+                            <Text style={styles.locationText} numberOfLines={1}>
+                              {cleanedAddresses[item.id] || (item.location ? `${item.location.latitude.toFixed(4)}, ${item.location.longitude.toFixed(4)}` : 'No Location')}
+                            </Text>
+                          </View>
+                        </View>
                       </View>
-                    )}
-                    <View style={styles.postInfo}>
-                      <Text style={styles.cleanedTitle}>CLEANED</Text>
-                      <View style={styles.locationContainer}>
-                        <Ionicons name="location-outline" size={16} color="#666" />
-                        <Text style={styles.postLocation}>
-                          {cleanedAddresses[item.id] || (item.location ? `${item.location.latitude.toFixed(4)}, ${item.location.longitude.toFixed(4)}` : 'No Location')}
-                        </Text>
-                      </View>
-                      <Text style={styles.postDate}>
-                        {item.cleanedAt ? new Date(item.cleanedAt.seconds * 1000).toLocaleDateString() : 
-                         item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'No Date'}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))
+                    </TouchableOpacity>
+                  );
+                })
               ) : (
                 <Text style={styles.noPostsText}>No cleaned items found</Text>
               )}
@@ -976,7 +1069,8 @@ const styles = StyleSheet.create({
   },
   postTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Poppins-Medium',
+    lineHeight: 16,
     color: '#333',
     marginBottom: 4,
   },
@@ -1022,8 +1116,8 @@ const styles = StyleSheet.create({
   reportedTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#4B9363',
-    marginBottom: 8,
+    color: '#A91101',
+    // marginBottom: 8,
   },
   locationContainer: {
     flexDirection: 'row',
@@ -1276,14 +1370,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cleanedTag: {
-    // backgroundColor: '#4B9363',
     color: '#4B9363',
     fontSize: 12,
     fontWeight: 'bold',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginLeft: 8,
+    marginRight: 4,
   },
   tagsContainer: {
     marginVertical: 2,
