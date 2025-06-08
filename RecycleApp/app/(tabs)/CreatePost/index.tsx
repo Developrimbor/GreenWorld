@@ -36,6 +36,8 @@ export default function CreatePost() {
   // Önerilen etiketler
   const suggestedTags = ['plastic', 'waste', 'recycle', 'reuse', 'paper', 'glass', 'metal', 'organic', 'nature', 'plant', 'environment'];
 
+  const [showBackModal, setShowBackModal] = useState(false);
+
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -221,7 +223,7 @@ export default function CreatePost() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => setShowBackModal(true)}
         >
         <MaterialIcons name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
@@ -246,7 +248,7 @@ export default function CreatePost() {
         <View style={styles.formSection}>
           <TextInput
             style={styles.titleInput}
-            placeholder="Add Title"
+            placeholder="Add a Title"
             value={title}
             onChangeText={setTitle}
             placeholderTextColor="#95A5A6"
@@ -265,7 +267,7 @@ export default function CreatePost() {
 
           {/* Etiket ekleme alanı */}
           <View style={styles.tagsSection}>
-            <Text style={styles.tagsSectionTitle}>Tags (Maks. 4) *</Text>
+            <Text style={styles.tagsSectionTitle}>Tags (Max 4) *</Text>
             
             {/* Eklenen etiketler */}
             {tags.length > 0 && (
@@ -368,6 +370,38 @@ export default function CreatePost() {
           </View>
         </View>
       </Modal>
+
+      {/* Back warning modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showBackModal}
+        onRequestClose={() => setShowBackModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.backModalContainer}>
+            <View style={styles.backIconContainer}>
+              <MaterialIcons name="warning" size={36} color="#fff" />
+            </View>
+            <Text style={styles.backModalTitle}>Are you sure?</Text>
+            <Text style={styles.backModalMessage}>If you go back, your changes will be lost.</Text>
+            <View style={styles.backModalButtonRow}>
+              <TouchableOpacity
+                style={[styles.backModalButton, { backgroundColor: '#4B9363' }]}
+                onPress={() => { setShowBackModal(false); router.back(); }}
+              >
+                <Text style={styles.backModalButtonText}>Yes, delete</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.backModalButton, { backgroundColor: '#E8E8E8', marginLeft: 12 }]}
+                onPress={() => setShowBackModal(false)}
+              >
+                <Text style={[styles.backModalButtonText, { color: '#333' }]}>No</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -421,9 +455,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   imagePlaceholderText: {
-    marginTop: 8,
+    marginTop: 2,
     color: '#666',
-    fontSize: 16,
+    fontSize: 12,
   },
   formSection: {
     paddingTop: 8,
@@ -450,7 +484,7 @@ const styles = StyleSheet.create({
   },
   contentInput: {
     fontSize: 16,
-    paddingTop: 12,
+    paddingTop: 4,
     lineHeight: 24,
   },
   // Etiket stili
@@ -470,10 +504,10 @@ const styles = StyleSheet.create({
   },
   tagChip: {
     backgroundColor: '#E8F5E9',
-    borderRadius: 16,
-    paddingHorizontal: 12,
+    borderRadius: 4,
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    marginRight: 8,
+    marginRight: 4,
     marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -579,6 +613,59 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  backModalContainer: {
+    backgroundColor: '#fff',
+    padding: 28,
+    borderRadius: 16,
+    width: '80%',
+    maxWidth: 360,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  backIconContainer: {
+    backgroundColor: '#A91101',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  backModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#333',
+    textAlign: 'center',
+  },
+  backModalMessage: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  backModalButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  backModalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  backModalButtonText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
