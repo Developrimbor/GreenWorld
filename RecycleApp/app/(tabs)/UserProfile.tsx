@@ -50,7 +50,7 @@ export default function UserProfile() {
   // Tab seçme işlevi
   const handleTabPress = (tab: TabType) => {
     setActiveTab(tab);
-    animateSlider(tab === 'reported' ? 0 : tab === 'cleaned' ? 120 : 240);
+    animateSlider(tab === 'reported' ? 0 : tab === 'cleaned' ? 104 : 208);
   };
 
   // Adresleri çekmek için yardımcı fonksiyon
@@ -80,7 +80,6 @@ export default function UserProfile() {
           router.back();
           return;
         }
-        
         // Kullanıcı bilgilerini getir
         const userDoc = await getDoc(doc(db, 'users', userId as string));
         if (userDoc.exists()) {
@@ -89,92 +88,91 @@ export default function UserProfile() {
           router.back();
           return;
         }
-        
         // Tüm verileri paralel olarak getir
         const [reportsSnapshot, cleanedTrashSnapshot, cleanedReportsSnapshot, postsSnapshot] = await Promise.all([
-          // Reported items (bildirilen atıklar)
           getDocs(query(
             collection(db, 'trashReports'),
             where('authorId', '==', userId)
           )),
-          
-          // Cleaned items - trashReports koleksiyonundan
           getDocs(query(
             collection(db, 'trashReports'),
             where('cleanedBy', '==', userId),
             where('status', '==', 'cleaned')
           )),
-          
-          // Cleaned items - cleanedReports koleksiyonundan
           getDocs(query(
             collection(db, 'cleanedReports'),
             where('cleanedBy', '==', userId)
           )),
-          
-          // Posts
           getDocs(query(
             collection(db, 'posts'),
             where('authorId', '==', userId)
           ))
         ]);
-
         // Reported items için
-        const reports = reportsSnapshot.docs.map(doc => ({
+        let reports = reportsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+        // Tarihe göre sırala (en yeni en üstte)
+        reports = reports.sort((a, b) => {
+          const aDate = (a as any).createdAt?.seconds ? new Date((a as any).createdAt.seconds * 1000) : ((a as any).createdAt ? new Date((a as any).createdAt) : new Date(0));
+          const bDate = (b as any).createdAt?.seconds ? new Date((b as any).createdAt.seconds * 1000) : ((b as any).createdAt ? new Date((b as any).createdAt) : new Date(0));
+          return bDate.getTime() - aDate.getTime();
+        });
         setReportedItems(reports);
         setReportedCount(reports.length);
-        
         // Cleaned items için
         const cleanedTrashReports = cleanedTrashSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           source: 'trashReports'
         }));
-        
         const cleanedReports = cleanedReportsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           source: 'cleanedReports'
         }));
-        
         // Mükerrer temizleme kayıtlarını önle
         const cleanedIds = new Set<string>();
         const allCleanedItems: any[] = [];
-        
         cleanedTrashReports.forEach(item => {
           if (!cleanedIds.has(item.id)) {
             cleanedIds.add(item.id);
             allCleanedItems.push(item);
           }
         });
-        
         cleanedReports.forEach(item => {
           if (!cleanedIds.has(item.id)) {
             cleanedIds.add(item.id);
             allCleanedItems.push(item);
           }
         });
-        
-        setCleanedItems(allCleanedItems);
+        // Cleaned'ı tarihe göre sırala (önce cleanedAt, yoksa createdAt)
+        const cleanedSorted = allCleanedItems.sort((a, b) => {
+          const aDate = (a as any).cleanedAt?.seconds ? new Date((a as any).cleanedAt.seconds * 1000) : ((a as any).cleanedAt ? new Date((a as any).cleanedAt) : ((a as any).createdAt?.seconds ? new Date((a as any).createdAt.seconds * 1000) : ((a as any).createdAt ? new Date((a as any).createdAt) : new Date(0))));
+          const bDate = (b as any).cleanedAt?.seconds ? new Date((b as any).cleanedAt.seconds * 1000) : ((b as any).cleanedAt ? new Date((b as any).cleanedAt) : ((b as any).createdAt?.seconds ? new Date((b as any).createdAt.seconds * 1000) : ((b as any).createdAt ? new Date((b as any).createdAt) : new Date(0))));
+          return bDate.getTime() - aDate.getTime();
+        });
+        setCleanedItems(cleanedSorted);
         setCleanedCount(cleanedIds.size);
-        
         // Posts için
-        const posts = postsSnapshot.docs.map(doc => ({
+        let posts = postsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+        posts = posts.sort((a, b) => {
+          const aDate = (a as any).createdAt?.seconds ? new Date((a as any).createdAt.seconds * 1000) : ((a as any).createdAt ? new Date((a as any).createdAt) : new Date(0));
+          const bDate = (b as any).createdAt?.seconds ? new Date((b as any).createdAt.seconds * 1000) : ((b as any).createdAt ? new Date((b as any).createdAt) : new Date(0));
+          return bDate.getTime() - aDate.getTime();
+        });
         setUserPosts(posts);
         setPostsCount(posts.length);
-        
       } catch (error) {
         // Hata durumunu sessizce ele al
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchUserData();
   }, [userId, router]);
 
@@ -432,15 +430,23 @@ export default function UserProfile() {
                       )}
                       <View style={styles.postInfo}>
                         {/* 1. REPORTED başlığı */}
-                        <Text style={styles.reportedTitle}>REPORTED</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center'}}>
+                          <Text style={styles.reportedTitle}>REPORTED</Text>
+                          {item.status === 'cleaned' && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8, position: 'absolute', right: 0}}>
+                              <Text style={styles.cleanedTag}>CLEANED</Text>
+                              <Ionicons name="checkmark-circle" size={20} color="#4B9363" style={{  }} />
+                            </View>
+                          )}
+                        </View>
                         {/* 2. Kategori ikonları ve isimleri */}
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 8 }}>
                           {typeKeys.map((typeKey) => {
                             const Icon = wasteTypeIcons[typeKey];
                             return Icon ? (
-                              <View key={typeKey} style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
-                                <Icon width={22} height={22} color="#4B9363" style={{ marginRight: 4 }} />
-                                <Text style={{ fontSize: 14, color: '#4B9363', fontWeight: 'bold', marginRight: 8 }}>{wasteTypeLabels[typeKey] || 'Unknown'}</Text>
+                              <View key={typeKey} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Icon width={22} height={22} color="#4B9363" style={{  }} />
+                                {/* <Text style={{ fontSize: 14, color: '#4B9363', fontWeight: 'bold', marginRight: 8 }}>{wasteTypeLabels[typeKey] || 'Unknown'}</Text> */}
                               </View>
                             ) : null;
                           })}
@@ -649,7 +655,7 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    // marginTop: 4,
   },
   statItem: {
     alignItems: 'center',
@@ -658,33 +664,33 @@ const styles = StyleSheet.create({
   statNumber: {
     fontFamily: 'Poppins-Medium',
     fontSize: 22,
-    marginBottom: 4,
+    marginBottom: 2, // Sayı ile label arası
   },
   statLabel: {
     fontFamily: 'Poppins-Regular',
     fontSize: 12,
-    color: '#666',
+    color: '#696969',
   },
   divider: {
     width: 1,
-    height: 26,
+    height: 32,
     backgroundColor: '#696969',
-    marginHorizontal: 16,
+    marginHorizontal: 12, // Çizgiler arası boşluk
   },
   progressContainer: {
-    width: 360,
+    width: 312,
     height: 2,
     marginTop: 16,
   },
   baseProgress: {
     position: 'absolute',
-    width: '100%',
+    width: 312,
     height: 1,
     backgroundColor: '#D9D9D9',
   },
   activeProgress: {
     position: 'absolute',
-    width: 120,
+    width: 104,
     height: 2,
     backgroundColor: '#4B9363',
   },
@@ -720,15 +726,16 @@ const styles = StyleSheet.create({
   },
   postTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Poppins-Medium',
+    lineHeight: 16,
     color: '#333',
     marginBottom: 4,
   },
   reportedTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FF0000',
-    marginBottom: 4,
+    color: '#A91101',
+    // marginBottom: 8,
   },
   cleanedTitle: {
     fontSize: 16,
@@ -742,40 +749,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   postLocation: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+    fontSize: 12,
+    fontFamily: 'Poppins-Regular',
+    color: '#696969',
+    // marginBottom: 4,
   },
   postDate: {
     fontSize: 12,
-    color: '#999',
+    fontFamily: 'Poppins-Regular',
+    color: '#696969',
   },
   noPostsText: {
     textAlign: 'center',
     fontSize: 16,
-    color: '#666',
+    color: '#696969',
     marginTop: 20,
     fontFamily: 'Poppins-Regular',
   },
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 4,
+    flex: 1,
+    // marginRight: 8,
   },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   cleanedTag: {
-    backgroundColor: '#4B9363',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginLeft: 4,
-    color: '#fff',
+    color: '#4B9363',
     fontSize: 12,
     fontWeight: 'bold',
+    marginRight: 4,
   },
   tagsContainer: {
     marginVertical: 2,
