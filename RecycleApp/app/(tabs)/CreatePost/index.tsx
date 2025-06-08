@@ -15,7 +15,7 @@ import {
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import { db, auth, storage } from '../../config/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as FileSystem from 'expo-file-system';
@@ -181,6 +181,12 @@ export default function CreatePost() {
         authorId: currentUser.uid,
         createdAt: serverTimestamp(),
         tags: tags.length > 0 ? tags : [],  // Etiketleri ekle
+      });
+
+      // Kullanıcıya 5 puan ekle
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, {
+        points: increment(5)
       });
 
       Alert.alert('Başarılı', 'Postunuz başarıyla paylaşıldı.');
