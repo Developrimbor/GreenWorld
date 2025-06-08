@@ -100,96 +100,94 @@ export default function ProfilePage() {
       try {
         const currentUser = auth.currentUser;
         if (!currentUser) return;
-
         // Kullanıcı bilgilerini getir
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
         if (userDoc.exists()) {
           setUserData(userDoc.data());
         }
-
         // Tüm verileri paralel olarak getir
         const [reportsSnapshot, cleanedTrashSnapshot, cleanedReportsSnapshot, postsSnapshot] = await Promise.all([
-          // Reported items (bildirilen atıklar)
           getDocs(query(
             collection(db, 'trashReports'),
             where('authorId', '==', currentUser.uid)
           )),
-          
-          // Cleaned items - trashReports koleksiyonundan
           getDocs(query(
             collection(db, 'trashReports'),
             where('cleanedBy', '==', currentUser.uid),
             where('status', '==', 'cleaned')
           )),
-          
-          // Cleaned items - cleanedReports koleksiyonundan
           getDocs(query(
             collection(db, 'cleanedReports'),
             where('cleanedBy', '==', currentUser.uid)
           )),
-          
-          // Posts
           getDocs(query(
             collection(db, 'posts'),
             where('authorId', '==', currentUser.uid)
           ))
         ]);
-
         // Reported items için
-        const reports = reportsSnapshot.docs.map(doc => ({
+        let reports = reportsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+        // Tarihe göre sırala (en yeni en üstte)
+        reports = reports.sort((a, b) => {
+          const aDate = (a as any).createdAt?.seconds ? new Date((a as any).createdAt.seconds * 1000) : ((a as any).createdAt ? new Date((a as any).createdAt) : new Date(0));
+          const bDate = (b as any).createdAt?.seconds ? new Date((b as any).createdAt.seconds * 1000) : ((b as any).createdAt ? new Date((b as any).createdAt) : new Date(0));
+          return bDate.getTime() - aDate.getTime();
+        });
         setReportedItems(reports);
         setReportedCount(reports.length);
-        
         // Cleaned items için
         const cleanedTrashReports = cleanedTrashSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           source: 'trashReports'
         }));
-        
         const cleanedReports = cleanedReportsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           source: 'cleanedReports'
         }));
-        
         // Mükerrer temizleme kayıtlarını önle
         const cleanedIds = new Set<string>();
         const allCleanedItems: any[] = [];
-        
         cleanedTrashReports.forEach(item => {
           if (!cleanedIds.has(item.id)) {
             cleanedIds.add(item.id);
             allCleanedItems.push(item);
           }
         });
-        
         cleanedReports.forEach(item => {
           if (!cleanedIds.has(item.id)) {
             cleanedIds.add(item.id);
             allCleanedItems.push(item);
           }
         });
-        
-        setCleanedItems(allCleanedItems);
+        // Cleaned'ı tarihe göre sırala (önce cleanedAt, yoksa createdAt)
+        const cleanedSorted = allCleanedItems.sort((a, b) => {
+          const aDate = (a as any).cleanedAt?.seconds ? new Date((a as any).cleanedAt.seconds * 1000) : ((a as any).cleanedAt ? new Date((a as any).cleanedAt) : ((a as any).createdAt?.seconds ? new Date((a as any).createdAt.seconds * 1000) : ((a as any).createdAt ? new Date((a as any).createdAt) : new Date(0))));
+          const bDate = (b as any).cleanedAt?.seconds ? new Date((b as any).cleanedAt.seconds * 1000) : ((b as any).cleanedAt ? new Date((b as any).cleanedAt) : ((b as any).createdAt?.seconds ? new Date((b as any).createdAt.seconds * 1000) : ((b as any).createdAt ? new Date((b as any).createdAt) : new Date(0))));
+          return bDate.getTime() - aDate.getTime();
+        });
+        setCleanedItems(cleanedSorted);
         setCleanedCount(cleanedIds.size);
-        
         // Posts için
-        const posts = postsSnapshot.docs.map(doc => ({
+        let posts = postsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+        posts = posts.sort((a, b) => {
+          const aDate = (a as any).createdAt?.seconds ? new Date((a as any).createdAt.seconds * 1000) : ((a as any).createdAt ? new Date((a as any).createdAt) : new Date(0));
+          const bDate = (b as any).createdAt?.seconds ? new Date((b as any).createdAt.seconds * 1000) : ((b as any).createdAt ? new Date((b as any).createdAt) : new Date(0));
+          return bDate.getTime() - aDate.getTime();
+        });
         setUserPosts(posts);
         setPostsCount(posts.length);
-        
       } catch (error) {
         // Hata durumunu sessizce ele al
       }
     };
-
     fetchAllData();
   }, []);
 
@@ -1092,18 +1090,18 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontFamily: 'Poppins-Regular',
   },
-  reportCard: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 12,
-    padding: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
+  // reportCard: {
+  //   flexDirection: 'row',
+  //   backgroundColor: '#fff',
+  //   borderRadius: 12,
+  //   marginBottom: 12,
+  //   padding: 8,
+  //   shadowColor: '#000',
+  //   shadowOffset: { width: 0, height: 2 },
+  //   shadowOpacity: 0.1,
+  //   shadowRadius: 4,
+  //   elevation: 3,
+  // },
   reportImage: {
     width: 80,
     height: 80,
