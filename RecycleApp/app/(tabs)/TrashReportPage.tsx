@@ -199,10 +199,11 @@ export default function TrashReportPage() {
       // Trash report'u Firebase'e kaydet
       const docRef = await addDoc(collection(db, 'trashReports'), reportData);
 
-      // Kullanıcının reported sayısını güncelle
+      // Kullanıcının reported sayısını ve puanını güncelle
       const userRef = doc(db, 'users', currentUser.uid);
       await updateDoc(userRef, {
-        reported: increment(1)
+        reported: increment(1),
+        points: increment(10) // Atık bildirimi başına 10 puan
       });
 
       Alert.alert('Success', 'Trash report submitted successfully');
