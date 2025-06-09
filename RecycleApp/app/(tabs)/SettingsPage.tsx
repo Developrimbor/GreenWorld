@@ -19,7 +19,6 @@ import { router } from 'expo-router';
 import { auth, db } from '../config/firebase';
 import { updateDoc, doc, getDoc } from 'firebase/firestore';
 import { updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import BottomNavigation from '../../components/BottomNavigation';
 
 // Stil tanımları için TypeScript arayüzü
 interface Styles {
@@ -237,7 +236,6 @@ export default function SettingsPage() {
           <ActivityIndicator size="large" color="#4B9363" />
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
-        <BottomNavigation />
       </SafeAreaView>
     );
   }
@@ -432,8 +430,6 @@ export default function SettingsPage() {
           <View style={styles.spacer} />
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <BottomNavigation />
     </SafeAreaView>
   );
 }
