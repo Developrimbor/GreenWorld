@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   navItem: {
     padding: 8,
     borderRadius: 8,
-    marginHorizontal: 14,
+    marginHorizontal: 12,
   },
   activeNavItem: {
     backgroundColor: '#4B9363',
