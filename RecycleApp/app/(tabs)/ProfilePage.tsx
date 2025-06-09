@@ -16,7 +16,6 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import BottomNavigation from '../../components/BottomNavigation';
 import { getCurrentUser } from '../(auth)/services/authService';
 import { auth, db, storage } from '../config/firebase';
 import { collection, query, where, orderBy, doc, getDoc, getDocs, updateDoc } from 'firebase/firestore';
@@ -889,8 +888,6 @@ export default function ProfilePage() {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-
-      <BottomNavigation />
     </SafeAreaView>
   );
 }
@@ -963,20 +960,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
-  // infoButton: {
-  //   position: 'absolute',
-  //   right: -35,
-  //   bottom: 20,
-  //   backgroundColor: '#4B9363',
-  //   borderRadius: 12,
-  //   width: 24,
-  //   height: 24,
-  //   borderWidth: 2,
-  //   borderColor: '#D9D9D9',
-  //   justifyContent: 'center',
-  //   alignItems: 'center',
-  //   zIndex: 1,
-  // },
   userName: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -987,12 +970,6 @@ const styles = StyleSheet.create({
     color: '#696969',
     marginBottom: 8, // Nickname ile member since arası
   },
-  // memberSince: {
-  //   fontFamily: 'Poppins-Medium',
-  //   fontSize: 14,
-  //   color: '#696969',
-  //   marginBottom: 16, // Member since ile stats arası
-  // },
   statsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1090,18 +1067,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontFamily: 'Poppins-Regular',
   },
-  // reportCard: {
-  //   flexDirection: 'row',
-  //   backgroundColor: '#fff',
-  //   borderRadius: 12,
-  //   marginBottom: 12,
-  //   padding: 8,
-  //   shadowColor: '#000',
-  //   shadowOffset: { width: 0, height: 2 },
-  //   shadowOpacity: 0.1,
-  //   shadowRadius: 4,
-  //   elevation: 3,
-  // },
   reportImage: {
     width: 80,
     height: 80,
@@ -1140,7 +1105,6 @@ const styles = StyleSheet.create({
     color: '#696969',
     marginLeft: 4,
   },
-  // Menu styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1184,7 +1148,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginLeft: 12,
   },
-  // Puan bilgisi modal stilleri
   pointsInfoModal: {
     backgroundColor: 'white',
     borderRadius: 16,
