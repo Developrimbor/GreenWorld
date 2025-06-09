@@ -13,7 +13,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
 import { auth, db } from '../config/firebase';
-import { collection, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, getDoc, doc, updateDoc, arrayRemove } from 'firebase/firestore';
 import { LinearGradient } from 'expo-linear-gradient';
 
 type PostType = {
@@ -113,12 +113,30 @@ export default function LikedPostsPage() {
     fetchLikedPosts();
   }, []);
 
+  // Postu beğenilerden kaldırma fonksiyonu
+  const handleUnlike = async (postId: string) => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+      // Firestore'dan likedPosts listesinden çıkar
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, {
+        likedPosts: arrayRemove(postId)
+      });
+      // Ekrandan da kaldır
+      setLikedPosts((prev) => prev.filter((p) => p.id !== postId));
+    } catch (e) {
+      // Hata yönetimi
+      console.error('Unlike error:', e);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => router.push('/(tabs)/ProfilePage')}
         >
           <MaterialIcons name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
@@ -179,6 +197,16 @@ export default function LikedPostsPage() {
                       <Text style={styles.authorName}>{post.author}</Text>
                     </View>
                   </View>
+                  {/* Heart icon sağ üstte */}
+                  <TouchableOpacity
+                    style={styles.heartIcon}
+                    onPress={(e) => {
+                      e.stopPropagation && e.stopPropagation();
+                      handleUnlike(post.id);
+                    }}
+                  >
+                    <Ionicons name="heart" size={24} color="#E53935" />
+                  </TouchableOpacity>
                 </View>
               </TouchableOpacity>
             ))
@@ -222,7 +250,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingVertical: 4,
+    paddingVertical: 12,
     paddingHorizontal: 24,
   },
   loadingContainer: {
@@ -348,5 +376,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     marginTop: 8,
+  },
+  heartIcon: {
+    position: 'absolute',
+    bottom: 12,
+    right: 0,
+    zIndex: 10,
+    // backgroundColor: '#fff',
+    // borderRadius: 20,
+    // padding: 2,
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 1 },
+    // shadowOpacity: 0.08,
+    // shadowRadius: 2,
+    // elevation: 2,
   },
 });
