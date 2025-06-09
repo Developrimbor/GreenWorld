@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import BottomNavigation from '../../components/BottomNavigation';
 import { collection, query, where, orderBy, getDocs, doc, updateDoc, addDoc } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 
@@ -426,9 +425,6 @@ export default function NotificationsPage() {
           onRefresh={onRefresh}
         />
       )}
-
-      {/* Bottom Navigation */}
-      <BottomNavigation />
     </SafeAreaView>
   );
 }

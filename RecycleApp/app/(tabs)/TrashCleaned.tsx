@@ -17,7 +17,6 @@ import {
 } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import BottomNavigation from '../../components/BottomNavigation';
 import { doc, getDoc, updateDoc, increment, setDoc, collection } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import * as ImagePicker from 'expo-image-picker';
@@ -419,9 +418,6 @@ export default function TrashCleaned() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* Bottom Navigation */}
-      <BottomNavigation />
     </SafeAreaView>
   );
 }

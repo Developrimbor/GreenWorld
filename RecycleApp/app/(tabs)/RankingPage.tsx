@@ -4,7 +4,6 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
-import BottomNavigation from '../../components/BottomNavigation';
 
 interface User {
   id: string;
@@ -132,7 +131,6 @@ export default function RankingPage() {
           </View>
         </View>
       )}
-      <BottomNavigation />
     </SafeAreaView>
   );
 }

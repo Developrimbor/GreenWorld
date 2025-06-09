@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import BottomNavigation from '../../components/BottomNavigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import * as Location from 'expo-location';
@@ -600,9 +599,6 @@ export default function TrashDetailPage() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* Bottom Navigation */}
-      <BottomNavigation />
 
       {/* Image Modal */}
       <Modal visible={showImageModal} transparent={true}>

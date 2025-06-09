@@ -306,7 +306,7 @@ export default function SettingsPage() {
               {isSaving ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text style={styles.saveButtonText}>Save</Text>
+                <Text style={styles.saveButtonText}>SAVE</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -395,7 +395,7 @@ export default function SettingsPage() {
                   {isSaving ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
-                    <Text style={styles.saveButtonText}>Save</Text>
+                    <Text style={styles.saveButtonText}>SAVE</Text>
                   )}
                 </TouchableOpacity>
               </View>

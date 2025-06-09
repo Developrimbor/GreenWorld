@@ -17,7 +17,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import BottomNavigation from '../../components/BottomNavigation';
 import { LinearGradient } from 'expo-linear-gradient';
 import { collection, getDocs, query, orderBy, getDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -457,9 +456,6 @@ export default function HomePage() {
           <Ionicons name="add" size={30} color="#fff" />
         </TouchableOpacity>
       )}
-
-      {/* Bottom Navigation - Klavye açıkken gizle */}
-      {!isKeyboardVisible && <BottomNavigation />}
     </SafeAreaView>
   );
 }

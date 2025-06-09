@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import BottomNavigation from '../../components/BottomNavigation';
 import { auth, db } from '../config/firebase';
 import { collection, query, where, orderBy, doc, getDoc, getDocs } from 'firebase/firestore';
 import * as Location from 'expo-location';
@@ -241,7 +240,6 @@ export default function UserProfile() {
           <ActivityIndicator size="large" color="#4B9363" />
           <Text style={styles.loadingText}>Yükleniyor...</Text>
         </View>
-        <BottomNavigation />
       </SafeAreaView>
     );
   }
@@ -558,8 +556,6 @@ export default function UserProfile() {
           )}
         </View>
       </ScrollView>
-
-      <BottomNavigation />
     </SafeAreaView>
   );
 }

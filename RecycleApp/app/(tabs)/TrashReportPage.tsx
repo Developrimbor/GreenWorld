@@ -19,7 +19,6 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import BottomNavigation from '../../components/BottomNavigation';
 import MapView, { Marker } from 'react-native-maps';
 import * as ImagePicker from 'expo-image-picker';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -1013,9 +1012,6 @@ export default function TrashReportPage() {
 
 
       </ScrollView>
-
-      {/* Bottom Navigation */}
-      <BottomNavigation />
 
       {/* Trash Images Modal */}
       <Modal visible={modalVisible} transparent animationType="fade">

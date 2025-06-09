@@ -22,7 +22,6 @@ import {
   Easing,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
-import BottomNavigation from '../../components/BottomNavigation';
 import MapView, { Marker, PROVIDER_GOOGLE, Circle, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
@@ -1257,9 +1256,6 @@ const onRegionChangeComplete = (newRegion: Region) => {
           </TouchableOpacity>
         </View>
       )}
-
-      {/* Bottom Navigation - Klavye açıkken gizle */}
-      {!isKeyboardVisible && <BottomNavigation />}
 
       {/* Konum Doğrulama Bilgi Modal */}
       <Modal

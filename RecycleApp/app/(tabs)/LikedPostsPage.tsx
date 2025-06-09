@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import BottomNavigation from '../../components/BottomNavigation';
 import { auth, db } from '../config/firebase';
 import { collection, query, where, getDocs, getDoc, doc, updateDoc, arrayRemove } from 'firebase/firestore';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -219,8 +218,6 @@ export default function LikedPostsPage() {
           )}
         </ScrollView>
       )}
-
-      <BottomNavigation />
     </SafeAreaView>
   );
 }
