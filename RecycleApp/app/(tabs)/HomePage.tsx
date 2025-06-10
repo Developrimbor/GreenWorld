@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   Keyboard,
   Platform,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -53,6 +54,7 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const collapseAnim = useRef(new Animated.Value(0)).current;
 
   // Fetch posts from Firebase
   useEffect(() => {
@@ -192,6 +194,14 @@ export default function HomePage() {
     };
   }, []);
 
+  useEffect(() => {
+    Animated.timing(collapseAnim, {
+      toValue: rulesOpen ? 1 : 0,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [rulesOpen]);
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -229,13 +239,23 @@ export default function HomePage() {
           <Text style={styles.collapseTitle}>Please read before sharing!</Text>
           <Ionicons name={rulesOpen ? 'chevron-up' : 'chevron-down'} size={22} color="#4B9363" />
         </TouchableOpacity>
-        {rulesOpen && (
-          <View style={styles.collapseContent}>
-            <Text style={styles.collapseText}>
-              Please share content that is real, current and contributes to the environment. Photos should be clear and descriptions should be informative.
-            </Text>
-          </View>
-        )}
+        <Animated.View
+          style={[
+            styles.collapseContent,
+            {
+              height: collapseAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 56], // 56px veya içeriğe göre ayarlanabilir
+              }),
+              opacity: collapseAnim,
+              overflow: 'hidden',
+            },
+          ]}
+        >
+          <Text style={styles.collapseText}>
+            Please share content that is real, current and contributes to the environment. Photos should be clear and descriptions should be informative.
+          </Text>
+        </Animated.View>
       </View>
 
       {/* Filtreleme Modal */}
@@ -670,7 +690,7 @@ const styles = StyleSheet.create({
   fabButton: {
     position: 'absolute',
     right: 24,
-    bottom: 96, // Positioned above BottomNavigation
+    bottom: 24, // Positioned above BottomNavigation
     width: 52,
     height: 52,
     borderRadius: 8,
@@ -825,7 +845,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8F5E9',
     borderRadius: 12,
     marginHorizontal: 24,
-    marginBottom: 10,
+    marginBottom: 12,
     marginTop: 0,
     paddingHorizontal: 16,
     paddingVertical: 4,
@@ -846,8 +866,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   collapseContent: {
-    marginTop: 8,
-    paddingBottom: 4,
+    // marginTop: 8,
+    // paddingBottom: 4,
   },
   collapseText: {
     fontSize: 12,
