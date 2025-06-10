@@ -1776,10 +1776,11 @@ const styles = StyleSheet.create({
   },
   bottomButtons: {
     position: 'absolute',
-    bottom: 100, // BottomNavigation'ın üzerinde
+    bottom: 24, // BottomNavigation'ın üzerinde
     left: 0,
     right: 0,
     flexDirection: 'row',
+    // marginHorizontal: 24,
     paddingHorizontal: 24,
     paddingVertical: 8,
     justifyContent: 'center',
