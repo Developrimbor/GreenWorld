@@ -140,6 +140,8 @@ export default function TrashDetailPage() {
   const [authorUsername, setAuthorUsername] = useState<string>('');
   const [authorId, setAuthorId] = useState<string | null>(null);
   const [wasteGuideVisible, setWasteGuideVisible] = useState(false);
+  const [showDistanceModal, setShowDistanceModal] = useState(false);
+  const [distanceToWaste, setDistanceToWaste] = useState(0);
   const wasteTypeIconsArr = [
     { key: 1, Icon: IconifyPlasticIcon, label: 'Plastic' },
     { key: 2, Icon: IconifyPaperIcon, label: 'Paper' },
@@ -350,12 +352,9 @@ export default function TrashDetailPage() {
           params: { id: id }
         });
       } else {
-        // Kullanıcı atığa yeterince yakın değil, uyarı göster
-        Alert.alert(
-          'You are far from the waste spot!',
-          `You need to be at the waste spot within ${MAX_DISTANCE} meters. The distance to the waste spot is approximately ${Math.round(distance)} meters.`,
-          [{ text: 'OK' }]
-        );
+        // Kullanıcı atığa yeterince yakın değil, özel modal göster
+        setDistanceToWaste(Math.round(distance));
+        setShowDistanceModal(true);
       }
     } catch (error) {
       console.error('Konum kontrolü hatası:', error);
@@ -861,6 +860,32 @@ export default function TrashDetailPage() {
           </View>
         </View>
       </Modal>
+
+      {/* MODERN MESAFE MODALI */}
+      <Modal
+        visible={showDistanceModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDistanceModal(false)}
+      >
+        <View style={styles.distanceModalOverlay}>
+          <View style={styles.distanceModalContainer}>
+            <View style={styles.distanceModalIconBox}>
+              <Ionicons name="location-outline" size={38} color="#E74C3C" />
+            </View>
+            <Text style={styles.distanceModalTitle}>You are far from the Waste Point!</Text>
+            <Text style={styles.distanceModalText}>
+            You are too far away from the waste point. You must be within 100 meters to perform the cleaning operation.
+            </Text>
+            <TouchableOpacity
+              style={styles.distanceModalButton}
+              onPress={() => setShowDistanceModal(false)}
+            >
+              <Text style={styles.distanceModalButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1290,5 +1315,60 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 15,
+  },
+  distanceModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  distanceModalContainer: {
+    width: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 28,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  distanceModalIconBox: {
+    backgroundColor: '#FDEDEC',
+    borderRadius: 32,
+    padding: 12,
+    marginBottom: 8,
+  },
+  distanceModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#E74C3C',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  distanceModalText: {
+    fontSize: 15,
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 18,
+    lineHeight: 22,
+  },
+  distanceModalHighlight: {
+    color: '#E74C3C',
+    fontWeight: 'bold',
+  },
+  distanceModalButton: {
+    backgroundColor: '#4B9363',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 36,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  distanceModalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
