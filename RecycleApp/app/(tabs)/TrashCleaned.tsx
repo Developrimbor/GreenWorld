@@ -231,13 +231,13 @@ export default function TrashCleaned() {
       });
 
       Alert.alert(
-        'Başarılı',
-        'Temizlik raporu başarıyla gönderildi. Çevre için teşekkürler!',
+        'Waste Cleaning Report Sent!',
+        'The cleaning report has been successfully submitted. Thank you for contributing to a greener world!',
         [{ text: 'Tamam', onPress: () => router.push('/(tabs)/HomePage') }]
       );
     } catch (error) {
       console.error('Veri yükleme hatası:', error);
-      Alert.alert('Hata', 'Temizlik raporu gönderilirken bir hata oluştu. Lütfen tekrar deneyin.');
+      Alert.alert('Error', 'An error occurred while sending the cleaning report. Please try again.');
     } finally {
       setSubmitting(false);
     }
