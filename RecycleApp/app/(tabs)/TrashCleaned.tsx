@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   Modal,
   TouchableWithoutFeedback,
+  Animated,
 } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -32,6 +33,8 @@ export default function TrashCleaned() {
   const [afterImage, setAfterImage] = useState<string | null>(null);
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const collapseAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const fetchTrash = async () => {
@@ -44,6 +47,14 @@ export default function TrashCleaned() {
     };
     fetchTrash();
   }, [id]);
+
+  useEffect(() => {
+    Animated.timing(collapseAnim, {
+      toValue: rulesOpen ? 1 : 0,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [rulesOpen]);
 
   const pickImage = async (type: 'before' | 'after') => {
     // İzinleri kontrol et
@@ -270,6 +281,31 @@ export default function TrashCleaned() {
         <TouchableOpacity style={styles.infoButton} onPress={showInfo}>
           <MaterialIcons name="info" size={24} color="#A91101" />
         </TouchableOpacity>
+      </View>
+
+      {/* Collapse Info Box */}
+      <View style={styles.collapseContainer}>
+        <TouchableOpacity style={styles.collapseHeader} onPress={() => setRulesOpen(!rulesOpen)} activeOpacity={0.8}>
+          <Text style={styles.collapseTitle}>Please read before sharing!</Text>
+          <Ionicons name={rulesOpen ? 'chevron-up' : 'chevron-down'} size={22} color="#4B9363" />
+        </TouchableOpacity>
+        <Animated.View
+          style={[
+            styles.collapseContent,
+            {
+              height: collapseAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 56],
+              }),
+              opacity: collapseAnim,
+              overflow: 'hidden',
+            },
+          ]}
+        >
+          <Text style={styles.collapseText}>
+            Please share content that is real, current and contributes to the environment. Photos should be clear and descriptions should be informative.
+          </Text>
+        </Animated.View>
       </View>
 
       {/* Bilgilendirme Modalı */}
@@ -657,5 +693,38 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  collapseContainer: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 12,
+    marginHorizontal: 24,
+    // marginBottom: 12,
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#4B9363',
+    elevation: 2,
+  },
+  collapseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  collapseTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4B9363',
+    letterSpacing: 0.2,
+  },
+  collapseContent: {
+    // marginTop: 8,
+    // paddingBottom: 4,
+  },
+  collapseText: {
+    fontSize: 12,
+    color: '#333',
+    lineHeight: 18,
   },
 });
