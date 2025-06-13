@@ -264,9 +264,9 @@ export default function TrashCleaned() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <MaterialIcons name="chevron-left" size={24} color="#4B9363" />
+          <MaterialIcons name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>TRASH CLEANED</Text>
+        <Text style={styles.headerTitle}>TRASH CLEANING</Text>
         <TouchableOpacity style={styles.infoButton} onPress={showInfo}>
           <MaterialIcons name="info" size={24} color="#A91101" />
         </TouchableOpacity>
@@ -283,35 +283,35 @@ export default function TrashCleaned() {
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback> 
               <View style={styles.modalContainer}>
-                <Text style={styles.modalTitle}>Konum Doğrulama</Text>
-                <Text style={styles.modalSubtitle}>Temizlik işlemini neden atık noktasında yapmalısınız?</Text>
+                <Text style={styles.modalTitle}>Location Verification</Text>
+                <Text style={styles.modalSubtitle}>Why should you be close to the waste disposal point when cleaning?</Text>
                 
                 <View style={styles.modalContent}>
                   <View style={styles.infoItem}>
                     <Ionicons name="location" size={24} color="#4B9363" style={styles.modalInfoIcon} />
                     <Text style={styles.modalInfoText}>
-                      Temizlik işlemini tamamlamak için atık noktasına en fazla 100 metre mesafede olmalısınız.
+                      You must be within 100 meters of the waste collection point to complete the cleaning process.
                     </Text>
                   </View>
                   
                   <View style={styles.infoItem}>
                     <Ionicons name="shield-checkmark" size={24} color="#4B9363" style={styles.modalInfoIcon} />
                     <Text style={styles.modalInfoText}>
-                      Bu doğrulama, sahte temizlik raporlarını önlemek ve uygulama güvenilirliğini sağlamak için gereklidir.
+                      This verification is necessary to prevent fake cleaning reports and ensure the reliability of the application.
                     </Text>
                   </View>
                   
                   <View style={styles.infoItem}>
                     <Ionicons name="camera" size={24} color="#4B9363" style={styles.modalInfoIcon} />
                     <Text style={styles.modalInfoText}>
-                      Temizlik öncesi ve sonrası fotoğraflar, gerçekten temizlik yaptığınızı kanıtlar.
+                    Before and after photos prove that you have actually cleaned.
                     </Text>
                   </View>
                   
                   <View style={styles.infoItem}>
                     <Ionicons name="trophy" size={24} color="#4B9363" style={styles.modalInfoIcon} />
                     <Text style={styles.modalInfoText}>
-                      Doğrulanmış temizlikler, profilinizde ve sıralamalarda gerçek başarı olarak sayılır.
+                      Verified cleans count as real achievements on your profile and in the rankings.
                     </Text>
                   </View>
                 </View>
@@ -320,7 +320,7 @@ export default function TrashCleaned() {
                   style={styles.modalButton}
                   onPress={() => setShowInfoModal(false)}
                 >
-                  <Text style={styles.modalButtonText}>Anladım</Text>
+                  <Text style={styles.modalButtonText}>OK</Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
@@ -362,11 +362,11 @@ export default function TrashCleaned() {
 
           {/* Bilgi alanı */}
           <View style={styles.infoContainer}>
-            <View style={styles.infoIcon}>
-              <Ionicons name="information-circle" size={24} color="#4B9363" />
-            </View>
             <View style={styles.infoContent}>
-              <Text style={styles.infoTitle}>You're so close to cleaning up this trash.</Text>
+              <View style={styles.infoTitleRow}>
+                <MaterialIcons name="info-outline" size={24} color="#4B9363" style={styles.infoIconMoved} />
+                <Text style={styles.infoTitle}>You're so close to cleaning up this trash.</Text>
+              </View>
               <Text style={styles.infoText}>
                 Please take a photo of the trash <Text style={styles.highlightText}>while cleaning</Text> and upload it to the "Before Cleaning" section.
               </Text>
@@ -489,9 +489,11 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E8E8E8',
+    paddingHorizontal: 24,
   },
   infoIcon: {
     marginRight: 12,
@@ -501,22 +503,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
+    fontFamily: 'Poppins-Medium',
+    fontSize: 15,
+    lineHeight: 20,
+    // marginBottom: 8,
+    color: '#000',
   },
   infoText: {
-    fontSize: 14,
+    fontFamily: 'Poppins-Regular',
+    fontSize: 13,
     color: '#666',
     marginBottom: 8,
-    lineHeight: 20,
+    // lineHeight: 16,
   },
   highlightText: {
     color: '#A91101',
-    fontWeight: 'bold',
+    fontFamily: 'Poppins-Medium',
+    // fontWeight: 'bold',
   },
   infoThanks: {
+    fontFamily: 'Poppins-Regular',
     fontSize: 14,
     color: '#666',
     marginTop: 8,
@@ -526,30 +532,40 @@ const styles = StyleSheet.create({
     color: '#4B9363',
     textAlign: 'right',
     fontStyle: 'italic',
-    marginTop: 4,
+    marginTop: 6,
+  },
+  infoTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  infoIconMoved: {
+    marginRight: 8,
   },
   additionalInfoContainer: {
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
     borderBottomWidth: 1,
     borderBottomColor: '#E8E8E8',
   },
   additionalInfoTitle: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'Poppins-Medium',
+    fontSize: 15,
     marginBottom: 12,
-    color: '#333',
+    color: '#000',
   },
   additionalInfoInput: {
     backgroundColor: '#F5F5F5',
     borderRadius: 8,
     padding: 16,
-    minHeight: 100,
+    minHeight: 64,
     textAlignVertical: 'top',
     color: '#333',
   },
   buttonContainer: {
     flexDirection: 'row',
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
     justifyContent: 'space-between',
   },
   cancelButton: {
