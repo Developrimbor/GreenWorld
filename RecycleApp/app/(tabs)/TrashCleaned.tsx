@@ -295,16 +295,23 @@ export default function TrashCleaned() {
             {
               height: collapseAnim.interpolate({
                 inputRange: [0, 1],
-                outputRange: [0, 56],
+                outputRange: [0, 120],
               }),
               opacity: collapseAnim,
               overflow: 'hidden',
             },
           ]}
         >
-          <Text style={styles.collapseText}>
-            Please share content that is real, current and contributes to the environment. Photos should be clear and descriptions should be informative.
-          </Text>
+          <View style={styles.collapsePhotoRow}>
+            <View style={styles.collapsePhotoBox}>
+              <MaterialIcons name="photo-camera" size={36} color="#999" />
+              <Text style={styles.collapsePhotoLabel}>Before Cleaning</Text>
+            </View>
+            <View style={styles.collapsePhotoBox}>
+              <MaterialIcons name="photo-camera" size={36} color="#999" />
+              <Text style={styles.collapsePhotoLabel}>After Cleaning</Text>
+            </View>
+          </View>
         </Animated.View>
       </View>
 
@@ -726,5 +733,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#333',
     lineHeight: 18,
+  },
+  collapsePhotoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 8,
+  },
+  collapsePhotoBox: {
+    flex: 1,
+    aspectRatio: 1,
+    backgroundColor: '#ECECEC',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 4,
+    overflow: 'hidden',
+  },
+  collapsePhotoLabel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    color: '#111',
+    fontWeight: 'bold',
+    fontSize: 14,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    paddingVertical: 8,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
   },
 });
