@@ -62,7 +62,7 @@ export default function TrashCleaned() {
     // İzinleri kontrol et
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('İzin Gerekli', 'Galeri erişimi için izin vermeniz gerekiyor.');
+      Alert.alert('Error', 'You must grant permission to access the gallery.');
       return;
     }
 
@@ -87,7 +87,7 @@ export default function TrashCleaned() {
     // Kamera izinlerini kontrol et
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('İzin Gerekli', 'Kamera erişimi için izin vermeniz gerekiyor.');
+      Alert.alert('Error', 'You must grant permission to access the camera.');
       return;
     }
 
@@ -123,12 +123,12 @@ export default function TrashCleaned() {
 
   const handleConfirm = async () => {
     if (!id || (!beforeImage && !afterImage)) {
-      Alert.alert('Hata', 'Lütfen en az bir fotoğraf yükleyin.');
+      Alert.alert('Error', 'Please upload at least one photo.');
       return;
     }
 
     if (!trash || !trash.location) {
-      Alert.alert('Hata', 'Atık konum bilgisi bulunamadı.');
+      Alert.alert('Error', 'Trash location information could not be found.');
       return;
     }
 
@@ -139,9 +139,9 @@ export default function TrashCleaned() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
-          'Konum İzni Gerekli', 
-          'Temizlik onayı için konum izni vermeniz gerekmektedir.',
-          [{ text: 'Tamam' }]
+          'Location Permission Required',
+          'You must grant location permission to confirm the cleaning.',
+          [{ text: 'OK' }]
         );
         setSubmitting(false);
         return;
@@ -167,9 +167,9 @@ export default function TrashCleaned() {
       if (distance > MAX_DISTANCE) {
         // Kullanıcı atığa yeterince yakın değil, uyarı göster
         Alert.alert(
-          'Çok Uzaktasınız',
-          `Temizlik işlemini tamamlamak için atık noktasına en fazla ${MAX_DISTANCE} metre mesafede olmalısınız. Şu anda atık noktasına olan mesafeniz yaklaşık ${Math.round(distance)} metredir.`,
-          [{ text: 'Tamam' }]
+          'Too Far Away',
+          `To complete the cleaning process, you must be within ${MAX_DISTANCE} meters of the trash point. Your current distance is approximately ${Math.round(distance)} meters.`,
+          [{ text: 'OK' }]
         );
         setSubmitting(false);
         return;
@@ -180,7 +180,7 @@ export default function TrashCleaned() {
       const currentUser = auth.currentUser;
       
       if (!currentUser) {
-        Alert.alert('Hata', 'Kullanıcı bilgileriniz alınamadı. Lütfen tekrar giriş yapın.');
+        Alert.alert('Error', 'User information could not be retrieved. Please log in again.');
         setSubmitting(false);
         return;
       }
@@ -246,10 +246,10 @@ export default function TrashCleaned() {
       Alert.alert(
         'Waste Cleaning Report Sent!',
         'The cleaning report has been successfully submitted. Thank you for contributing to a greener world!',
-        [{ text: 'Tamam', onPress: () => router.push('/(tabs)/HomePage') }]
+        [{ text: 'OK', onPress: () => router.push('/(tabs)/HomePage') }]
       );
     } catch (error) {
-      console.error('Veri yükleme hatası:', error);
+      console.error('Data upload error:', error);
       Alert.alert('Error', 'An error occurred while sending the cleaning report. Please try again.');
     } finally {
       setSubmitting(false);
@@ -329,34 +329,34 @@ export default function TrashCleaned() {
             <TouchableWithoutFeedback> 
               <View style={styles.modalContainer}>
                 <Text style={styles.modalTitle}>Location Verification</Text>
-                <Text style={styles.modalSubtitle}>Why should you be close to the waste disposal point when cleaning?</Text>
+                <Text style={styles.modalSubtitle}>Why do you need to be close to the waste point when cleaning?</Text>
                 
                 <View style={styles.modalContent}>
                   <View style={styles.infoItem}>
                     <Ionicons name="location" size={24} color="#4B9363" style={styles.modalInfoIcon} />
                     <Text style={styles.modalInfoText}>
-                      You must be within 100 meters of the waste collection point to complete the cleaning process.
+                      You must be within 100 meters of the waste point to complete the cleaning process.
                     </Text>
                   </View>
                   
                   <View style={styles.infoItem}>
                     <Ionicons name="shield-checkmark" size={24} color="#4B9363" style={styles.modalInfoIcon} />
                     <Text style={styles.modalInfoText}>
-                      This verification is necessary to prevent fake cleaning reports and ensure the reliability of the application.
+                      This verification is necessary to prevent fake cleaning reports and ensure the reliability of the app.
                     </Text>
                   </View>
                   
                   <View style={styles.infoItem}>
                     <Ionicons name="camera" size={24} color="#4B9363" style={styles.modalInfoIcon} />
                     <Text style={styles.modalInfoText}>
-                    Before and after photos prove that you have actually cleaned.
+                      Before and after photos prove that you have actually cleaned the area.
                     </Text>
                   </View>
                   
                   <View style={styles.infoItem}>
                     <Ionicons name="trophy" size={24} color="#4B9363" style={styles.modalInfoIcon} />
                     <Text style={styles.modalInfoText}>
-                      Verified cleans count as real achievements on your profile and in the rankings.
+                      Verified cleanings count as real achievements on your profile and in the rankings.
                     </Text>
                   </View>
                 </View>
@@ -448,8 +448,8 @@ export default function TrashCleaned() {
           <View style={styles.infoContainer}>
             <View style={styles.infoContent}>
               <View style={styles.infoTitleRow}>
-                <MaterialIcons name="info-outline" size={24} color="#4B9363" style={styles.infoIconMoved} />
-                <Text style={styles.infoTitle}>You're so close to cleaning up this trash.</Text>
+                {/* <MaterialIcons name="info-outline" size={24} color="#4B9363" style={styles.infoIconMoved} /> */}
+                <Text style={styles.infoTitle}>You are very close to cleaning up this trash.</Text>
               </View>
               <Text style={styles.infoText}>
                 Please take a photo of the trash <Text style={styles.highlightText}>while cleaning</Text> and upload it to the "Before Cleaning" section.
@@ -487,7 +487,7 @@ export default function TrashCleaned() {
                 </Text>
               </View>
               <Text style={styles.infoThanks}>
-                Thank you for what you have done for a green world.
+                Thank you for your contribution to a greener world.
               </Text>
               <Text style={styles.signatureText}>Green World</Text>
             </View>
@@ -496,7 +496,7 @@ export default function TrashCleaned() {
           {/* Ek Bilgi Alanı */}
           <View style={styles.additionalInfoContainer}>
             <Text style={styles.additionalInfoTitle}>
-              If you want to give information about trash:
+              If you want to provide additional information about the trash:
             </Text>
             <TextInput
               style={styles.additionalInfoInput}
@@ -652,7 +652,9 @@ const styles = StyleSheet.create({
   signatureText: {
     fontSize: 14,
     color: '#4B9363',
+    fontFamily: 'Poppins',
     textAlign: 'right',
+    fontWeight: 'bold',
     fontStyle: 'italic',
     marginTop: 6,
   },
@@ -846,20 +848,19 @@ const styles = StyleSheet.create({
   },
   infoCheckboxRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    // alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 10,
     marginBottom: 4,
-    gap: 8,
+    gap: 4,
   },
   checkbox: {
     width: 28,
     height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: '#4B9363',
-    backgroundColor: '#fff',
+    // justifyContent: 'center',
+    // alignItems: 'center',
+    // backgroundColor: 'transparent',
+    marginTop: 0,
   },
   checkboxLabel: {
     fontSize: 13,
