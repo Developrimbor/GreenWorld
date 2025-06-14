@@ -35,6 +35,8 @@ export default function TrashCleaned() {
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const collapseAnim = useRef(new Animated.Value(0)).current;
+  const [infoChecked, setInfoChecked] = useState(false);
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchTrash = async () => {
@@ -371,6 +373,33 @@ export default function TrashCleaned() {
         </TouchableWithoutFeedback>
       </Modal>
 
+      {/* Hata Modalı: Checkbox işaretlenmeden görsel yüklenemez */}
+      <Modal
+        visible={errorModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setErrorModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setErrorModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>Action Not Allowed</Text>
+                <Text style={styles.modalSubtitle}>
+                  You must read and confirm the information above before uploading before/after images.
+                </Text>
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={() => setErrorModalVisible(false)}
+                >
+                  <Text style={styles.modalButtonText}>OK</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
@@ -380,7 +409,13 @@ export default function TrashCleaned() {
           <View style={styles.photoContainer}>
             <TouchableOpacity 
               style={styles.photoBox}
-              onPress={() => takePhoto('before')}
+              onPress={() => {
+                if (!infoChecked) {
+                  setErrorModalVisible(true);
+                  return;
+                }
+                takePhoto('before');
+              }}
             >
               {beforeImage ? (
                 <Image source={{ uri: beforeImage }} style={styles.photoImage} />
@@ -392,7 +427,13 @@ export default function TrashCleaned() {
 
             <TouchableOpacity 
               style={styles.photoBox}
-              onPress={() => takePhoto('after')}
+              onPress={() => {
+                if (!infoChecked) {
+                  setErrorModalVisible(true);
+                  return;
+                }
+                takePhoto('after');
+              }}
             >
               {afterImage ? (
                 <Image source={{ uri: afterImage }} style={styles.photoImage} />
@@ -428,7 +469,23 @@ export default function TrashCleaned() {
                   <Text style={styles.photoLabel}>After Cleaning</Text>
                 </View>
               </View>
-
+              {/* Bilgilendirici Onay Checkbox'u */}
+              <View style={styles.infoCheckboxRow}>
+                <TouchableOpacity
+                  style={styles.checkbox}
+                  onPress={() => setInfoChecked(!infoChecked)}
+                  activeOpacity={0.8}
+                >
+                  {infoChecked ? (
+                    <Ionicons name="checkbox" size={22} color="#4B9363" />
+                  ) : (
+                    <Ionicons name="square-outline" size={22} color="#999" />
+                  )}
+                </TouchableOpacity>
+                <Text style={styles.checkboxLabel}>
+                  I have read and understood the information above.
+                </Text>
+              </View>
               <Text style={styles.infoThanks}>
                 Thank you for what you have done for a green world.
               </Text>
@@ -786,5 +843,29 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
+  },
+  infoCheckboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 4,
+    gap: 8,
+  },
+  checkbox: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#4B9363',
+    backgroundColor: '#fff',
+  },
+  checkboxLabel: {
+    fontSize: 13,
+    color: '#4B9363',
+    fontFamily: 'Poppins-Medium',
+    flex: 1,
+    flexWrap: 'wrap',
   },
 });
