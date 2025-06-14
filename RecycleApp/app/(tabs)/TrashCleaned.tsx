@@ -284,7 +284,7 @@ export default function TrashCleaned() {
       </View>
 
       {/* Collapse Info Box */}
-      <View style={styles.collapseContainer}>
+      {/* <View style={styles.collapseContainer}>
         <TouchableOpacity style={styles.collapseHeader} onPress={() => setRulesOpen(!rulesOpen)} activeOpacity={0.8}>
           <Text style={styles.collapseTitle}>Please read before sharing!</Text>
           <Ionicons name={rulesOpen ? 'chevron-up' : 'chevron-down'} size={22} color="#4B9363" />
@@ -313,7 +313,7 @@ export default function TrashCleaned() {
             </View>
           </View>
         </Animated.View>
-      </View>
+      </View> */}
 
       {/* Bilgilendirme Modalı */}
       <Modal
@@ -416,6 +416,19 @@ export default function TrashCleaned() {
               <Text style={styles.infoText}>
                 Then, after cleaning the trash, take a photo of the area and upload it to the "After Cleaning" section.
               </Text>
+
+              {/* Örnek Before/After Görselleri */}
+              <View style={styles.photoContainerInfo} pointerEvents="none">
+                <View style={styles.photoBox}>
+                  <Image source={require('../../assets/images/before.jpg')} style={styles.photoImage} />
+                  <Text style={styles.photoLabel}>Before Cleaning</Text>
+                </View>
+                <View style={styles.photoBox}>
+                  <Image source={require('../../assets/images/after.jpg')} style={styles.photoImage} />
+                  <Text style={styles.photoLabel}>After Cleaning</Text>
+                </View>
+              </View>
+
               <Text style={styles.infoThanks}>
                 Thank you for what you have done for a green world.
               </Text>
@@ -499,15 +512,24 @@ const styles = StyleSheet.create({
   photoContainer: {
     flexDirection: 'row',
     paddingVertical: 16,
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     borderBottomWidth: 1,
+    gap: 12,
     borderBottomColor: '#E8E8E8',
+  },
+  photoContainerInfo: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    // paddingHorizontal: 24,
+    // borderBottomWidth: 1,
+    gap: 12,
+    // borderBottomColor: '#E8E8E8',
   },
   photoBox: {
     flex: 1,
     aspectRatio: 1,
     backgroundColor: '#E8E8E8',
-    marginHorizontal: 8,
+    // marginHorizontal: 8,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -566,7 +588,7 @@ const styles = StyleSheet.create({
   },
   infoThanks: {
     fontFamily: 'Poppins-Regular',
-    fontSize: 14,
+    fontSize: 13,
     color: '#666',
     marginTop: 8,
   },
