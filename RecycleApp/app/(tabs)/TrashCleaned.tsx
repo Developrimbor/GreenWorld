@@ -37,6 +37,8 @@ export default function TrashCleaned() {
   const collapseAnim = useRef(new Animated.Value(0)).current;
   const [infoChecked, setInfoChecked] = useState(false);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [showBackModal, setShowBackModal] = useState(false);
+  const [customError, setCustomError] = useState<{visible: boolean, title: string, message: string, onOk?: () => void}>({visible: false, title: '', message: ''});
 
   useEffect(() => {
     const fetchTrash = async () => {
@@ -62,7 +64,7 @@ export default function TrashCleaned() {
     // İzinleri kontrol et
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Error', 'You must grant permission to access the gallery.');
+      showCustomError('Error', 'You must grant permission to access the gallery.');
       return;
     }
 
@@ -87,7 +89,7 @@ export default function TrashCleaned() {
     // Kamera izinlerini kontrol et
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Error', 'You must grant permission to access the camera.');
+      showCustomError('Error', 'You must grant permission to access the camera.');
       return;
     }
 
@@ -123,12 +125,12 @@ export default function TrashCleaned() {
 
   const handleConfirm = async () => {
     if (!id || (!beforeImage && !afterImage)) {
-      Alert.alert('Error', 'Please upload at least one photo.');
+      showCustomError('Error', 'Please upload at least one photo.');
       return;
     }
 
     if (!trash || !trash.location) {
-      Alert.alert('Error', 'Trash location information could not be found.');
+      showCustomError('Error', 'Trash location information could not be found.');
       return;
     }
 
@@ -138,12 +140,7 @@ export default function TrashCleaned() {
       // Konum izni kontrolü
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(
-          'Location Permission Required',
-          'You must grant location permission to confirm the cleaning.',
-          [{ text: 'OK' }]
-        );
-        setSubmitting(false);
+        showCustomError('Location Permission Required', 'You must grant location permission to confirm the cleaning.', () => setSubmitting(false));
         return;
       }
 
@@ -165,13 +162,7 @@ export default function TrashCleaned() {
       const MAX_DISTANCE = 100;
 
       if (distance > MAX_DISTANCE) {
-        // Kullanıcı atığa yeterince yakın değil, uyarı göster
-        Alert.alert(
-          'Too Far Away',
-          `To complete the cleaning process, you must be within ${MAX_DISTANCE} meters of the trash point. Your current distance is approximately ${Math.round(distance)} meters.`,
-          [{ text: 'OK' }]
-        );
-        setSubmitting(false);
+        showCustomError('Too Far Away', `To complete the cleaning process, you must be within ${MAX_DISTANCE} meters of the trash point. Your current distance is approximately ${Math.round(distance)} meters.`, () => setSubmitting(false));
         return;
       }
 
@@ -180,8 +171,7 @@ export default function TrashCleaned() {
       const currentUser = auth.currentUser;
       
       if (!currentUser) {
-        Alert.alert('Error', 'User information could not be retrieved. Please log in again.');
-        setSubmitting(false);
+        showCustomError('Error', 'User information could not be retrieved. Please log in again.', () => setSubmitting(false));
         return;
       }
       
@@ -243,14 +233,10 @@ export default function TrashCleaned() {
         points: increment(20)
       });
 
-      Alert.alert(
-        'Waste Cleaning Report Sent!',
-        'The cleaning report has been successfully submitted. Thank you for contributing to a greener world!',
-        [{ text: 'OK', onPress: () => router.push('/(tabs)/HomePage') }]
-      );
+      showCustomError('Waste Cleaning Report Sent!', 'The cleaning report has been successfully submitted. Thank you for contributing to a greener world!', () => router.push('/(tabs)/HomePage'));
     } catch (error) {
       console.error('Data upload error:', error);
-      Alert.alert('Error', 'An error occurred while sending the cleaning report. Please try again.');
+      showCustomError('Error', 'An error occurred while sending the cleaning report. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -260,8 +246,16 @@ export default function TrashCleaned() {
     setShowInfoModal(true);
   };
 
+  const handleBackPress = () => {
+    setShowBackModal(true);
+  };
+
   const handleCancel = () => {
-    router.back();
+    setShowBackModal(true);
+  };
+
+  const showCustomError = (title: string, message: string, onOk?: () => void) => {
+    setCustomError({ visible: true, title, message, onOk });
   };
 
   if (loading) {
@@ -276,7 +270,7 @@ export default function TrashCleaned() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <MaterialIcons name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>TRASH CLEANING</Text>
@@ -398,6 +392,62 @@ export default function TrashCleaned() {
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Cancel/Back Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showBackModal}
+        onRequestClose={() => setShowBackModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.backModalContainer}>
+            <View style={styles.backIconContainer}>
+              <MaterialIcons name="warning" size={36} color="#fff" />
+            </View>
+            <Text style={styles.backModalTitle}>Are you sure?</Text>
+            <Text style={styles.backModalMessage}>If you go back, your changes will be lost.</Text>
+            <View style={styles.backModalButtonRow}>
+              <TouchableOpacity
+                style={[styles.backModalButton, { backgroundColor: '#4B9363' }]}
+                onPress={() => { setShowBackModal(false); router.back(); }}
+              >
+                <Text style={styles.backModalButtonText}>Yes</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.backModalButton, { backgroundColor: '#E8E8E8', marginLeft: 12 }]}
+                onPress={() => setShowBackModal(false)}
+              >
+                <Text style={[styles.backModalButtonText, { color: '#333' }]}>No</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Custom Error Modal */}
+      <Modal
+        visible={customError.visible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setCustomError({ ...customError, visible: false })}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.customErrorContainer}>
+            <Text style={styles.customErrorTitle}>{customError.title}</Text>
+            <Text style={styles.customErrorMessage}>{customError.message}</Text>
+            <TouchableOpacity
+              style={styles.customErrorButton}
+              onPress={() => {
+                setCustomError({ ...customError, visible: false });
+                if (customError.onOk) customError.onOk();
+              }}
+            >
+              <Text style={styles.customErrorButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
 
       <KeyboardAvoidingView 
@@ -868,5 +918,93 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     flex: 1,
     flexWrap: 'wrap',
+  },
+  backModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    width: '85%',
+    alignSelf: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  backIconContainer: {
+    backgroundColor: '#A91101',
+    borderRadius: 32,
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  backModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#4B9363',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  backModalMessage: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  backModalButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  backModalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  backModalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  customErrorContainer: {
+    width: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  customErrorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#A91101',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  customErrorMessage: {
+    fontSize: 15,
+    color: '#333',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  customErrorButton: {
+    backgroundColor: '#4B9363',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+  },
+  customErrorButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
