@@ -18,8 +18,52 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import * as Location from 'expo-location';
 import { auth } from '../config/firebase';
+import IconifyPlasticIcon from '../../components/ui/IconifyPlastic';
+import IconifyPaperIcon from '../../components/ui/IconifyPaper';
+import IconifyGlassIcon from '../../components/ui/IconifyGlass';
+import IconifyFoodIcon from '../../components/ui/IconifyFood';
+import IconifyCigaretteIcon from '../../components/ui/IconifyCigarette';
+import IconifyMaskIcon from '../../components/ui/IconifyMask';
+import IconifyPackageIcon from '../../components/ui/IconifyPackage';
+import IconifyEWasteIcon from '../../components/ui/IconifyEWaste';
+import IconifyClothesIcon from '../../components/ui/IconifyClothes';
+import IconifyFishingNetsIcon from '../../components/ui/IconifyFishingNets';
+import IconifyConstructionIcon from '../../components/ui/IconifyConstruction';
+import IconifyBatteryIcon from '../../components/ui/IconifyBattery';
+import IconifyBiomedicalIcon from '../../components/ui/IconifyBiomedical';
+import IconifyDeadAnimalsIcon from '../../components/ui/IconifyDeadAnimals';
+import IconifyFurnitureIcon from '../../components/ui/IconifyFurniture';
+import IconifyGardenIcon from '../../components/ui/IconifyGarden';
+import IconifyHomeAppliancesIcon from '../../components/ui/IconifyHomeAppliances';
+import IconifyMetalIcon from '../../components/ui/IconifyMetal';
+import IconifyTireIcon from '../../components/ui/IconifyTire';
+import IconifyToxicIcon from '../../components/ui/IconifyToxic';
 
 const { width } = Dimensions.get('window');
+
+// Kategori yardımcıları
+const wasteTypeIcons: { [key: number]: any } = {
+  1: IconifyPlasticIcon,
+  2: IconifyPaperIcon,
+  3: IconifyGlassIcon,
+  4: IconifyFoodIcon,
+  5: IconifyCigaretteIcon,
+  6: IconifyMaskIcon,
+  7: IconifyPackageIcon,
+  8: IconifyEWasteIcon,
+  9: IconifyClothesIcon,
+  10: IconifyFishingNetsIcon,
+  11: IconifyConstructionIcon,
+  12: IconifyBatteryIcon,
+  13: IconifyBiomedicalIcon,
+  14: IconifyDeadAnimalsIcon,
+  15: IconifyFurnitureIcon,
+  16: IconifyGardenIcon,
+  17: IconifyHomeAppliancesIcon,
+  18: IconifyMetalIcon,
+  19: IconifyTireIcon,
+  20: IconifyToxicIcon,
+};
 
 export default function CleanedTrashPage() {
   const { id } = useLocalSearchParams();
@@ -287,68 +331,54 @@ export default function CleanedTrashPage() {
         {/* Info Section */}
         <View style={styles.combinedSection}>
           <View style={styles.sectionColumn}>
-            <View style={styles.infoItem}>
-              <MaterialIcons name="tag" size={16} color="#4B9363" />
-              <Text style={styles.infoText}>{formatId(id)}</Text>
+            <View style={styles.sectionHeader}>
+              <MaterialIcons name="info-outline" size={22} color="#4B9363" />
+              <Text style={styles.sectionTitle}>Trash Info</Text>
             </View>
-            <View style={styles.infoItem}>
-              <MaterialIcons name="person" size={16} color="#4B9363" />
-              <TouchableOpacity onPress={() => {
-                if (authorId) {
-                  if (auth.currentUser && authorId === auth.currentUser.uid) {
-                    router.push('/(tabs)/ProfilePage');
-                  } else {
-                    router.push({ pathname: '/(tabs)/UserProfile', params: { userId: authorId } });
-                  }
-                }
-              }}>
-                <Text style={[styles.infoText, { color: '#4B9363' }]}>{authorUsername}</Text>
-              </TouchableOpacity>
+            <View style={styles.iconGrid}>
+              {trash.type && typeof trash.type === 'object' && !Array.isArray(trash.type)
+                ? Object.keys(trash.type).map((key) => {
+                    const Icon = wasteTypeIcons[Number(key)];
+                    return Icon ? <Icon key={key} width={24} height={24} color="#4B9363" style={{ margin: 4 }} /> : null;
+                  })
+                : (() => {
+                    const Icon = wasteTypeIcons[typeof trash.type === 'string' ? Number(trash.type) : trash.type];
+                    return Icon ? <Icon width={24} height={24} color="#4B9363" style={{ margin: 4 }} /> : null;
+                  })()
+              }
             </View>
           </View>
-
           <View style={styles.divider} />
-
           <View style={styles.sectionColumn}>
-            <View style={styles.infoItem}>
-              <MaterialIcons name="calendar-today" size={16} color="#4B9363" />
-              <Text style={styles.infoText}>{formatDate(trash.createdAt)}</Text>
+            <View style={styles.sectionHeader}>
+              <MaterialIcons name="info-outline" size={22} color="#4B9363" />
+              <Text style={styles.sectionTitle}>Trash Volume</Text>
             </View>
-            <View style={styles.infoItem}>
-              <MaterialIcons name="location-on" size={16} color="#4B9363" />
-              <Text style={styles.infoText}>{locationName}</Text>
+            <View style={styles.iconGrid}>
+              {trash.type && typeof trash.type === 'object' && !Array.isArray(trash.type)
+                ? Object.values(trash.type).map((qty, idx) => {
+                    if (Number(qty) >= 3) {
+                      return <MaterialIcons key={idx} name="local-shipping" size={24} color="#4B9363" style={{ margin: 4 }} />;
+                    } else {
+                      return <MaterialIcons key={idx} name="delete" size={24} color="#4B9363" style={{ margin: 4 }} />;
+                    }
+                  })
+                : (trash.quantity >= 3
+                    ? <MaterialIcons name="local-shipping" size={24} color="#4B9363" style={{ margin: 4 }} />
+                    : <MaterialIcons name="delete" size={24} color="#4B9363" style={{ margin: 4 }} />
+                  )
+              }
             </View>
           </View>
         </View>
 
-        {/* Cleaning Details Section */}
-        <View style={styles.detailsSection}>
-          <Text style={styles.sectionTitle}>Temizleme Detayları</Text>
-          
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Temizleyen:</Text>
-            <Text style={styles.detailValue}>{cleanedByUsername}</Text>
+        {/* Temizlik Notu */}
+        {trash.cleaningInfo && (
+          <View style={styles.detailsSection}>
+            <Text style={styles.additionalInfoTitle}>Other Details:</Text>
+            <Text style={styles.additionalInfoText}>{trash.cleaningInfo}</Text>
           </View>
-          
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Temizlenme Tarihi:</Text>
-            <Text style={styles.detailValue}>
-              {trash.cleanedAt ? formatDate(trash.cleanedAt) : 'Tarih bilgisi yok'}
-            </Text>
-          </View>
-          
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Kazanılan Puan:</Text>
-            <Text style={styles.detailValue}>{trash.pointsAwarded || 0}</Text>
-          </View>
-          
-          {trash.cleaningInfo && (
-            <>
-              <Text style={styles.additionalInfoTitle}>Temizlik Notu:</Text>
-              <Text style={styles.additionalInfoText}>{trash.cleaningInfo}</Text>
-            </>
-          )}
-        </View>
+        )}
       </ScrollView>
 
       {/* Image Modal */}
@@ -523,11 +553,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 12,
   },
-  infoItem: {
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 8,
+  },
+  iconGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   cleanedAuthorText: {
     fontFamily: 'Poppins-Medium',
@@ -541,23 +575,7 @@ const styles = StyleSheet.create({
     color: '#696969',
   },
   detailsSection: {
-    padding: 24,
-  },
-  detailItem: {
-    flexDirection: 'row',
-    marginBottom: 8,
-  },
-  detailLabel: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 14,
-    color: '#333',
-    width: 140,
-  },
-  detailValue: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 14,
-    color: '#696969',
-    flex: 1,
+    paddingHorizontal: 24,
   },
   additionalInfoTitle: {
     fontFamily: 'Poppins-Medium',
