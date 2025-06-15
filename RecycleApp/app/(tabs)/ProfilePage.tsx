@@ -868,11 +868,6 @@ export default function ProfilePage() {
                   <Text style={styles.pointsInfoItemText}>Share post: +5 points</Text>
                 </View>
                 
-                <View style={styles.pointsInfoItem}>
-                  <Ionicons name="checkmark-circle" size={20} color="#4B9363" />
-                  <Text style={styles.pointsInfoItemText}>Use the app actively: +1 point/day</Text>
-                </View>
-                
                 <Text style={styles.pointsInfoText}>
                   By earning higher points, you can earn various rewards and gain more recognition in the community.
                 </Text>
