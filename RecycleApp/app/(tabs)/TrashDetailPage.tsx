@@ -39,6 +39,7 @@ import IconifyHomeAppliancesIcon from '../../components/ui/IconifyHomeAppliances
 import IconifyMetalIcon from '../../components/ui/IconifyMetal';
 import IconifyTireIcon from '../../components/ui/IconifyTire';
 import IconifyToxicIcon from '../../components/ui/IconifyToxic';
+import IconifyGarbageIcon from '@/components/ui/IconifyGarbage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -535,20 +536,8 @@ export default function TrashDetailPage() {
               <Text style={styles.sectionTitle}>Trash Volume</Text>
             </View>
             <View style={styles.iconGrid}>
-              {/* Miktara göre ikonlar */}
-              {trash.type && typeof trash.type === 'object' && !Array.isArray(trash.type)
-                ? Object.values(trash.type).map((qty, idx) => {
-                    if (Number(qty) >= 3) {
-                      return <MaterialIcons key={idx} name="local-shipping" size={24} color="#4B9363" style={{ margin: 4 }} />;
-                    } else {
-                      return <MaterialIcons key={idx} name="delete" size={24} color="#4B9363" style={{ margin: 4 }} />;
-                    }
-                  })
-                : (trash.quantity >= 3
-                    ? <MaterialIcons name="local-shipping" size={24} color="#4B9363" style={{ margin: 4 }} />
-                    : <MaterialIcons name="delete" size={24} color="#4B9363" style={{ margin: 4 }} />
-                  )
-              }
+            <IconifyGarbageIcon width={24} height={24} color="#4B9363" style={{ marginTop: 2 }} />
+            <Text style={{ fontFamily: 'Poppins-Regular', fontSize: 14, color: '#333', marginLeft: 2, alignSelf: 'center' }}>{trash.quantity || 1}</Text>
             </View>
           </View>
         </View>
