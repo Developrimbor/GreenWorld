@@ -96,6 +96,7 @@ export default function TrashReportPage() {
   const [wasteTypesAnim] = useState(new Animated.Value(0));
   const [infoModalVisible, setInfoModalVisible] = useState(false);
   const [wasteGuideVisible, setWasteGuideVisible] = useState(false);
+  const [customModal, setCustomModal] = useState<{visible: boolean, title: string, message: string, onOk?: () => void}>({visible: false, title: '', message: ''});
 
   useEffect(() => {
     if (params.latitude && params.longitude) {
@@ -205,11 +206,10 @@ export default function TrashReportPage() {
         points: increment(10) // Atık bildirimi başına 10 puan
       });
 
-      Alert.alert('Success', 'Trash report submitted successfully');
-      router.replace('/(tabs)/MapScreen');
+      showCustomModal('Success', 'Trash report submitted successfully', () => router.replace('/(tabs)/MapScreen'));
     } catch (error) {
       console.error('Error submitting report:', error);
-      Alert.alert('Error', 'Failed to submit report');
+      showCustomModal('Error', 'Failed to submit report');
     }
 
     // // Kullanıcı bilgisini al
@@ -301,6 +301,10 @@ export default function TrashReportPage() {
       easing: Easing.inOut(Easing.cubic),
       useNativeDriver: false,
     }).start();
+  };
+
+  const showCustomModal = (title: string, message: string, onOk?: () => void) => {
+    setCustomModal({ visible: true, title, message, onOk });
   };
 
   return (
@@ -1172,6 +1176,29 @@ export default function TrashReportPage() {
             </ScrollView>
             <TouchableOpacity style={styles.wasteGuideCloseButton} onPress={() => setWasteGuideVisible(false)}>
               <Text style={styles.wasteGuideCloseButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={customModal.visible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setCustomModal({ ...customModal, visible: false })}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ width: '85%', backgroundColor: '#fff', borderRadius: 12, padding: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5 }}>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', color: customModal.title === 'Success' ? '#4B9363' : '#A91101', marginBottom: 12, textAlign: 'center' }}>{customModal.title}</Text>
+            <Text style={{ fontSize: 15, color: '#333', marginBottom: 24, textAlign: 'center' }}>{customModal.message}</Text>
+            <TouchableOpacity
+              style={{ backgroundColor: '#4B9363', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 32, alignItems: 'center' }}
+              onPress={() => {
+                setCustomModal({ ...customModal, visible: false });
+                if (customModal.onOk) customModal.onOk();
+              }}
+            >
+              <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>OK</Text>
             </TouchableOpacity>
           </View>
         </View>
