@@ -68,7 +68,12 @@ export default function TrashCleaned() {
       return;
     }
 
-    // Görüntü seçme işlemi
+    // BEFORE görseli yüklenmeden AFTER yüklenemez
+    if (type === 'after' && !beforeImage) {
+      showCustomError('Error', 'Please upload the "Before Cleaning" photo first.');
+      return;
+    }
+
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -93,7 +98,12 @@ export default function TrashCleaned() {
       return;
     }
 
-    // Fotoğraf çekme işlemi
+    // BEFORE görseli yüklenmeden AFTER yüklenemez
+    if (type === 'after' && !beforeImage) {
+      showCustomError('Error', 'Please upload the "Before Cleaning" photo first.');
+      return;
+    }
+
     let result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
@@ -124,16 +134,26 @@ export default function TrashCleaned() {
   };
 
   const handleConfirm = async () => {
-    if (!id || (!beforeImage && !afterImage)) {
-      showCustomError('Error', 'Please upload at least one photo.');
+    if (!beforeImage) {
+      showCustomError('Error', 'Please upload the "Before Cleaning" photo.');
       return;
     }
-
+    if (!afterImage) {
+      showCustomError('Error', 'Please upload the "After Cleaning" photo.');
+      return;
+    }
+    if (!additionalInfo.trim()) {
+      showCustomError('Error', 'Please provide additional information about the cleaning.');
+      return;
+    }
+    if (!id) {
+      showCustomError('Error', 'Trash ID is missing.');
+      return;
+    }
     if (!trash || !trash.location) {
       showCustomError('Error', 'Trash location information could not be found.');
       return;
     }
-
     setSubmitting(true);
 
     try {
@@ -546,12 +566,12 @@ export default function TrashCleaned() {
           {/* Ek Bilgi Alanı */}
           <View style={styles.additionalInfoContainer}>
             <Text style={styles.additionalInfoTitle}>
-              If you want to provide additional information about the trash:
+              More information about this cleaned waste:
             </Text>
             <TextInput
               style={styles.additionalInfoInput}
               multiline
-              placeholder="Add optional details about the cleaning process..."
+              placeholder="The waste point was further away than shown on the map..."
               placeholderTextColor="#999"
               value={additionalInfo}
               onChangeText={setAdditionalInfo}
