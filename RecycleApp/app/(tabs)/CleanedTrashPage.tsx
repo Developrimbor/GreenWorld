@@ -38,6 +38,7 @@ import IconifyHomeAppliancesIcon from '../../components/ui/IconifyHomeAppliances
 import IconifyMetalIcon from '../../components/ui/IconifyMetal';
 import IconifyTireIcon from '../../components/ui/IconifyTire';
 import IconifyToxicIcon from '../../components/ui/IconifyToxic';
+import IconifyGarbageIcon from '../../components/ui/IconifyGarbage';
 
 const { width } = Dimensions.get('window');
 
@@ -331,6 +332,42 @@ export default function CleanedTrashPage() {
         {/* Info Section */}
         <View style={styles.combinedSection}>
           <View style={styles.sectionColumn}>
+            <View style={styles.infoItem}>
+              <MaterialIcons name="tag" size={16} color="#4B9363" />
+              <Text style={styles.infoText}>ID: {typeof id === 'string' ? id.substring(0, 3) + '**' : '---**'}</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <MaterialIcons name="person" size={16} color="#4B9363" />
+              <TouchableOpacity onPress={() => {
+                if (authorId) {
+                  if (auth.currentUser && authorId === auth.currentUser.uid) {
+                    router.push('/(tabs)/ProfilePage');
+                  } else {
+                    router.push({ pathname: '/(tabs)/UserProfile', params: { userId: authorId } });
+                  }
+                }
+              }}>
+                <Text style={[styles.infoText, { color: '#4B9363' }]}>: {authorUsername}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.sectionColumn}>
+            <View style={styles.infoItem}>
+              <MaterialIcons name="calendar-today" size={16} color="#4B9363" />
+              <Text style={styles.infoText}>: {trash.cleanedAt ? (() => { const d = trash.cleanedAt.toDate ? trash.cleanedAt.toDate() : new Date(trash.cleanedAt); return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`; })() : ''}</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <MaterialIcons name="location-on" size={16} color="#4B9363" />
+              <Text style={styles.infoText}>: {locationName}</Text>
+            </View>
+          </View>
+        </View>
+        {/* Alt çizgi */}
+        <View style={{ height: 1, backgroundColor: '#E8E8E8', marginHorizontal: 8, marginBottom: 8 }} />
+        {/* Trash Info & Trash Volume Section */}
+        <View style={styles.combinedSection}>
+          <View style={styles.sectionColumn}>
             <View style={styles.sectionHeader}>
               <MaterialIcons name="info-outline" size={22} color="#4B9363" />
               <Text style={styles.sectionTitle}>Trash Info</Text>
@@ -355,19 +392,8 @@ export default function CleanedTrashPage() {
               <Text style={styles.sectionTitle}>Trash Volume</Text>
             </View>
             <View style={styles.iconGrid}>
-              {trash.type && typeof trash.type === 'object' && !Array.isArray(trash.type)
-                ? Object.values(trash.type).map((qty, idx) => {
-                    if (Number(qty) >= 3) {
-                      return <MaterialIcons key={idx} name="local-shipping" size={24} color="#4B9363" style={{ margin: 4 }} />;
-                    } else {
-                      return <MaterialIcons key={idx} name="delete" size={24} color="#4B9363" style={{ margin: 4 }} />;
-                    }
-                  })
-                : (trash.quantity >= 3
-                    ? <MaterialIcons name="local-shipping" size={24} color="#4B9363" style={{ margin: 4 }} />
-                    : <MaterialIcons name="delete" size={24} color="#4B9363" style={{ margin: 4 }} />
-                  )
-              }
+              <IconifyGarbageIcon width={24} height={24} color="#4B9363" style={{ marginTop: 2 }} />
+              <Text style={{ fontFamily: 'Poppins-Regular', fontSize: 14, color: '#333', marginLeft: 2, alignSelf: 'center' }}>{trash.quantity || 1}</Text>
             </View>
           </View>
         </View>
@@ -535,7 +561,8 @@ const styles = StyleSheet.create({
   },
   combinedSection: {
     flexDirection: 'row',
-    padding: 24,
+    paddingHorizontal: 24,
+    marginTop: 24,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#D9D9D9',
@@ -548,26 +575,33 @@ const styles = StyleSheet.create({
     backgroundColor: '#D9D9D9',
     marginHorizontal: 24,
   },
-  sectionTitle: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 16,
-    marginBottom: 12,
-  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 8,
   },
+  sectionTitle: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 14,
+    color: '#111',
+  },
   iconGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: 6,
   },
   cleanedAuthorText: {
     fontFamily: 'Poppins-Medium',
     fontSize: 12,
     color: '#696969',
     marginBottom: 4,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
   },
   infoText: {
     fontFamily: 'Poppins-Medium',
