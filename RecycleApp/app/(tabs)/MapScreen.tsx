@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -30,6 +30,7 @@ import { db } from '../config/firebase';
 import { storage } from '../config/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Defs, RadialGradient, Stop, Circle as SvgCircle } from 'react-native-svg';
+
 
 
 const { width, height } = Dimensions.get('window');
@@ -253,12 +254,12 @@ const onRegionChange = () => {
 };
 
   // Region değişimi tamamlandığında
-const onRegionChangeComplete = (newRegion: Region) => {
+const onRegionChangeComplete = useCallback( (newRegion: Region) => {
   if (isRegionChanging) {
     setRegion(newRegion);
     setIsRegionChanging(false);
   }
-};
+},[isRegionChanging]);
 
   const getCurrentLocation = async () => {
     try {
@@ -949,9 +950,18 @@ const onRegionChangeComplete = (newRegion: Region) => {
   const [clusters, setClusters] = useState<TrashCluster[]>([]);
 
   // Cluster hesaplama effect'i
-  useEffect(() => {
-    setClusters(clusterTrashReports(visibleTrashReports, region));
-  }, [visibleTrashReports, region]);
+  // useEffect(() => {
+  //   setClusters(clusterTrashReports(visibleTrashReports, region));
+  // }, [visibleTrashReports, region]);
+
+// Cluster hesaplama effect'i - useMemo ile optimize edildi
+const memoizedClusters = useMemo(() => {
+  return clusterTrashReports(visibleTrashReports, region);
+}, [visibleTrashReports, region]);
+
+useEffect(() => {
+  setClusters(memoizedClusters);
+}, [memoizedClusters]);
 
   return (
     <SafeAreaView style={styles.container}>
