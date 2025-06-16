@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import * as Location from 'expo-location';
 import { auth } from '../config/firebase';
@@ -77,6 +77,7 @@ export default function CleanedTrashPage() {
   const [cleanedByUsername, setCleanedByUsername] = useState<string>('');
   const [authorId, setAuthorId] = useState<string | null>(null);
   const [cleanedById, setCleanedById] = useState<string | null>(null);
+  const [sequentialId, setSequentialId] = useState<string>('-----');
 
   useEffect(() => {
     const fetchTrash = async () => {
@@ -143,6 +144,28 @@ export default function CleanedTrashPage() {
         } else {
           setLocationName('Konum bilgisi yok');
         }
+
+        // Sıralı ID hesapla
+        try {
+          const allDocsSnap = await getDocs(collection(db, 'trashReports'));
+          const allDocs = allDocsSnap.docs
+            .map(doc => ({ id: doc.id, createdAt: doc.data().createdAt }))
+            .filter(doc => doc.createdAt)
+            .sort((a, b) => {
+              const aDate = a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+              const bDate = b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+              return aDate.getTime() - bDate.getTime();
+            });
+          const foundIndex = allDocs.findIndex(doc => doc.id === id);
+          if (foundIndex !== -1) {
+            const seq = (foundIndex + 1).toString().padStart(5, '0');
+            setSequentialId(seq);
+          } else {
+            setSequentialId('-----');
+          }
+        } catch (e) {
+          setSequentialId('-----');
+        }
       }
       
       setLoading(false);
@@ -176,12 +199,6 @@ export default function CleanedTrashPage() {
         setCleanedByUsername('Bilinmiyor');
       }
     }
-  };
-
-  // ID'nin kısaltılmış versiyonunu oluştur (ilk 3 karakter + **)
-  const formatId = (fullId: string | string[] | undefined) => {
-    if (!fullId || typeof fullId !== 'string') return '---**';
-    return fullId.substring(0, 3) + '**';
   };
 
   const formatDate = (dateObj: any) => {
@@ -334,7 +351,7 @@ export default function CleanedTrashPage() {
           <View style={styles.sectionColumn}>
             <View style={styles.infoItem}>
               <MaterialIcons name="tag" size={16} color="#4B9363" />
-              <Text style={styles.infoText}>ID: {typeof id === 'string' ? id.substring(0, 3) + '**' : '---**'}</Text>
+              <Text style={styles.infoText}>ID: {sequentialId}</Text>
             </View>
             <View style={styles.infoItem}>
               <MaterialIcons name="person" size={16} color="#4B9363" />
