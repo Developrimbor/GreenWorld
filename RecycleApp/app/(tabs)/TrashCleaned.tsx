@@ -492,7 +492,7 @@ export default function TrashCleaned() {
               ) : (
                 <MaterialIcons name="photo-camera" size={36} color="#999" />
               )}
-              <Text style={styles.photoLabel}>Before Cleaning</Text>
+              <Text style={styles.photoLabel}>While Cleaning</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
