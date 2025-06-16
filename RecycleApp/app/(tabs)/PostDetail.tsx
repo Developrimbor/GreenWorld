@@ -418,8 +418,6 @@ export default function PostDetail() {
           </View>
         </View>
       </Modal>
-
-      <BottomNavigation />
     </SafeAreaView>
   );
 }
