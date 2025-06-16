@@ -240,26 +240,36 @@ export default function TrashReportPage() {
     setModalVisible(true);
   };
 
-  const renderItem = ({ item, drag, isActive }: RenderItemParams<ImageItem>) => (
-    <View style={styles.imageWrapper}>
-      <TouchableOpacity
-        style={[styles.imageContainer, isActive && styles.activeImageContainer]}
-        onLongPress={drag}
-        disabled={isActive}
-        activeOpacity={1}
-        onPress={() => handleImagePress(item.uri)}
-      >
-        <Image source={{ uri: item.uri }} style={styles.image} />
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDeleteImage(item.id)}
-        activeOpacity={0.7}
-      >
-        <MaterialIcons name="close" size={18} color="#fff" />
-      </TouchableOpacity>
-    </View>
-  );
+  const renderDraggableImageItem = ({ item, drag, isActive }: RenderItemParams<ImageItem>) => {
+    if (item.id === 'add-photo') {
+      return (
+        <TouchableOpacity style={styles.emptyImageBox} onPress={handleTakePhoto}>
+          <Ionicons name="add" size={32} color="#AAA" />
+          <Text style={styles.emptyImageText}>Add Photo</Text>
+        </TouchableOpacity>
+      );
+    }
+    return (
+      <View style={styles.imageWrapper}>
+        <TouchableOpacity
+          style={[styles.imageContainer, isActive && styles.activeImageContainer]}
+          onLongPress={drag}
+          disabled={isActive}
+          activeOpacity={1}
+          onPress={() => handleImagePress(item.uri)}
+        >
+          <Image source={{ uri: item.uri }} style={styles.image} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDeleteImage(item.id)}
+          activeOpacity={0.7}
+        >
+          <MaterialIcons name="close" size={18} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   const wasteTypeIcons = [
     { key: 1, Icon: IconifyPlasticIcon, label: 'Plastic' },
@@ -532,12 +542,12 @@ export default function TrashReportPage() {
               </TouchableOpacity>
             ) : (
               <DraggableFlatList
-                data={images}
+                data={[...images, { id: 'add-photo', uri: '' }]}
                 onDragEnd={handleDragEnd}
                 keyExtractor={(item) => item.id}
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                renderItem={renderItem}
+                renderItem={renderDraggableImageItem}
               />
             )}
           </GestureHandlerRootView>
