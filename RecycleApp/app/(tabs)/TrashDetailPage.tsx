@@ -586,7 +586,7 @@ export default function TrashDetailPage() {
               <Text style={styles.sectionTitle}>Trash Volume</Text>
             </View>
             <View style={styles.iconGrid}>
-            <IconifyGarbageIcon width={24} height={24} color="#4B9363" style={{ marginTop: 2 }} />
+            <IconifyGarbageIcon width={22} height={22} color="#4B9363" style={{ marginTop: 2 }} />
             <Text style={{ fontFamily: 'Poppins-Regular', fontSize: 14, color: '#333', marginLeft: 2, alignSelf: 'center' }}>{trash.quantity || 1}</Text>
             </View>
           </View>
