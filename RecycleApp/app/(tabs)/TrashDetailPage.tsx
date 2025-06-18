@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, arrayUnion, arrayRemove, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import * as Location from 'expo-location';
 import { auth } from '../config/firebase';
@@ -144,6 +144,9 @@ export default function TrashDetailPage() {
   const [showDistanceModal, setShowDistanceModal] = useState(false);
   const [distanceToWaste, setDistanceToWaste] = useState(0);
   const [sequentialId, setSequentialId] = useState<string>('-----');
+  const [alreadyCleanedClicks, setAlreadyCleanedClicks] = useState<string[]>([]);
+  const [alwaysHereClicks, setAlwaysHereClicks] = useState<string[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
   const wasteTypeIconsArr = [
     { key: 1, Icon: IconifyPlasticIcon, label: 'Plastic' },
     { key: 2, Icon: IconifyPaperIcon, label: 'Paper' },
@@ -253,12 +256,21 @@ export default function TrashDetailPage() {
         } catch (e) {
           setSequentialId('-----');
         }
+
+        // Buton sayaçları
+        setAlreadyCleanedClicks(trashData.alreadyCleanedClicks || []);
+        setAlwaysHereClicks(trashData.alwaysHereClicks || []);
       }
       
       setLoading(false);
     };
     
     fetchTrash();
+
+    // Kullanıcıyı al
+    if (auth.currentUser) {
+      setUserId(auth.currentUser.uid);
+    }
   }, [id]);
 
   // Kullanıcı detaylarını getir
@@ -389,6 +401,27 @@ export default function TrashDetailPage() {
   // Temizleme bilgi modalını göster
   const showCleaningInfo = () => {
     setShowCleaningInfoModal(true);
+  };
+
+  // --- Sayaç butonları için yardımcı fonksiyonlar ---
+  const handleClickButton = async (type: 'alreadyCleaned' | 'alwaysHere') => {
+    if (!id || !userId) return;
+    const docRef = doc(db, 'trashReports', id as string);
+    let currentClicks: string[] = type === 'alreadyCleaned' ? alreadyCleanedClicks : alwaysHereClicks;
+    let field = type === 'alreadyCleaned' ? 'alreadyCleanedClicks' : 'alwaysHereClicks';
+    let setClicks = type === 'alreadyCleaned' ? setAlreadyCleanedClicks : setAlwaysHereClicks;
+    let isClicked = currentClicks.includes(userId);
+    try {
+      if (!isClicked) {
+        await updateDoc(docRef, { [field]: arrayUnion(userId) });
+        setClicks([...currentClicks, userId]);
+      } else {
+        await updateDoc(docRef, { [field]: arrayRemove(userId) });
+        setClicks(currentClicks.filter(uid => uid !== userId));
+      }
+    } catch (e) {
+      // Hata yönetimi
+    }
   };
 
   if (loading) {
@@ -584,11 +617,17 @@ export default function TrashDetailPage() {
           
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.outlineButton}>
+            <TouchableOpacity style={styles.outlineButton} onPress={() => handleClickButton('alreadyCleaned')}>
               <Text style={styles.outlineButtonText}>Already Cleaned</Text>
+              {alreadyCleanedClicks.length > 0 && (
+                <Text style={{ color: '#4B9363', fontSize: 12, marginTop: 2 }}>{alreadyCleanedClicks.length}</Text>
+              )}
             </TouchableOpacity>
-            <TouchableOpacity style={styles.outlineButton}>
+            <TouchableOpacity style={styles.outlineButton} onPress={() => handleClickButton('alwaysHere')}>
               <Text style={styles.outlineButtonText}>Always Here</Text>
+              {alwaysHereClicks.length > 0 && (
+                <Text style={{ color: '#4B9363', fontSize: 12, marginTop: 2 }}>{alwaysHereClicks.length}</Text>
+              )}
             </TouchableOpacity>
           </View>
           <TouchableOpacity 
