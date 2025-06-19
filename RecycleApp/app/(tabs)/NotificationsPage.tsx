@@ -388,7 +388,7 @@ export default function NotificationsPage() {
         >
           <MaterialIcons name="chevron-left" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>BİLDİRİMLER</Text>
+        <Text style={styles.headerTitle}>NOTIFICATIONS</Text>
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
             <MaterialIcons name="refresh" size={24} color="#4B9363" />
@@ -396,7 +396,7 @@ export default function NotificationsPage() {
         </View>
       </View>
 
-      {/* Data Mode Toggle - Geliştirme için */}
+      {/* Data Mode Toggle - Geliştirme için
       {__DEV__ && (
         <TouchableOpacity 
           style={styles.toggleModeButton}
@@ -406,7 +406,7 @@ export default function NotificationsPage() {
             {showDemoData ? "Gerçek Verileri Göster" : "Demo Verileri Göster"}
           </Text>
         </TouchableOpacity>
-      )}
+      )} */}
 
       {/* Notifications List */}
       {loading ? (
