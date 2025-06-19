@@ -32,7 +32,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.yourcompany.recycleapp",
-      "googleMapsApiKey": "YOUR_ANDROID_API_KEY",
+      "googleMapsApiKey": "AIzaSyDG8n3QsitVfsbF6rCzHA_DroQ_pT8HMM4",
       "googleServicesFile": "./google-services.json"
     },
     "web": {
