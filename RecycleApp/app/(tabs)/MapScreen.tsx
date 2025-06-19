@@ -1218,41 +1218,53 @@ useEffect(() => {
             style={styles.confirmButton}
             onPress={handleConfirmLocation}
           >
-            <Text style={styles.confirmButtonText}>Bu Konumu Onayla</Text>
+            <Ionicons name="checkmark" size={20} color="#fff" />
+            <Text style={styles.confirmButtonText}>Confirm</Text>
           </TouchableOpacity>
         )}
 
         {/* İptal butonu - Sadece report mode aktifken ve konum izni varken göster */}
-        {isReportMode && showCircle && (
+        {/* {isReportMode && showCircle && (
           <TouchableOpacity 
             style={[styles.cancelButton, showConfirmButton ? styles.cancelButtonWithConfirm : {}]}
             onPress={cancelReportMode}
           >
             <Text style={styles.cancelButtonText}>İptal</Text>
           </TouchableOpacity>
-        )}
+        )} */}
       </View>
       
       {/* Alt Butonlar - Report Spot ve View Spots Near - Klavye açıkken gizle */}
       {!isKeyboardVisible && (
         <View style={styles.bottomButtons}>
           <TouchableOpacity 
-            style={[styles.reportButton, isReportMode && styles.reportActiveButton]} 
-            onPress={handleReportSpot}
+            style={[
+              styles.reportButton, 
+              isReportMode ? styles.reportCancelButton : null
+            ]} 
+            onPress={() => {
+              if (isReportMode) {
+                cancelReportMode();
+              } else {
+                handleReportSpot();
+              }
+            }}
           >
             {isLoading ? (
               <ActivityIndicator size="small" color={isReportMode ? "#FFFFFF" : "#4B9363"} />
             ) : (
               <>
                 <Ionicons 
-                  name="locate" 
+                  name={isReportMode ? "close" : "locate"} 
                   size={20} 
                   color={isReportMode ? "#FFFFFF" : "#4B9363"} 
                 />
                 <Text style={[
                   styles.buttonText, 
-                  isReportMode && styles.reportActiveButtonText
-                ]}>Report Trash</Text>
+                  isReportMode ? styles.reportActiveButtonText : null
+                ]}>
+                  {isReportMode ? "Cancel" : "Report Trash"}
+                </Text>
               </>
             )}
           </TouchableOpacity>
@@ -1856,14 +1868,16 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   confirmButton: {
+    flexDirection: 'row',
     position: 'absolute',
     left: 24,
-    bottom: 80,
+    bottom: 84,
     backgroundColor: '#4B9363',
+    width: 142,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
-    elevation: 4,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -1875,8 +1889,11 @@ const styles = StyleSheet.create({
   },
   confirmButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'Poppins-Medium',
+    lineHeight: 20,
+    // textAlign: 'center',
+    fontSize: 14,
+    marginLeft: 8,
   },
   suggestionsContainer: {
     backgroundColor: 'white',
@@ -2604,5 +2621,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#28BBE3',
     borderRadius: 4,
     marginTop: 4,
+  },
+  reportCancelButton: {
+    backgroundColor: '#e74c3c', // Kırmızı arka plan
   },
 }); 
