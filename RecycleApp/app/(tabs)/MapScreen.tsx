@@ -393,8 +393,8 @@ const onRegionChangeComplete = useCallback( (newRegion: Region) => {
       const newRegion = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01
+        latitudeDelta: 0.001,
+        longitudeDelta: 0.001
       };
       
       // Sadece userLocation'ı güncelle
