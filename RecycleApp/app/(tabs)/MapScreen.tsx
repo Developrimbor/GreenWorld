@@ -280,14 +280,14 @@ const onRegionChangeComplete = useCallback( (newRegion: Region) => {
       const location = await Promise.race([locationPromise, timeoutPromise]) as Location.LocationObject;
 
       // Yeni region'ı hesapla
-      const longitudeDelta = 0.005;
-      const latitudeDelta = 0.005;
+      const longitudeDelta = 0.001;
+      const latitudeDelta = 0.001;
       
       const newRegion = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005
+        latitudeDelta: 0.0015,
+        longitudeDelta: 0.0015
       };
       
       // Haritayı tam kullanıcı konumuna merkezle
@@ -1869,6 +1869,8 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
     position: 'absolute',
     left: 24,
     bottom: 84,
@@ -1881,10 +1883,10 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
     zIndex: 10,
   },
   confirmButtonText: {
