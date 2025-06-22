@@ -807,7 +807,7 @@ const onRegionChangeComplete = useCallback( (newRegion: Region) => {
     
     try {
       // Arama çubuğunu güncelle
-      setSearchQuery(location.name);
+      // setSearchQuery(location.name);
       
       // Haritayı bu konuma taşı
       const newRegion = {
@@ -950,6 +950,28 @@ const onRegionChangeComplete = useCallback( (newRegion: Region) => {
   const memoizedClusters = useMemo(() => {
     return clusterTrashReports(visibleTrashReports, region);
   }, [visibleTrashReports, region]);
+
+  // Map sayfası açıldığında kullanıcının konumunu al ve haritayı o konuma odakla
+  useEffect(() => {
+    const getUserLocation = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const location = await Location.getCurrentPositionAsync({});
+        setUserLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+        // Haritayı otomatik olarak kullanıcı konumuna odakla
+        mapRef.current?.animateToRegion({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }, 1000);
+      }
+    };
+    getUserLocation();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
