@@ -946,22 +946,10 @@ const onRegionChangeComplete = useCallback( (newRegion: Region) => {
     }
   };
 
-  // Cluster state'i
-  const [clusters, setClusters] = useState<TrashCluster[]>([]);
-
-  // Cluster hesaplama effect'i
-  // useEffect(() => {
-  //   setClusters(clusterTrashReports(visibleTrashReports, region));
-  // }, [visibleTrashReports, region]);
-
-// Cluster hesaplama effect'i - useMemo ile optimize edildi
-const memoizedClusters = useMemo(() => {
-  return clusterTrashReports(visibleTrashReports, region);
-}, [visibleTrashReports, region]);
-
-useEffect(() => {
-  setClusters(memoizedClusters);
-}, [memoizedClusters]);
+  // Cluster hesaplama effect'i - useMemo ile optimize edildi
+  const memoizedClusters = useMemo(() => {
+    return clusterTrashReports(visibleTrashReports, region);
+  }, [visibleTrashReports, region]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -1025,7 +1013,7 @@ useEffect(() => {
           rotateEnabled={false}      // Harita rotasyonunu devre dışı bırak
           pitchEnabled={false}       // Eğim özelliğini devre dışı bırak
         >
-          {clusters.map((cluster, idx) => {
+          {memoizedClusters.map((cluster, idx) => {
             // Her durumda (tekli veya çoklu) daire ve ortasında sayı göster
             const radius = 100 + Math.min(cluster.items.length * 60, 500);
             const total = cluster.items.length;
@@ -1113,7 +1101,7 @@ useEffect(() => {
                       textShadowColor: 'rgba(0,0,0,0.3)',
                       textShadowOffset: { width: 1, height: 1 },
                       textShadowRadius: 1.5,
-                    }}>{cluster.items.length}</Text>
+                    }}>{cluster.items.length > 1 ? cluster.items.length : ''}</Text>
                   </View>
                 </Marker>
               </React.Fragment>
