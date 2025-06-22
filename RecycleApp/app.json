@@ -17,22 +17,27 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.recycleapp",
-      "googleMapsApiKey": "YOUR_IOS_API_KEY",
+      "bundleIdentifier": "com.recycleapp",
+      "googleMapsApiKey": "AIzaSyAY2sQ-OFIbcvK4oNswr2cD-_KkM2WDH_E",
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "READ_MEDIA_IMAGES"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.yourcompany.recycleapp",
-      "googleMapsApiKey": "AIzaSyDG8n3QsitVfsbF6rCzHA_DroQ_pT8HMM4",
+      "package": "com.recycleapp",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyC_za6RubGd0WOUtvi1OJ5i9N2Ckbh3Z9E"
+        }
+      },
       "googleServicesFile": "./google-services.json"
     },
     "web": {
@@ -50,6 +55,15 @@
           "photosPermission": "The app needs access to your photos to let you share them."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "d55bcff2-46f1-4f3e-91c4-27b0ed65a15e"
+      }
+    },
+    "owner": "fahricoskun"
   }
 }
