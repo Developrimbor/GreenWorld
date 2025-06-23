@@ -51,6 +51,7 @@ import IconifyHomeAppliancesIcon from '../../components/ui/IconifyHomeAppliances
 import IconifyMetalIcon from '../../components/ui/IconifyMetal';
 import IconifyTireIcon from '../../components/ui/IconifyTire';
 import IconifyToxicIcon from '../../components/ui/IconifyToxic';
+import IconifyGarbageTruckIcon from '../../components/ui/IconifyGarbageTruck';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -97,6 +98,10 @@ export default function TrashReportPage() {
   const [infoModalVisible, setInfoModalVisible] = useState(false);
   const [wasteGuideVisible, setWasteGuideVisible] = useState(false);
   const [customModal, setCustomModal] = useState<{visible: boolean, title: string, message: string, onOk?: () => void}>({visible: false, title: '', message: ''});
+  const [quantityModalVisible, setQuantityModalVisible] = useState(false);
+  const [selectedBagQuantity, setSelectedBagQuantity] = useState<string | null>(null);
+  const [tempBagQuantity, setTempBagQuantity] = useState<string | null>(null);
+  const [truckSelected, setTruckSelected] = useState(false);
 
   useEffect(() => {
     if (params.latitude && params.longitude) {
@@ -305,6 +310,15 @@ export default function TrashReportPage() {
 
   const showCustomModal = (title: string, message: string, onOk?: () => void) => {
     setCustomModal({ visible: true, title, message, onOk });
+  };
+
+  const handleGarbageTruckClick = () => {
+    setTruckSelected(prev => !prev);
+  };
+
+  const handleGarbageIconClick = () => {
+    setTempBagQuantity(selectedBagQuantity);
+    setQuantityModalVisible(true);
   };
 
   return (
@@ -976,14 +990,86 @@ export default function TrashReportPage() {
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Please select the quantity of waste.</Text>
           <View style={styles.wasteQuantityGrid}>
-            <TouchableOpacity
-              style={[styles.wasteQuantityItem, selectedQuantity === 1 && styles.selectedItem]}
-              onPress={() => setSelectedQuantity(selectedQuantity === 1 ? null : 1)}
-            >
-              <IconifyGarbageIcon width={24} height={24} color={selectedQuantity === 1 ? '#4B9363' : '#555'} />
-            </TouchableOpacity>
+            {/* Garbage Truck Icon - LEFT */}
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TouchableOpacity
+                style={[styles.wasteQuantityItem, truckSelected && styles.selectedItem]}
+                onPress={handleGarbageTruckClick}
+              >
+                <IconifyGarbageTruckIcon width={24} height={24} color={'#555'} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.wasteQuantityItem, selectedBagQuantity && styles.selectedItem, { marginLeft: 16 }]}
+                onPress={handleGarbageIconClick}
+              >
+                <IconifyGarbageIcon width={24} height={24} color={'#555'} />
+              </TouchableOpacity>
+            </View>
           </View>
+          {/* Selected Bag Quantity Display */}
+          {selectedBagQuantity && (
+            <View style={{ alignItems: 'center', marginTop: 8 }}>
+              <Text style={{ color: '#4B9363', fontWeight: 'bold', fontSize: 15 }}>
+                Bag need: {selectedBagQuantity}
+              </Text>
+            </View>
+          )}
+          {/* Selected Truck Display */}
+          {truckSelected && (
+            <View style={{ alignItems: 'center', marginTop: 4 }}>
+              <Text style={{ color: '#4B9363', fontWeight: 'bold', fontSize: 15 }}>
+                Truck need: Yes
+              </Text>
+            </View>
+          )}
         </View>
+
+        {/* Quantity Modal */}
+        <Modal
+          visible={quantityModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setQuantityModalVisible(false)}
+        >
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
+            <View style={{ backgroundColor: '#fff', borderRadius: 14, padding: 28, width: '85%', alignItems: 'center' }}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#4B9363', marginBottom: 18 }}>How many trash bags are needed?</Text>
+              {['1-4 bags', '5-10 bags', '10+ bags'].map(option => (
+                <TouchableOpacity
+                  key={option}
+                  style={{
+                    width: '100%',
+                    paddingVertical: 12,
+                    marginVertical: 6,
+                    borderRadius: 8,
+                    backgroundColor: tempBagQuantity === option ? '#E6F4EA' : '#ECECEC',
+                    borderWidth: tempBagQuantity === option ? 1 : 0,
+                    borderColor: tempBagQuantity === option ? '#4B9363' : 'transparent',
+                    alignItems: 'center',
+                  }}
+                  onPress={() => {
+                    if (tempBagQuantity === option) {
+                      setTempBagQuantity(null);
+                    } else {
+                      setTempBagQuantity(option);
+                    }
+                  }}
+                >
+                  <Text style={{ color: '#333', fontWeight: '500', fontSize: 16 }}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={{ marginTop: 18, paddingVertical: 8, paddingHorizontal: 24, borderRadius: 8, backgroundColor: '#4B9363' }}
+                onPress={() => {
+                  setSelectedBagQuantity(tempBagQuantity);
+                  setQuantityModalVisible(false);
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>OK</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {/* Additional Information */}
         <View style={styles.commentContainer}>
