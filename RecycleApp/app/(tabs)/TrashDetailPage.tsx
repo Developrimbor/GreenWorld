@@ -463,24 +463,6 @@ export default function TrashDetailPage() {
             />
           </TouchableOpacity>
           
-              {trash.images.length > 1 && (
-                <View style={styles.thumbnailsContainer}>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {trash.images.map((img: any, index: number) => (
-                      <TouchableOpacity 
-                        key={img.id || index} 
-                        onPress={() => setCurrentImageIndex(index)}
-                        style={[
-                          styles.thumbnailWrapper,
-                          currentImageIndex === index && styles.activeThumbnail
-                        ]}
-                      >
-                        <Image source={{ uri: img.uri }} style={styles.thumbnail} />
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
             </>
           ) : (
             <View style={[styles.mainImage, styles.noImageContainer]}>
@@ -496,11 +478,21 @@ export default function TrashDetailPage() {
           
           {trash.images && trash.images.length > 1 && (
             <>
-              <TouchableOpacity style={styles.previousButton} onPress={previousImage}>
-                <MaterialIcons name="chevron-left" size={24} color="#fff" />
+              <TouchableOpacity 
+                style={styles.cleanedNavPreviousButton} 
+                onPress={previousImage}
+                disabled={currentImageIndex === 0}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <MaterialIcons name="chevron-left" size={24} color={currentImageIndex === 0 ? "#bbb" : "#fff"} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.nextButton} onPress={nextImage}>
-                <MaterialIcons name="chevron-right" size={24} color="#fff" />
+              <TouchableOpacity 
+                style={styles.cleanedNavNextButton} 
+                onPress={nextImage}
+                disabled={currentImageIndex === trash.images.length - 1}
+                hitSlop={{ top: 10, bottom: 0, left: 10, right: 10 }}
+              >
+                <MaterialIcons name="chevron-right" size={24} color={currentImageIndex === trash.images.length - 1 ? "#bbb" : "#fff"} />
               </TouchableOpacity>
               <View style={styles.paginationContainer}>
                 <Text style={styles.paginationText}>
@@ -1023,22 +1015,38 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   previousButton: {
-    position: 'absolute',
-    left: 16,
-    top: '50%',
-    transform: [{ translateY: -20 }],
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 20,
-    padding: 8,
+    // eski stil kaldırıldı
+    // CleanedTrashPage ile uyumlu yeni stil aşağıda
   },
   nextButton: {
+    // eski stil kaldırıldı
+    // CleanedTrashPage ile uyumlu yeni stil aşağıda
+  },
+  cleanedNavPreviousButton: {
     position: 'absolute',
-    right: 16,
+    left: 24,
     top: '50%',
     transform: [{ translateY: -20 }],
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 20,
-    padding: 8,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 24,
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 0,
+  },
+  cleanedNavNextButton: {
+    position: 'absolute',
+    right: 24,
+    top: '50%',
+    transform: [{ translateY: -20 }],
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 24,
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 0,
   },
   paginationContainer: {
     position: 'absolute',
