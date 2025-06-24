@@ -40,6 +40,7 @@ import IconifyMetalIcon from '../../components/ui/IconifyMetal';
 import IconifyTireIcon from '../../components/ui/IconifyTire';
 import IconifyToxicIcon from '../../components/ui/IconifyToxic';
 import IconifyGarbageIcon from '@/components/ui/IconifyGarbage';
+import IconifyGarbageTruckIcon from '../../components/ui/IconifyGarbageTruck';
 
 const { width, height } = Dimensions.get('window');
 
@@ -585,9 +586,26 @@ export default function TrashDetailPage() {
               </TouchableOpacity>
               <Text style={styles.sectionTitle}>Trash Volume</Text>
             </View>
-            <View style={styles.iconGrid}>
-            <IconifyGarbageIcon width={22} height={22} color="#4B9363" style={{ marginTop: 2 }} />
-            <Text style={{ fontFamily: 'Poppins-Regular', fontSize: 14, color: '#333', marginLeft: 2, alignSelf: 'center' }}>{trash.quantity || 1}</Text>
+            {/* Sadece ikonlar, sola yaslanmış şekilde */}
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 4 }}>
+              {/* Truck icon */}
+              {(trash.quantity && typeof trash.quantity === 'object' && trash.quantity.truck) || (typeof trash.quantity === 'string' && trash.quantity.toLowerCase().includes('truck')) ? (
+                <View style={{ marginRight: 12 }}>
+                  <IconifyGarbageTruckIcon width={24} height={24} color={'#4B9363'} />
+                </View>
+              ) : null}
+              {/* Garbage icon */}
+              {trash.quantity && ((typeof trash.quantity === 'object' && trash.quantity.bag) || (typeof trash.quantity === 'string' && trash.quantity.toLowerCase().includes('bag'))) ? (
+                <View style={{ marginRight: 12 }}>
+                  <IconifyGarbageIcon width={24} height={24} color={'#4B9363'} />
+                </View>
+              ) : null}
+              {/* Eğer eski sistemde quantity sayı ise sadece garbage icon */}
+              {trash.quantity && typeof trash.quantity === 'number' && (
+                <View style={{ marginRight: 12 }}>
+                  <IconifyGarbageIcon width={24} height={24} color={'#4B9363'} />
+                </View>
+              )}
             </View>
           </View>
         </View>
@@ -595,22 +613,21 @@ export default function TrashDetailPage() {
         {/* Other Details Section */}
         <View style={styles.otherDetailsSection}>
           <Text style={styles.sectionTitle}>Other Details</Text>
-          {/* Çoklu kategori desteği */}
-          {/* {trash.type && typeof trash.type === 'object' && !Array.isArray(trash.type) ? (
-            <View style={{ marginBottom: 8 }}>
-              <Text style={styles.detailsText}>Categories:</Text>
-              {Object.entries(trash.type).map(([key, qty]) => (
-                <Text style={styles.detailsText} key={key}>
-                  - {wasteTypeLabels[Number(key)] || 'Unknown'}: {String(qty)}
-                </Text>
-              ))}
-            </View>
-          ) : (
-            <>
-              <Text style={styles.detailsText}>Category: {wasteTypeLabels[trash.type] || trash.type}</Text>
-              <Text style={styles.detailsText}>Quantity: {trash.quantity}</Text>
-            </>
-          )} */}
+          {/* Truck/Bag bilgileri burada gösterilecek */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
+            {/* Truck need */}
+            {((trash.quantity && typeof trash.quantity === 'object' && trash.quantity.truck) || (typeof trash.quantity === 'string' && trash.quantity.toLowerCase().includes('truck'))) && (
+              <Text style={[styles.detailsText, { color: '#4B9363', fontWeight: 'bold', marginRight: 16 }]}>Truck need: Yes</Text>
+            )}
+            {/* Bag need */}
+            {trash.quantity && ((typeof trash.quantity === 'object' && trash.quantity.bag) || (typeof trash.quantity === 'string' && trash.quantity.toLowerCase().includes('bag'))) && (
+              <Text style={[styles.detailsText, { color: '#4B9363', fontWeight: 'bold', marginRight: 16 }]}>Bag need: {typeof trash.quantity === 'object' ? trash.quantity.bag : trash.quantity}</Text>
+            )}
+            {/* Eski sistemde sadece sayı ise */}
+            {trash.quantity && typeof trash.quantity === 'number' && (
+              <Text style={[styles.detailsText, { color: '#4B9363', fontWeight: 'bold', marginRight: 16 }]}>Bag need: {trash.quantity}</Text>
+            )}
+          </View>
           <Text style={styles.detailsText}>
           {trash.additionalInfo}
           </Text>
@@ -1415,5 +1432,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  wasteQuantityItem: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#555',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
