@@ -190,10 +190,22 @@ export default function TrashReportPage() {
 
       const imageUrls = await Promise.all(uploadPromises);
 
+      // Quantity field logic
+      let quantity: any = null;
+      if (selectedBagQuantity && truckSelected) {
+        quantity = { bag: selectedBagQuantity, truck: true };
+      } else if (selectedBagQuantity) {
+        quantity = selectedBagQuantity;
+      } else if (truckSelected) {
+        quantity = 'truck';
+      } else if (selectedQuantity) {
+        quantity = selectedQuantity;
+      }
+
       const reportData = {
         location: selectedLocation,
         type: selectedTypes,
-        quantity: selectedQuantity,
+        quantity,
         additionalInfo,
         imageUrls: imageUrls, // Artık Firebase Storage URL'lerini kullanıyoruz
         status: 'reported',
@@ -536,24 +548,41 @@ export default function TrashReportPage() {
 
         {/* Trash Images Section */}
         <View style={styles.sectionAddImage}>
-          
           <Text style={styles.sectionTitle}>Trash Images</Text>
           <GestureHandlerRootView>
-            {images.length === 0 ? (
-              <TouchableOpacity style={styles.emptyImageBox} onPress={handleTakePhoto}>
-                <Ionicons name="add" size={32} color="#AAA" />
-                <Text style={styles.emptyImageText}>Add Photo</Text>
-              </TouchableOpacity>
-            ) : (
-              <DraggableFlatList
-                data={images}
-                onDragEnd={handleDragEnd}
-                keyExtractor={(item) => item.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                renderItem={renderItem}
-              />
-            )}
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {/* Görseller */}
+              {images.map((item) => (
+                <View key={item.id} style={styles.imageWrapper}>
+                  <TouchableOpacity
+                    style={styles.imageContainer}
+                    onPress={() => handleImagePress(item.uri)}
+                  >
+                    <Image source={{ uri: item.uri }} style={styles.image} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteImage(item.id)}
+                    activeOpacity={0.7}
+                  >
+                    <MaterialIcons name="close" size={18} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {/* Add Photo kutuları */}
+              {images.length < 2 && (
+                <TouchableOpacity style={styles.emptyImageBox} onPress={handleTakePhoto}>
+                  <Ionicons name="add" size={32} color="#AAA" />
+                  <Text style={styles.emptyImageText}>Add Photo</Text>
+                </TouchableOpacity>
+              )}
+              {images.length === 0 && (
+                <TouchableOpacity style={styles.emptyImageBox} onPress={handleTakePhoto}>
+                  <Ionicons name="add" size={32} color="#AAA" />
+                  <Text style={styles.emptyImageText}>Add Photo</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </GestureHandlerRootView>
         </View>
 
