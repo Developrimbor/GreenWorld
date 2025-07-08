@@ -52,9 +52,15 @@ Uygulama şu ekranları içerir:
 
 GreenWorld/
 ├── assets/ (ikonlar ve görseller)
+
 ├── components/ (tekrar kullanılabilir bileşenler)
+
 ├── screens/ (uygulama ekranları)
+
 ├── services/ (firebase servisleri, bildirim vs.)
+
 ├── navigation/ (tab navigasyon)
+
 ├── styles/
+
 └── App.js
