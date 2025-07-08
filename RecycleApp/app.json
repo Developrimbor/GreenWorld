@@ -18,7 +18,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.recycleapp",
-      "googleMapsApiKey": "AIzaSyAY2sQ-OFIbcvK4oNswr2cD-_KkM2WDH_E",
+      "googleMapsApiKey": "YOUR_API_KEY",
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
@@ -35,7 +35,7 @@
       "package": "com.recycleapp",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyC_za6RubGd0WOUtvi1OJ5i9N2Ckbh3Z9E"
+          "apiKey": "YOUR_API_KEY"
         }
       },
       "googleServicesFile": "./google-services.json"
