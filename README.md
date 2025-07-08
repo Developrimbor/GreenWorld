@@ -1,13 +1,13 @@
 📦 Green World
 
-<img src='https://github.com/Developrimbor/GreenWorld/blob/main/B%C3%A9hance.png'>
-
 Report, Inform and Clean Up!
 Green World, çevresel kirliliğe dikkat çekmek, gönüllü çöp toplama sürecini desteklemek ve toplumsal çevre bilincini artırmak amacıyla geliştirilmiş konum tabanlı bir mobil uygulamadır.
 
 🧭 Uygulama Özeti
 
 Green World, kullanıcıların çevresinde gördükleri çöp yığınlarını harita üzerinde işaretleyebildiği, sosyal gönderiler paylaşabildiği ve temizlik yaptıkça puan kazanabildiği bir sosyal temizlik platformudur. Uygulama React Native ile geliştirilmiş olup, Firebase altyapısıyla desteklenmektedir.
+
+<img src='https://github.com/Developrimbor/GreenWorld/blob/main/B%C3%A9hance.png'>
 
 🧩 Uygulama Özellikleri
 
